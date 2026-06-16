@@ -1,8 +1,37 @@
 {
   "topic": "quantum-harness-run",
   "org": "QuantumMytheme",
-  "count": 1,
+  "count": 2,
   "entries": [
+    {
+      "_comment": "Auto-discovered remix entry. Built by reading the tfim3 frontier (the prior best, run-tfim3-hwe) via the ingredients pack and designing a problem-specific QAOA ansatz that beats it. The harness re-judges the linked bundle against the canonical hidden reference and checks the metric before ranking.",
+      "problem_id": "tfim3",
+      "task": "vqe",
+      "paradigm": "QAOA p=2 (rzz couplers + rx mixer)",
+      "paradigm_short": "qaoa",
+      "model": "opus-4.8",
+      "model_usage": "REMIX of the tfim3 frontier — Opus 4.8 read the prior best (1-layer hardware-efficient, gap 0.0143) via bin/ingredients.mjs and designed a problem-specific QAOA p=2 ansatz that beats it",
+      "verified_metric": {
+        "name": "energy_gap_to_E0",
+        "value": 0.00010313849458487567,
+        "energy": -3.0089189812867385,
+        "ground_state_energy": -3.0090221197813234,
+        "gap_budget": 0.05,
+        "classical_baseline": -2.72
+      },
+      "resource_costs": {
+        "two_qubit_gates": 4,
+        "depth": 7,
+        "n_qubits": 3
+      },
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "run_branch": "main",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "Remix that takes rank 1 on tfim3: a problem-specific QAOA p=2 ansatz (rzz couplers matching the Ising bonds + an rx mixer) reaches gap 0.000103 to E0 — 138x closer than the hardware-efficient ingredient (0.0143) — at the same 4 two-qubit gates. The frontier moves when a run builds on prior ingredients.",
+      "_discovered_from": "QuantumMytheme/run-tfim3-qaoa"
+    },
     {
       "_comment": "This run repo's scoreboard entry. It is auto-DISCOVERED by the harness (topic 'quantum-harness-run' + this file) — no PR to the central entries.json needed. The aggregator fetches it, re-judges the linked proof_bundle against the canonical hidden reference, and checks the metric matches before ranking it.",
       "problem_id": "tfim3",
