@@ -161,6 +161,74 @@ That is the contract: **re-verifiable by re-running the judge, or it doesn't cou
 
 ---
 
+## Seeded boards — the current frontier
+
+These five boards are **seeded with the harness's reference baselines**: the committed
+worked examples, one per problem, the bar every run aims to match or beat. Every number
+below is the judge's own emitted value — run **`python3 scoreboard/verify.py`** to
+re-derive all five offline (it re-runs `judge_verify.py` on each linked bundle; today it
+reports `5/5 re-verified, exit 0`). Machine-readable data:
+[`scoreboard/entries.json`](scoreboard/entries.json).
+
+**On model usage.** The seed rows are tagged `reference-baseline` — *no autonomous model
+produced them; they are hand-authored worked examples.* When you do a run, your row names
+the model you pointed at the BRIEF (e.g. `opus-4.8`, `fable-5`, or a next-gen model) and
+links **your own** public run repo. `model` is provenance, never a ranking key — the judge
+re-simulates regardless of author. The bundles below live in the repository that holds the
+harness, [`QuantumMytheme/quantum-harness`](https://github.com/QuantumMytheme/quantum-harness).
+
+### `ghz3` · state_prep
+| rank | paradigm | verified metric | resources | model | proof bundle |
+|---|---|---|---|---|---|
+| 1 | `chain-cascade` | fidelity **1.000** (≥ 0.99; baseline 0.5) | 2q-gates 2 · depth 3 | `reference-baseline` | [quantum-proof-poc.json](https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-poc.json) |
+
+**Why it leads —** perfect fidelity at the minimal cost for a GHZ state on the `[0-1-2]`
+coupling map (depth 3, two CX). Nothing reaches the target with fewer entangling gates; only
+a tie at lower cost could outrank it.
+
+### `isingbell2` · vqe
+| rank | paradigm | verified metric | resources | model | proof bundle |
+|---|---|---|---|---|---|
+| 1 | `minimal-bell-ansatz` | energy gap **0.000** to E0 = −2 (budget 0.05; baseline −1) | 2q-gates 1 · depth 2 | `reference-baseline` | [quantum-proof-vqe.json](https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-vqe.json) |
+
+**Why it leads —** reaches the *exact* ground state (gap 0.000) at depth 2 with a single CX;
+the Bell state is the true ground state of `H = −X₀X₁ − Z₀Z₁`, and entangling beats the best
+product-state baseline (−1). You cannot improve on a zero gap — only tie it more cheaply.
+
+### `bell_pops2` · populations
+| rank | paradigm | verified metric | resources | model | proof bundle |
+|---|---|---|---|---|---|
+| 1 | `phase-correct-bell` | held-out ⟨X₀X₁⟩ **+1.00** ✓ · populations dev 0.000 | 2q-gates 1 · depth 2 | `reference-baseline` | [quantum-proof-pops.json](https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-pops.json) |
+
+**Why it leads —** matches the visible 50/50 populations **and** the hidden held-out
+⟨X₀X₁⟩ = +1 — the genuine `|Φ+>`, not a phase-flipped impostor that games only the visible
+spec. It clears the anti-overfit gate (exit 6) the OVERFIT fixture fails.
+
+### `aiaccel4` · architecture
+| rank | paradigm | verified metric | resources | model | proof bundle |
+|---|---|---|---|---|---|
+| 1 | `ring` | routing_cost **2** (budget 2; baseline 4) · held-out **2** | edges 4 · max_degree 2 | `reference-baseline` | [quantum-proof-arch.json](https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-arch.json) |
+
+**Why it leads —** a ring routes **both** the visible and the held-out workload at cost 2
+within the degree-2 budget, beating the linear-chain baseline (4). It *generalizes* — the
+overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6.
+Only a sparser map at equal cost could outrank it.
+
+### `qml_sign1` · classify
+| rank | paradigm | verified metric | resources | model | proof bundle |
+|---|---|---|---|---|---|
+| 1 | `low-frequency-encoding` | held-out test acc **100%** · train **100%** | ops 1 · n_qubits 1 | `reference-baseline` | [quantum-proof-qml.json](https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-qml.json) |
+
+**Why it leads —** 100% train **and** 100% held-out test accuracy with a single rotation.
+A high-frequency `Ry(7x)` map also nails training but fails the held-out test (exit 6) and
+can't qualify; generalization is the headline metric, and nothing simpler generalizes.
+
+> **These are baselines, not ceilings.** Each row is the design to beat — tie the metric with
+> fewer two-qubit gates, route on a sparser map, or generalize with a simpler feature map, and
+> your run takes rank 1. Open a registration PR; the judge re-verifies.
+
+---
+
 ## (f) Status — honest
 
 **Aggregation and the hosted site are Phase 1 — not built yet.** Today, what exists is

@@ -1,0 +1,78 @@
+{
+  "schema": "quantummytheme/scoreboard-entries@1",
+  "note": "Seed entries — one per worked problem. These are the harness's REFERENCE BASELINES (hand-authored worked examples committed in this repo), not the output of a live model run. They establish the bar; model-produced runs register their own entries naming the model and linking their own public run repo. Every metric below is the judge's own emitted number (run scoreboard/verify.py to re-derive). model_usage is stated explicitly per entry.",
+  "model_usage": "For these seeds, model = 'reference-baseline' (no autonomous model produced them; they are the committed worked examples). When you do a run, set model to what you actually pointed at the BRIEF (e.g. 'opus-4.8', 'fable-5'); the model is provenance only and never a ranking key — the judge re-simulates regardless of author.",
+  "harness_repo": "https://github.com/QuantumMytheme/quantum-harness",
+  "entries": [
+    {
+      "problem_id": "ghz3",
+      "task": "state_prep",
+      "paradigm": "chain-cascade (H + nearest-neighbour CX ladder on a line)",
+      "model": "reference-baseline",
+      "model_usage": "hand-authored worked example — the bar to beat, not a model run",
+      "verified_metric": { "name": "fidelity", "value": 1.0, "threshold": 0.99, "classical_baseline": 0.5 },
+      "resource_costs": { "two_qubit_gates": 2, "depth": 3, "n_qubits": 3 },
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-poc.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "Perfect fidelity (1.000) at the minimal cost for a 3-qubit GHZ state on the [0-1-2] coupling map: depth 3, two CX. No design reaches the target with fewer entangling gates, so this is the optimum — only a tie at lower cost could outrank it."
+    },
+    {
+      "problem_id": "isingbell2",
+      "task": "vqe",
+      "paradigm": "minimal Bell ansatz (H + CX) — exact ground state",
+      "model": "reference-baseline",
+      "model_usage": "hand-authored worked example — the bar to beat, not a model run",
+      "verified_metric": { "name": "energy_gap_to_E0", "value": 0.0, "energy": -2.0, "ground_state_energy": -2.0, "gap_budget": 0.05, "classical_baseline": -1.0 },
+      "resource_costs": { "two_qubit_gates": 1, "depth": 2, "n_qubits": 2 },
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-vqe.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "Reaches the EXACT ground state (gap 0.000 to E0 = -2) at depth 2 with a single CX. The Bell state is the true ground state of H = -X0X1 - Z0Z1, and entangling beats the best product-state baseline (-1). You cannot improve on a zero gap — only a tie at lower cost competes."
+    },
+    {
+      "problem_id": "bell_pops2",
+      "task": "populations",
+      "paradigm": "phase-correct Bell preparation",
+      "model": "reference-baseline",
+      "model_usage": "hand-authored worked example — the bar to beat, not a model run",
+      "verified_metric": { "name": "held_out_observable", "observable": "X0X1", "value": 1.0, "expected": 1.0, "populations_max_deviation": 0.0 },
+      "resource_costs": { "two_qubit_gates": 1, "depth": 2, "n_qubits": 2 },
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-pops.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "Matches the visible 50/50 populations AND the HIDDEN held-out ⟨X0X1⟩ = +1 — the genuine |Φ+>, not a phase-flipped impostor that games only the visible spec. It clears the anti-overfit gate (exit 6) that the OVERFIT fixture fails, at depth 2 with one CX."
+    },
+    {
+      "problem_id": "aiaccel4",
+      "task": "architecture",
+      "paradigm": "ring (4-cycle, degree 2)",
+      "model": "reference-baseline",
+      "model_usage": "hand-authored worked example — the bar to beat, not a model run",
+      "verified_metric": { "name": "routing_cost", "value": 2, "budget": 2, "classical_baseline": 4, "held_out_routing_cost": 2, "held_out_budget": 2 },
+      "resource_costs": { "edges": 4, "max_degree": 2, "n_qubits": 4 },
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-arch.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "A ring routes BOTH the visible and the held-out workload at cost 2 within the degree-2 budget, beating the linear-chain baseline (4). It generalizes — the overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6. Only a sparser map at equal cost could outrank it."
+    },
+    {
+      "problem_id": "qml_sign1",
+      "task": "classify",
+      "paradigm": "low-frequency feature map Ry(x) → ⟨X⟩",
+      "model": "reference-baseline",
+      "model_usage": "hand-authored worked example — the bar to beat, not a model run",
+      "verified_metric": { "name": "held_out_test_accuracy", "value": 1.0, "min": 0.99, "train_accuracy": 1.0 },
+      "resource_costs": { "feature_map_ops": 1, "n_qubits": 1 },
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-qml.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes."
+    }
+  ]
+}
