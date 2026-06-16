@@ -4,166 +4,157 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Field Notebook · QuantumMytheme — open, reproducible quantum circuit design</title>
-<meta name="description" content="A full-frame lab notebook for QuantumMytheme: point Claude Mythos or Fable 5 (or any capable model) at a hard quantum design problem and get a verdict anyone can re-run. Abstract · Method · Protocol · Results · Logbook · Theory." />
+<meta name="description" content="A tabbed field notebook for QuantumMytheme: point Claude Mythos or Fable 5 (or any capable model) at a hard quantum design problem and get a verdict anyone can re-run. Abstract · Method · Protocol · Results · Logbook · Theory — with an in-browser circuit runner." />
 <link rel="canonical" href="https://quantummytheme.com/lab" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="QuantumMytheme" />
 <meta property="og:url" content="https://quantummytheme.com/lab" />
 <meta property="og:title" content="QuantumMytheme — Field Notebook" />
-<meta property="og:description" content="A full-frame lab notebook: manila folders open onto vellum sheets packed with live animations — the four-gate judge, a Bell run, a Bloch sphere, the verified-circuit catalog." />
+<meta property="og:description" content="A tabbed notebook with live figures — the four-gate judge, a Bell run, a Bloch sphere — and an in-browser runner that re-simulates any verified circuit and recomputes the judge's metric." />
 <meta property="og:image" content="https://quantummytheme.com/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://quantummytheme.com/og.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
 <style>
-  /* ===== Phosphor & Vellum — QuantumMytheme Field Notebook ===== */
-  :root{
-    --void:#080b12; --ink-hi:#e9eef6; --ink-lo:#8a98ac; --ink-dim:#5a6678;
-    --phosphor:#5ef2e4; --violet:#9d8cff; --amber:#ffb454;
-    --serif:'Newsreader',Georgia,serif; --ui:'Space Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
-    --paper:#f4f1e7; --paper2:#ece9db;
-    --pt:#16202b; --pt2:#47566a; --pf:#93a0ad; --prule:#cfd6cd; --prule2:#e0e3d8;
-    --pteal:#0e7a8c; --pred:#bd4a30; --pgreen:#3f7a52;
-    --folder:#cabd97; --folder2:#beb085; --folder-edge:#a3946a; --folder-hi:#d8cda9;
-    --qm-accent:#5ef2e4; --qm-accent-glow:rgba(94,242,228,.5);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:var(--void);font-family:var(--ui);-webkit-font-smoothing:antialiased;}
-  a{color:inherit}
-  ::-webkit-scrollbar{width:11px;height:11px}
-  ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:#2b3447;border-radius:6px;border:3px solid transparent;background-clip:content-box}
-  ::-webkit-scrollbar-thumb:hover{background:#3a455d;background-clip:content-box}
-  @keyframes qmPulse{0%,100%{opacity:.32}50%{opacity:1}}
+  /* ---- lab: tabbed SPA on the site's paper design system ---- */
+  .lab-titlerow{ display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; margin-top:26px; }
+  .lab-titlerow h1{ margin:8px 0 0; max-width:24ch; }
+  .lab-titlerow .meta{ font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); text-align:right; line-height:1.9; white-space:nowrap; }
+  .lab-status{ display:inline-flex; align-items:center; gap:7px; }
+  .lab-status .dot{ width:7px; height:7px; border-radius:50%; background:var(--pass); }
+  @keyframes labPulse{0%,100%{opacity:.32}50%{opacity:1}}
+  .lab-status .dot{ animation:labPulse 2.4s ease-in-out infinite; }
 
-  #qm{height:100vh;display:flex;flex-direction:column;overflow:hidden;color:var(--ink-hi);
-    background:
-      repeating-linear-gradient(0deg,transparent 0 33px,rgba(94,242,228,.035) 33px 34px),
-      repeating-linear-gradient(90deg,transparent 0 33px,rgba(94,242,228,.035) 33px 34px),
-      radial-gradient(135% 100% at 50% -10%,#121a2b 0%,#0b111c 50%,#080b12 100%);}
+  .lab-tabs{ display:flex; gap:2px; flex-wrap:wrap; border-bottom:1px solid var(--rule); margin-top:24px; }
+  .lab-tab{ font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint);
+    background:none; border:none; border-bottom:2px solid transparent; padding:11px 14px 12px; cursor:pointer;
+    display:flex; flex-direction:column; gap:3px; align-items:flex-start; line-height:1.1; }
+  .lab-tab .pl{ font-size:8.5px; opacity:.7; letter-spacing:.16em; }
+  .lab-tab:hover{ color:var(--ink); }
+  .lab-tab[aria-selected="true"]{ color:var(--accent); border-bottom-color:var(--accent); }
 
-  /* ---- header ---- */
-  .qm-head{display:flex;justify-content:space-between;align-items:center;padding:15px 30px 13px;border-bottom:1px solid #18202e;flex:0 0 auto;gap:16px;flex-wrap:wrap}
-  .qm-brand{display:flex;align-items:center;gap:13px}
-  .qm-brand .mark{color:var(--qm-accent);filter:drop-shadow(0 0 7px var(--qm-accent-glow))}
-  .qm-word{font-family:var(--serif);font-weight:500;font-size:23px;letter-spacing:-.01em;color:#eef2f8;line-height:1}
-  .qm-word em{font-style:italic;font-weight:500;color:var(--qm-accent)}
-  .qm-tag{font-family:var(--mono);font-size:8.5px;letter-spacing:.26em;text-transform:uppercase;color:#5a6678;margin-top:6px}
-  .qm-head-right{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-  .qm-meta{text-align:right;font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#5a6678;line-height:1.8}
-  .qm-meta .site{color:#75839a}
-  .qm-status{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#75839a;padding-right:14px;border-right:1px solid #18202e}
-  .qm-status .dot{width:7px;height:7px;border-radius:50%;background:var(--qm-accent);box-shadow:0 0 9px var(--qm-accent-glow);animation:qmPulse 2.4s ease-in-out infinite}
-  .qm-accent-pick{display:flex;gap:5px;align-items:center}
-  .qm-accent-pick button{width:15px;height:15px;border-radius:50%;border:1px solid #2b3447;cursor:pointer;padding:0;background:var(--sw)}
-  .qm-accent-pick button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--void),0 0 0 3px currentColor}
-  .qm-ghbtn{text-decoration:none;display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--qm-accent);border:1px solid #1d4a4f;padding:9px 12px;border-radius:7px;background:rgba(94,242,228,.05)}
-  .qm-ghbtn:hover{background:rgba(94,242,228,.1)}
+  .lab-sheet{ padding:30px 0 20px; }
+  .lab-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:20px; border-bottom:1px solid var(--rule); padding-bottom:12px; margin-bottom:26px; }
+  .lab-head h2{ margin:7px 0 0; }
+  .lab-head .rmeta{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); text-align:right; line-height:1.9; white-space:nowrap; }
+  .lab-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:start; }
+  .lab-grid-15{ display:grid; grid-template-columns:1.5fr 1fr; gap:40px; align-items:start; }
+  .lab-card{ border:1px solid var(--rule); border-radius:var(--r); background:var(--panel); }
+  .lab-take{ font-family:var(--sans); font-size:14px; color:var(--ink-2); border-left:3px solid var(--accent); padding:8px 14px; background:var(--panel); border-radius:0 4px 4px 0; }
+  canvas.lab-stage{ display:block; width:100%; background:var(--stage-bg); border-radius:4px; }
+  .lab-list{ list-style:none; padding:0; margin:0; }
+  .lab-mono{ font-family:var(--mono); }
+  .lab-runhint{ font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
 
-  /* ---- folder tabs ---- */
-  .qm-tabs{display:flex;gap:4px;padding:14px 28px 0;align-items:flex-end;flex:0 0 auto;position:relative;z-index:3;flex-wrap:wrap}
-  .qm-tab{background:var(--folder2);color:#6a5f3f;border:1px solid var(--folder-edge);border-bottom:none;border-radius:8px 8px 0 0;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;opacity:.88;text-align:left;line-height:1.1;padding:8px 16px 12px}
-  .qm-tab .plate{display:block;font-size:7.5px;opacity:.62;letter-spacing:.18em;margin-bottom:3px}
-  .qm-tab[aria-selected="true"]{background:var(--folder);color:var(--pt);border-radius:9px 9px 0 0;margin-bottom:-1px;box-shadow:0 -4px 12px rgba(0,0,0,.22);position:relative;z-index:3;opacity:1;padding:10px 18px 13px}
+  /* gallery */
+  .lab-gal{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .lab-gcard{ border:1px solid var(--rule); border-radius:var(--r); background:var(--panel); overflow:hidden; display:flex; flex-direction:column; text-align:left; cursor:pointer; padding:0; color:inherit; font:inherit; transition:border-color .15s, transform .15s; }
+  .lab-gcard:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .lab-gcard canvas{ display:block; width:100%; border-bottom:1px solid var(--rule); background:var(--stage-bg); }
 
-  /* ---- folder + sheet ---- */
-  .qm-main{flex:1 1 auto;min-height:0;display:flex;margin:0 18px 18px}
-  .qm-folder{flex:1;min-height:0;overflow-y:auto;position:relative;padding:26px 26px 60px;
-    background:repeating-linear-gradient(45deg,rgba(120,98,54,.05) 0 2px,transparent 2px 6px),repeating-linear-gradient(-45deg,rgba(120,98,54,.04) 0 2px,transparent 2px 7px),linear-gradient(176deg,var(--folder-hi),var(--folder2));
-    border:1px solid var(--folder-edge);border-radius:0 10px 10px 10px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 -2px 0 var(--folder-edge),0 20px 50px -16px rgba(0,0,0,.6);}
-  .qm-sticker{position:absolute;top:13px;right:16px;z-index:2;transform:rotate(1.6deg);font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#5a4f33;background:#efe7cf;border:1px solid #b6a778;border-radius:2px;padding:7px 11px;box-shadow:0 2px 7px rgba(0,0,0,.2);line-height:1.55}
-  .qm-sticker b{color:var(--pteal);font-weight:600}
+  /* register table */
+  .lab-tablewrap{ border:1px solid var(--rule); border-radius:var(--r); overflow:hidden; }
+  .lab-trow{ display:grid; grid-template-columns:40px 1.1fr 1.1fr 1fr 1fr .9fr 92px; gap:10px; align-items:center; padding:12px 15px; border-bottom:1px solid var(--rule); }
+  .lab-trow.h{ background:var(--panel); font-family:var(--mono); font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--faint); padding:9px 15px; }
+  .lab-trow:last-child{ border-bottom:none; }
+  .spark{ display:flex; align-items:flex-end; gap:2px; height:22px; }
+  .spark i{ flex:1; min-width:3px; border-radius:1px 1px 0 0; }
+  .badge-ok{ font-family:var(--mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; border-radius:4px; color:#fff; background:var(--pass); }
+  .badge-err{ font-family:var(--mono); font-size:8.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; border-radius:4px; color:#fff; background:var(--reject); }
 
-  .qm-sheet{position:relative;max-width:1060px;margin:0 auto;padding:34px 40px 46px;border:1px solid #d8d2bf;border-radius:3px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 20px 44px -16px rgba(0,0,0,.5);
-    background:repeating-linear-gradient(0deg,transparent 0 26px,rgba(22,32,43,.045) 26px 27px),repeating-linear-gradient(90deg,transparent 0 26px,rgba(22,32,43,.045) 26px 27px),linear-gradient(180deg,#f6f3ea,#efece0);}
-  /* registration crop-marks */
-  .qm-sheet::before,.qm-sheet::after{content:"";position:absolute;width:13px;height:13px;pointer-events:none;opacity:.5}
-  .qm-sheet::before{top:9px;left:9px;border-top:1px solid var(--pteal);border-left:1px solid var(--pteal)}
-  .qm-sheet::after{bottom:9px;right:9px;border-bottom:1px solid var(--pteal);border-right:1px solid var(--pteal)}
-  /* red engineering margin-rule */
-  .qm-sheet>.qm-marginrule{position:absolute;top:18px;bottom:18px;left:30px;width:1px;background:repeating-linear-gradient(0deg,rgba(189,74,48,.45) 0 5px,transparent 5px 9px);pointer-events:none}
+  /* overlay: runner drawer + submission modal (paper) */
+  .qm-overlay{ position:fixed; inset:0; z-index:60; display:none; }
+  .qm-overlay.open{ display:flex; }
+  .qm-overlay.center{ align-items:center; justify-content:center; }
+  .qm-scrim{ position:absolute; inset:0; background:color-mix(in srgb, var(--bg) 40%, #000 60%); }
+  html[data-theme="dark"] .qm-scrim{ background:rgba(2,3,8,.7); }
+  .qm-scrim{ -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+  .qm-panel{ position:relative; background:var(--bg); color:var(--ink); border:1px solid var(--rule); }
+  .qm-drawer{ width:min(560px,96vw); margin-left:auto; height:100%; overflow-y:auto; border-left:1px solid var(--rule); box-shadow:-18px 0 50px -20px rgba(0,0,0,.5); padding:24px 26px 44px; animation:qmSlide .3s cubic-bezier(.2,.7,.2,1); }
+  .qm-modalpanel{ width:min(780px,94vw); max-height:92vh; overflow-y:auto; border-radius:var(--r); box-shadow:0 30px 70px -22px rgba(0,0,0,.5); padding:28px 30px 34px; animation:qmRise .3s cubic-bezier(.2,.7,.2,1); }
+  @keyframes qmSlide{ from{transform:translateX(30px);opacity:.3} to{transform:none;opacity:1} }
+  @keyframes qmRise{ from{transform:translateY(16px);opacity:.3} to{transform:none;opacity:1} }
+  .qm-close{ position:absolute; top:13px; right:14px; border:1px solid var(--rule-2); background:var(--bg); color:var(--ink-2); font-family:var(--mono); font-size:11px; border-radius:5px; padding:5px 9px; cursor:pointer; z-index:2; }
+  .qm-close:hover{ border-color:var(--accent); color:var(--accent); }
+  .qm-cmd{ display:flex; align-items:flex-start; gap:8px; background:var(--panel); border:1px solid var(--rule); border-radius:4px; padding:7px 9px; margin:7px 0; }
+  .qm-cmd code{ flex:1; font-family:var(--mono); font-size:12px; color:var(--accent); white-space:pre-wrap; word-break:break-word; line-height:1.5; }
+  .qm-copy{ flex:0 0 auto; border:1px solid var(--rule-2); background:var(--bg); color:var(--ink-2); font-family:var(--mono); font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; border-radius:4px; padding:4px 7px; cursor:pointer; }
+  .qm-copy:hover{ border-color:var(--accent); color:var(--accent); }
+  .qm-step{ display:flex; gap:13px; padding:15px 0; border-bottom:1px solid var(--rule); }
+  .qm-step:last-child{ border-bottom:none; }
+  .qm-step .num{ flex:0 0 27px; height:27px; border-radius:50%; border:1px solid var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; color:var(--accent); }
+  .qm-step h4{ font-family:var(--serif); font-weight:700; font-size:16px; color:var(--ink); margin:1px 0 4px; }
+  .qm-step p{ font-size:13.5px; line-height:1.45; color:var(--ink-2); margin:0 0 4px; }
+  .qm-checklist{ list-style:none; padding:0; margin:8px 0 0; }
+  .qm-checklist li{ display:flex; gap:9px; align-items:flex-start; padding:6px 0; font-size:13.5px; color:var(--ink-2); }
+  .qm-checklist li b{ color:var(--ink); }
+  .qm-checklist .mk{ color:var(--accent); flex:0 0 auto; }
+  .qm-oplist{ font-family:var(--mono); font-size:11.5px; color:var(--ink-2); border:1px solid var(--rule); border-radius:4px; overflow:hidden; }
+  .qm-oprow{ display:flex; gap:10px; padding:5px 11px; border-bottom:1px solid var(--rule); }
+  .qm-oprow:last-child{ border-bottom:none; }
+  .qm-oprow.on{ background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--ink); }
+  .qm-oprow .gn{ color:var(--accent); flex:0 0 64px; font-weight:600; }
+  .qm-gv{ display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; padding:4px 8px; border-radius:5px; border:1px solid var(--rule-2); color:var(--faint); }
+  .qm-gv.pass{ border-color:var(--pass); color:var(--pass); }
+  .qm-gv.fail{ border-color:var(--reject); color:var(--reject); }
+  .qm-pathtab{ display:flex; gap:6px; margin:4px 0 10px; }
+  .qm-pathtab button{ font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; padding:6px 11px; border-radius:6px; border:1px solid var(--rule-2); background:transparent; color:var(--ink-2); cursor:pointer; }
+  .qm-pathtab button[aria-pressed="true"]{ border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 8%, transparent); }
 
-  .qm-plate-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5px solid var(--pt);padding-bottom:13px;gap:24px}
-  .qm-sec{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--pteal)}
-  .qm-plate-head h2{font-family:var(--serif);font-style:italic;font-weight:500;font-size:27px;color:var(--pt);margin:6px 0 0;letter-spacing:-.01em}
-  .qm-plate-meta{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--pf);text-align:right;line-height:1.8;white-space:nowrap}
-
-  /* typography helpers on vellum */
-  .qm-sheet p{font-family:var(--serif);color:var(--pt2);margin:0}
-  .qm-sheet h1{font-family:var(--serif);font-weight:500;color:var(--pt)}
-  .qm-mono{font-family:var(--mono)}
-  .qm-teal{color:var(--pteal)}
-  .qm-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--pf)}
-  em.qm-em{font-style:italic;color:var(--pteal)}
-  b{font-weight:600;color:var(--pt)}
-
-  .qm-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--ui);font-weight:600;font-size:14px;padding:13px 22px;border-radius:8px;border:1px solid var(--pteal);background:var(--pteal);color:#f4f1e7;cursor:pointer}
-  .qm-btn.ghost{border:1px solid var(--prule);background:transparent;color:var(--pt)}
-  .qm-btn:hover{filter:brightness(1.04)}
-  .qm-btn.sm{font-size:12.5px;padding:8px 14px;border-radius:7px}
-
-  canvas.qm-canvas{display:block;width:100%}
-  .qm-figcap{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--pf)}
-  .qm-framed{border:1px solid var(--prule);border-radius:4px;overflow:hidden;background:var(--paper);box-shadow:inset 0 0 0 6px #f6f3ea}
-
-  .qm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:38px;align-items:start}
-  .qm-badge-ok{font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:4px;color:var(--pgreen);background:rgba(63,122,82,.15)}
-  .qm-badge-err{font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:4px;color:var(--pred);background:rgba(189,74,48,.13)}
-
-  @media (max-width:820px){
-    .qm-grid2{grid-template-columns:1fr}
-    .qm-sheet{padding:26px 22px 38px}
-    .qm-folder{padding:20px 14px 44px}
-    .qm-head{padding:13px 18px}
-  }
-  @media (prefers-reduced-motion: reduce){ .qm-status .dot{animation:none} }
+  @media (max-width:820px){ .lab-grid2,.lab-grid-15{ grid-template-columns:1fr; } .lab-gal{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:520px){ .lab-gal{ grid-template-columns:1fr; } }
+  @media (prefers-reduced-motion:reduce){ .lab-status .dot{ animation:none; } .qm-drawer,.qm-modalpanel{ animation:none; } }
 </style>
+<script>/* set theme before paint to avoid flash */(function(){try{var q=new URLSearchParams(location.search).get('theme');var t=q||localStorage.getItem('qh-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 </head>
 <body>
-<div id="qm" aria-label="QuantumMytheme field notebook">
-  <header class="qm-head">
-    <div class="qm-brand">
-      <svg class="mark" width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-        <ellipse cx="24" cy="24" rx="21" ry="8.5" stroke="currentColor" stroke-width="1.4" opacity=".5"/>
-        <ellipse cx="24" cy="24" rx="21" ry="8.5" stroke="currentColor" stroke-width="1.4" opacity=".5" transform="rotate(60 24 24)"/>
-        <ellipse cx="24" cy="24" rx="21" ry="8.5" stroke="currentColor" stroke-width="1.4" opacity=".5" transform="rotate(120 24 24)"/>
-        <circle cx="24" cy="24" r="4.4" fill="currentColor"/>
-        <circle cx="45" cy="24" r="2.4" fill="currentColor"/>
-      </svg>
+
+<header class="hero">
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="brandbar">
+      <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><b>QuantumMytheme</b> · quantum-harness</a></div>
+      <div class="right">
+        <nav>
+          <a href="/">Overview</a>
+          <a href="/#judge">Bench</a>
+          <a href="education.html">Learn</a>
+          <a href="/#scoreboard">Scoreboard</a>
+        </nav>
+        <button id="themeToggle" class="themebtn" aria-label="Switch colour theme">
+          <span class="dotmark" aria-hidden="true"></span><span id="themeLabel">Luminous mode</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="lab-titlerow">
       <div>
-        <div class="qm-word">Quantum<em>Mytheme</em></div>
-        <div class="qm-tag">Citizen science for quantum design</div>
+        <p class="preprint">Field notebook · tabbed dossier</p>
+        <h1>The lab notebook for <span class="ket">verifiable quantum design.</span></h1>
+        <p class="subtitle">Point a capable model at a hard problem; a hermetic judge grades it. Six tabs — from the abstract to a re-runnable catalog.</p>
+      </div>
+      <div class="meta">
+        <div class="lab-status"><span class="dot"></span> Sim bench · online</div>
+        <div>Edition 2026.06 · Phase 1 preview</div>
       </div>
     </div>
-    <div class="qm-head-right">
-      <div class="qm-meta">
-        <div>Edition 2026.06 · Phase&nbsp;1 preview</div>
-        <div class="site"><a href="/" style="text-decoration:none">quantummytheme.com</a></div>
-      </div>
-      <div class="qm-status"><span class="dot"></span> Sim bench · online</div>
-      <div class="qm-accent-pick" role="group" aria-label="Accent colour">
-        <button data-accent="phosphor" style="--sw:#5ef2e4" aria-pressed="true" title="Phosphor"></button>
-        <button data-accent="violet" style="--sw:#9d8cff" aria-pressed="false" title="Violet"></button>
-        <button data-accent="amber" style="--sw:#ffb454" aria-pressed="false" title="Amber"></button>
-      </div>
-      <a class="qm-ghbtn" href="https://github.com/QuantumMytheme/quantum-harness">◴ GitHub · QuantumMytheme</a>
-    </div>
-  </header>
 
-  <nav class="qm-tabs" id="qm-tabs" aria-label="Notebook sections"></nav>
+    <nav class="lab-tabs" id="qm-tabs" role="tablist" aria-label="Notebook sections"></nav>
+  </div>
+</header>
 
-  <main class="qm-main">
-    <div class="qm-folder">
-      <div class="qm-sticker">QM · Lab Notebook<br><b>Vol. 2026.06</b> · Open</div>
-      <div id="qm-sheet"></div>
-    </div>
-  </main>
-</div>
+<main>
+  <div class="wrap"><div id="qm-sheet" class="lab-sheet"></div></div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="mono">QuantumMytheme · quantum-harness · field notebook</span>
+    <span class="mono">verifiable quantum design · numpy-only · no QPU</span>
+  </div>
+</footer>
+
+<div class="qm-overlay" id="qm-overlay"><div class="qm-scrim" data-close></div></div>
 <script src="lab.js"></script>
 </body>
 </html>
