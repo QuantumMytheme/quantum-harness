@@ -12,6 +12,11 @@ permissions:
 jobs:
   discover:
     runs-on: ubuntu-latest
+    env:
+      # The `secrets` context is not allowed inside `if:` expressions, so expose
+      # a non-sensitive boolean here (job-level env DOES allow `secrets`) and gate
+      # the deploy step on it. The token itself stays scoped to the deploy step.
+      HAS_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +46,7 @@ jobs:
             echo "no change"
           fi
       - name: Deploy to Cloudflare Pages (only if a token secret is configured)
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        if: ${{ env.HAS_CF_TOKEN == 'true' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
