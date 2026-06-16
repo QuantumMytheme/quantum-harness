@@ -56,7 +56,7 @@ test('education page exists, is wired, and mounts all 12 module canvases', () =>
   assert.ok(existsSync(v('education.html')), 'viewer/education.html should exist')
   assert.ok(existsSync(v('education.js')), 'viewer/education.js should exist')
   const edu = readFileSync(v('education.html'), 'utf8')
-  assert.match(edu, /rel="canonical" href="https:\/\/quantummytheme\.com\/education\.html"/)
+  assert.match(edu, /rel="canonical" href="https:\/\/quantummytheme\.com\/education"/)
   assert.match(edu, /<script src="education\.js">/)
   const mounts = [...edu.matchAll(/data-edu="([a-z0-9-]+)"/g)].map(m => m[1])
   assert.equal(mounts.length, 12, 'expected exactly 12 module canvases')
@@ -70,7 +70,7 @@ test('education.js defines an animation for every mounted module', () => {
   }
 })
 
-test('overview links to the education page; sitemap lists it', () => {
+test('overview links to the education page; sitemap lists its canonical URL', () => {
   assert.match(html, /href="education\.html"/)
-  assert.match(readFileSync(v('sitemap.xml'), 'utf8'), /education\.html/)
+  assert.match(readFileSync(v('sitemap.xml'), 'utf8'), /<loc>https:\/\/quantummytheme\.com\/education<\/loc>/)
 })
