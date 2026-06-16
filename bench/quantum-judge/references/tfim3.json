@@ -1,0 +1,16 @@
+{
+  "_comment": "Transverse-field Ising on an open 3-qubit chain: H = -(Z0Z1 + Z1Z2) - 0.8*(X0+X1+X2). The ground state is entangled and is NOT reachable exactly by a shallow hardware-efficient ansatz, so there is real optimization headroom: ground_state_energy is from exact diagonalization; a run gets ranked by how close to it the design lands (lower gap wins). The model designs an ansatz + bound parameters to minimize <H>; the judge re-derives it.",
+  "problem_id": "tfim3",
+  "task": "vqe",
+  "n_qubits": 3,
+  "hamiltonian_terms": [
+    { "coeff": -1.0, "pauli": "ZZI" },
+    { "coeff": -1.0, "pauli": "IZZ" },
+    { "coeff": -0.8, "pauli": "XII" },
+    { "coeff": -0.8, "pauli": "IXI" },
+    { "coeff": -0.8, "pauli": "IIX" }
+  ],
+  "ground_state_energy": -3.0090221197813234,
+  "thresholds": { "energy_gap": 0.05 },
+  "tolerance": { "energy_reproduce": 1e-06 }
+}
