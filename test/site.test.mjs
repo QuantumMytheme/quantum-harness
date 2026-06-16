@@ -44,3 +44,33 @@ test('every in-page nav link resolves to a real section id', () => {
     assert.match(html, new RegExp(`id="${id}"`), `nav points to #${id} but nothing has id="${id}"`)
   }
 })
+
+// --- education page ---------------------------------------------------------
+const EDU_IDS = [
+  'rules-to-learning', 'machine-learning', 'big-data', 'neural-nets', 'transformers',
+  'slm-llm', 'pretrain-posttrain', 'inference-zoo', 'classical-stack', 'quantum-sim',
+  'hybrid-quantum', 'your-run',
+]
+
+test('education page exists, is wired, and mounts all 12 module canvases', () => {
+  assert.ok(existsSync(v('education.html')), 'viewer/education.html should exist')
+  assert.ok(existsSync(v('education.js')), 'viewer/education.js should exist')
+  const edu = readFileSync(v('education.html'), 'utf8')
+  assert.match(edu, /rel="canonical" href="https:\/\/quantummytheme\.com\/education\.html"/)
+  assert.match(edu, /<script src="education\.js">/)
+  const mounts = [...edu.matchAll(/data-edu="([a-z0-9-]+)"/g)].map(m => m[1])
+  assert.equal(mounts.length, 12, 'expected exactly 12 module canvases')
+  for (const id of EDU_IDS) assert.ok(mounts.includes(id), `education.html should mount a canvas for ${id}`)
+})
+
+test('education.js defines an animation for every mounted module', () => {
+  const js = readFileSync(v('education.js'), 'utf8')
+  for (const id of EDU_IDS) {
+    assert.match(js, new RegExp(`EDU\\["${id}"\\]\\s*=`), `education.js should define EDU["${id}"]`)
+  }
+})
+
+test('overview links to the education page; sitemap lists it', () => {
+  assert.match(html, /href="education\.html"/)
+  assert.match(readFileSync(v('sitemap.xml'), 'utf8'), /education\.html/)
+})

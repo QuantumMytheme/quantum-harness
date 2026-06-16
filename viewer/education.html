@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Education · QuantumMytheme — from machine learning to your own quantum-harness run</title>
+<meta name="description" content="An interactive curriculum: from hand-written rules to machine learning, transformers, the classical compute stack, and simulating a quantum computer — ending where you fork the harness and run your own model against the judge." />
+<link rel="canonical" href="https://quantummytheme.com/education.html" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="QuantumMytheme" />
+<meta property="og:url" content="https://quantummytheme.com/education.html" />
+<meta property="og:title" content="Education — from machine learning to your own quantum-harness run" />
+<meta property="og:description" content="Twelve interactive slices: rules → learning → transformers → the silicon stack → simulating a quantum computer → forking the harness and running your own model." />
+<meta property="og:image" content="https://quantummytheme.com/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://quantummytheme.com/og.png" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  .takeaway { font-family: var(--sans); font-size: 14.5px; color: var(--ink-2); background: var(--panel); border-left: 3px solid var(--accent); padding: 9px 14px; border-radius: 0 4px 4px 0; margin-top: 14px; max-width: var(--measure); }
+  .takeaway b { color: var(--ink); }
+  section > .wrap > p { margin-top: 14px; }
+  .edu-fig { padding: 14px; margin-top: 20px; }
+  .controls { margin-bottom: 12px; }
+  .controls:empty { display: none; }
+  canvas.edu-stage { display: block; width: 100%; height: 340px; border-radius: 4px; background: var(--stage-bg); }
+  .contents { font-family: var(--mono); font-size: 12.5px; columns: 2; column-gap: 40px; max-width: 760px; margin-top: 24px; }
+  .contents a { display: block; padding: 4px 0; color: var(--faint); text-decoration: none; break-inside: avoid; }
+  .contents a:hover { color: var(--ink); }
+  .contents a b { color: var(--accent); font-weight: 400; margin-right: 8px; }
+  .cta h2::before { content: none; }
+  .cta ol { margin: 16px 0 0 20px; max-width: var(--measure); }
+  .cta li { margin: 9px 0; color: var(--ink-2); }
+  .cta li b { color: var(--ink); }
+  @media (max-width: 860px) { .contents { columns: 1; } canvas.edu-stage { height: 300px; } }
+</style>
+<script>/* set theme before paint to avoid flash */(function(){try{var q=new URLSearchParams(location.search).get('theme');var t=q||localStorage.getItem('qh-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+</head>
+<body>
+
+<header class="hero">
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="brandbar">
+      <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><b>QuantumMytheme</b> · quantum-harness</a></div>
+      <div class="right">
+        <nav>
+          <a href="/">Overview</a>
+          <a href="/#judge">Bench</a>
+          <a href="/#scoreboard">Scoreboard</a>
+          <a href="/#run">Run yours</a>
+        </nav>
+        <button id="themeToggle" class="themebtn" aria-label="Switch colour theme">
+          <span class="dotmark" aria-hidden="true"></span><span id="themeLabel">Luminous mode</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="preprint">Curriculum · learn by watching it run</p>
+    <h1>From machine learning to your <span class="ket">own quantum run.</span></h1>
+    <p class="subtitle">The arc from hand-written rules to a quantum coprocessor, told one idea at a time — each with a small thing you can poke.</p>
+
+    <div class="abstract">
+      <span class="lbl">How to read this</span>
+      <p>Twelve slices, in order. How machines stopped following coded rules and started learning from data; how that scaled into neural networks and transformers; how the classical silicon stack actually runs it; and where quantum processors fit alongside. It ends where you take over — forking the template, pointing your own model at a brief, and watching a judge anyone can re-run decide whether your result joins the board. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+    </div>
+
+    <nav class="contents" aria-label="Curriculum contents">
+      <a href="#m-rules-to-learning"><b>01</b>From rules to learning</a>
+      <a href="#m-machine-learning"><b>02</b>Learning a boundary</a>
+      <a href="#m-big-data"><b>03</b>Scale changes everything</a>
+      <a href="#m-neural-nets"><b>04</b>Networks that learn features</a>
+      <a href="#m-transformers"><b>05</b>Attention</a>
+      <a href="#m-slm-llm"><b>06</b>Small and large models</a>
+      <a href="#m-pretrain-posttrain"><b>07</b>Pretraining, then post-training</a>
+      <a href="#m-inference-zoo"><b>08</b>The modern inference zoo</a>
+      <a href="#m-classical-stack"><b>09</b>How silicon runs all this</a>
+      <a href="#m-quantum-sim"><b>10</b>Simulating a quantum computer</a>
+      <a href="#m-hybrid-quantum"><b>11</b>Hybrid classical–quantum</a>
+      <a href="#m-your-run"><b>12</b>Your turn: fork and run</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============================= 1 ============================= -->
+<section id="m-rules-to-learning">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Rules → learning</p>
+      <h2>From rules to learning</h2>
+      <p class="takeaway"><b>Takeaway.</b> Don't write the rule — show labeled examples and let the system fit the rule for you.</p>
+    </div>
+    <p>For decades the way to make a machine "smart" was to write the rules by hand: IF the email contains "free money" AND the sender is unknown, THEN flag it as spam. These expert systems worked until the rules collided. Real problems have thousands of overlapping exceptions, and each patched rule tends to break others, so the rulebook grows faster than anyone can maintain it. Machine learning inverts the job: instead of writing the rule, you collect labeled examples — emails already marked spam or not — and a fitting procedure adjusts a decision boundary to make as few mistakes as it can on those examples, recovering a rule no person wrote. The boundary need not split the classes perfectly; it just has to make fewer errors than the hand-written rules did.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="rules-to-learning" aria-label="A staircase of hand-written rules dissolves into data points and a learned boundary settles in"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 1.</b> A hand-coded staircase rule (with the points it gets wrong) melts into the data; a learned boundary then settles and corrects them. Click to flip between the two.</p>
+  </div>
+</section>
+
+<!-- ============================= 2 ============================= -->
+<section id="m-machine-learning">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Supervised learning</p>
+      <h2>Learning a boundary</h2>
+      <p class="takeaway"><b>Takeaway.</b> A model that memorizes its training examples isn't learning the rule — only a held-out test reveals the difference.</p>
+    </div>
+    <p>Supervised learning fits a function to labeled examples — points tagged with the answer — and the goal is to predict labels for points it has never seen. To check that it actually learned the pattern and didn't just memorize the examples, you split the data: fit on a training set, then score on a held-out test set the model never touched. A smooth boundary that misses a few training points often generalizes better than a jagged one that fits nearly every example, because the jagged curve is partly memorizing noise — wiggles that fit the particular sample but not the underlying rule. This harness's anti-overfit gate works the same way: ground truth lives in a hidden held-out check, so a submission that fit only the visible target is rejected when it fails the part it could not see.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="machine-learning" aria-label="A flexibility slider morphs a decision boundary from smooth to jagged while train and test accuracy update"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 2.</b> Drag <em>flexibility</em>: training accuracy keeps climbing while test accuracy peaks and then falls once the boundary starts chasing noise. Toggle the held-out test points to watch them.</p>
+  </div>
+</section>
+
+<!-- ============================= 3 ============================= -->
+<section id="m-big-data">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Scale · data + compute</p>
+      <h2>Scale changes everything</h2>
+      <p class="takeaway"><b>Takeaway.</b> Past a certain scale of data and compute, models that learn their own features beat models built on hand-engineered ones.</p>
+    </div>
+    <p>For decades, the hard part of building a classifier was hand-engineering the features — a human deciding which edges, frequencies, or word counts the model should look at. As labeled datasets and processors grew by orders of magnitude, a different approach started winning: feed raw data to a large model and let gradient descent discover the useful features on its own. This is representation learning, and it scaled because more examples and more compute kept buying lower error on tasks where hand-tuned features had plateaued. On those tasks the features were no longer designed; they were learned.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="big-data" aria-label="A sparse dataset grows dense, hand-tuned feature knobs fade as a learned-feature lattice forms, and an error curve falls"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 3.</b> As data and compute grow, hand-tuned feature knobs fade and a learned-representation lattice lights up; the error curve falls and flattens. Hover to scrub the scale.</p>
+  </div>
+</section>
+
+<!-- ============================= 4 ============================= -->
+<section id="m-neural-nets">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Forward pass</p>
+      <h2>Networks that learn features</h2>
+      <p class="takeaway"><b>Takeaway.</b> Stacked layers of weighted sums, tuned by gradient descent, tend to learn a hierarchy of features from data.</p>
+    </div>
+    <p>A neural network is layers of simple units called neurons. Each neuron multiplies its inputs by learned numbers (weights), adds them up along with a learned offset, and passes the sum through a nonlinear function; one layer's outputs become the next layer's inputs, so each pass through the stack — a forward pass, which we draw flowing left to right — turns the input into an output. Training compares that output to the desired answer with a loss, then uses gradient descent: it computes which way each weight should move to lower the loss and nudges every weight a small step that way, over and over, to fit the data. Because each layer feeds the next, the weights tend to organize into a hierarchy — early layers respond to simple patterns and later layers combine those into more abstract features.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="neural-nets" aria-label="A small multilayer network with activations lighting up left to right on a forward pass"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 4.</b> A real forward pass: activations sweep left to right, edge weight and sign (color) shaping each neuron. Click to replay; train a step to watch the loss tick down.</p>
+  </div>
+</section>
+
+<!-- ============================= 5 ============================= -->
+<section id="m-transformers">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Self-attention</p>
+      <h2>Attention</h2>
+      <p class="takeaway"><b>Takeaway.</b> Attention replaces step-by-step reading with all-pairs comparison done in parallel — one-hop paths, big matmuls, easy scaling.</p>
+    </div>
+    <p>A transformer first cuts text into tokens (word-pieces) and maps each to an embedding — a vector of numbers that places it in a learned space where related meanings sit nearby. Self-attention then lets every token compare itself against every other: each token emits a query and a key, the match between one token's query and another's key becomes a weight, and each token rebuilds itself as a weighted blend of the others' value vectors. A recurrent network had to read left-to-right, threading information through one hidden state step by step, so distant words were many steps apart and the computation could not be parallelized along the sequence. Attention computes all pairwise comparisons at once as matrix multiplies, which both shortens the path between any two tokens to a single hop and maps cleanly onto GPU hardware — that is why it scaled.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="transformers" aria-label="An attention grid over seven tokens; hovering a token fans out weighted bonds to the tokens it attends to"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 5.</b> Hover a token to light its attention row and fan weighted bonds to what it attends to (illustrative weights, not a trained model). Toggle <em>parallel</em> vs <em>recurrent</em> to see one-hop attention against step-by-step reading.</p>
+  </div>
+</section>
+
+<!-- ============================= 6 ============================= -->
+<section id="m-slm-llm">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Scale &amp; tradeoffs</p>
+      <h2>Small and large models</h2>
+      <p class="takeaway"><b>Takeaway.</b> Bigger raises capability but also cost and latency; the best model is the smallest one that still does the job.</p>
+    </div>
+    <p>Adding parameters and training data to a model tends to raise what it can do, but the gains arrive unevenly and never for free. A large general model answers a wide range of questions because it has the capacity to store broad patterns; a small purposeful model trained for one job can match or beat it on that job while running on a phone. The cost is concrete: more parameters mean more computation and more memory traffic per token, so a larger model is usually slower to respond and more expensive to serve. Choosing a model is therefore a tradeoff, not a ranking — the right size is the smallest one that clears the bar for your task.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="slm-llm" aria-label="A size slider raises capability with diminishing returns while cost and latency rise; a right-sized band marks the smallest model that clears the task bar"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 6.</b> Drag model size: capability climbs with diminishing returns while cost and latency keep rising. The shaded band marks the smallest size that clears the task bar — the right-sized choice.</p>
+  </div>
+</section>
+
+<!-- ============================= 7 ============================= -->
+<section id="m-pretrain-posttrain">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Two stages</p>
+      <h2>Pretraining, then post-training</h2>
+      <p class="takeaway"><b>Takeaway.</b> Pretraining builds the capability; post-training decides how that capability behaves.</p>
+    </div>
+    <p>Pretraining runs one mechanical objective at enormous scale: predict the next token across a broad corpus of text. Doing that well forces the model to absorb grammar, facts, code, and reasoning patterns — a base model with wide competence but no fixed way of behaving. Post-training then reshapes that competence: supervised fine-tuning on curated instruction-and-response pairs teaches it to follow requests, and preference optimization (RLHF is one such method) tunes it toward responses that human raters judge more helpful and honest. The second stage adds relatively little new factual knowledge; it mostly steers the behavior of knowledge the first stage already built.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="pretrain-posttrain" aria-label="A broad corpus funnels into a base model, then a refinement stage snaps the diffuse output into ordered lanes"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 7.</b> A broad corpus funnels into a base model; past the divider, post-training snaps the diffuse output into ordered behavior. Hover the left half to hold the base model alone.</p>
+  </div>
+</section>
+
+<!-- ============================= 8 ============================= -->
+<section id="m-inference-zoo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Inference zoo</p>
+      <h2>The modern inference zoo</h2>
+      <p class="takeaway"><b>Takeaway.</b> Inference is a landscape of trade-offs — where it runs, how broad it is, what it can reach — not a single box.</p>
+    </div>
+    <p>Inference — running a trained model to get answers — happens in many places at once, and the differences matter more than any single "best" model. A model can run in a data center or on your own device; it can be broadly general or narrowly purposeful; it can answer from its own weights alone or reach out to tools, search, and retrieval as an agent. Hybrids mix these: a capable cloud model hands simple work to a small local one, or an on-device model calls a larger one only when it must. Inference is a landscape of trade-offs — where it runs, how broad it is, what it can reach — not a single box.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="inference-zoo" aria-label="A general-vs-purposeful by cloud-vs-on-device map of model archetypes with a central tools/agents node tying them together"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 8.</b> Model archetypes placed on two axes — cloud vs on-device, general vs purposeful — with a central tools/retrieval/agents node. Hover any node for its trade-off; hover the center to see a hybrid span the grid.</p>
+  </div>
+</section>
+
+<!-- ============================= 9 ============================= -->
+<section id="m-classical-stack">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">The classical stack</p>
+      <h2>How silicon runs all this</h2>
+      <p class="takeaway"><b>Takeaway.</b> From source to chip, the machine boils down to one move done at enormous scale: multiply matrices.</p>
+    </div>
+    <p>Every model you run starts as source code — Python, over the C++ and CUDA underneath it. A compiler lowers that source into an intermediate representation (IR): at the top level, a hardware-neutral description of the computation as a graph of operations. That IR is then lowered, stage by stage, into instructions for a specific accelerator — a GPU or TPU — and the resulting program runs on the chip. (On NVIDIA GPUs this passes through PTX, a virtual instruction set, before becoming the chip's real machine code.) Once you reach the chip, the overwhelming majority of the arithmetic is one operation repeated: multiplying matrices of numbers. A GPU spreads those multiplies across thousands of small cores; a TPU feeds them through a systolic array — a fixed grid of multiply-add units that data flows across. This silicon — an op graph lowered onto matrix-multiplying hardware — is the substrate today's machine intelligence runs on. Quantum processors do not replace it: they run as coprocessors alongside this classical stack, which still handles the control, compilation, and most of the work.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="classical-stack" aria-label="A work token flows through source, IR, ISA and accelerator stages while a systolic matmul grid pulses diagonally"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 9.</b> Source → IR → ISA → accelerator, then the work dissolves into a systolic matmul array sweeping diagonally. Hover a stage to freeze and label it; hover the grid to light a row × column dot product.</p>
+  </div>
+</section>
+
+<!-- ============================= 10 ============================= -->
+<section id="m-quantum-sim">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Statevector · sim.py</p>
+      <h2>Simulating a quantum computer</h2>
+      <p class="takeaway"><b>Takeaway.</b> Gates transform a vector of complex amplitudes without changing its length; measurement turns squared magnitudes into outcome probabilities.</p>
+    </div>
+    <p>A quantum computer with <em>n</em> qubits is described by 2<sup>n</sup> complex numbers called amplitudes — the statevector. Each gate is a unitary matrix that this repo's <code>sim.py</code> multiplies into the statevector, transforming it without changing its overall length; an H gate, for instance, turns the starting state |0⟩ into amplitudes of 1/√2 for both |0⟩ and |1⟩. Each amplitude has a phase (an angle), and the differences in phase between amplitudes carry real physical information and can interfere — an overall phase shared by every amplitude is not observable. You never observe amplitudes directly either: measuring collapses the state to one basis outcome, and the probability of each outcome is that amplitude's squared magnitude. Because the squared magnitudes always sum to 1, the same <code>simulate()</code> that grades a submitted circuit is just bookkeeping these amplitudes gate by gate.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="quantum-sim" aria-label="Phase-colored amplitude bars and a Bloch sphere update as you apply single-qubit gates"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 10.</b> Apply gates (H, X, Z, S, T, Rx) to one qubit: the phase-colored amplitude bars and the Bloch arrow update, the arrow staying on the sphere's surface — length preserved. Probabilities below always sum to one.</p>
+  </div>
+</section>
+
+<!-- ============================= 11 ============================= -->
+<section id="m-hybrid-quantum">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Hybrid loop</p>
+      <h2>Hybrid classical–quantum</h2>
+      <p class="takeaway"><b>Takeaway.</b> A classical optimizer steers; the quantum device only measures energy — the loop repeats until the energy stops dropping.</p>
+    </div>
+    <p>Today's quantum devices are noisy and shallow, so the useful near-term algorithms keep most of the work classical and hand the device only one job: prepare a parameterized circuit and estimate the average energy of its state against a chosen Hamiltonian. A classical optimizer on an ordinary computer reads that energy, nudges the circuit's parameters, and asks the device to measure again — the variational loop behind VQE (ground-state energies) and QAOA (combinatorial optimization). The variational principle guarantees the true expectation value of the energy can never fall below the actual ground state, so the optimizer always has a floor to descend toward; shallow circuits accumulate less hardware error, keeping the estimate close to that true value, and the cost is averaged over many repeated measurements to beat down sampling noise. This repo's <code>isingbell2</code> task is exactly this loop made checkable: a classical optimizer drives a small circuit to the ground state of H = −X0X1 − Z0Z1, whose energy is −2.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="hybrid-quantum" aria-label="A variational loop between a classical optimizer and a quantum circuit, with an energy trace descending toward the ground state"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 11.</b> The variational loop: optimizer → parameters → circuit → energy → back. Run or step it and watch the energy descend toward the ground-state floor. Raise the step size to make it overshoot; add noise to see what averaging removes.</p>
+  </div>
+</section>
+
+<!-- ============================= 12 ============================= -->
+<section id="m-your-run">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Your turn</p>
+      <h2>Your turn: fork and run</h2>
+      <p class="takeaway"><b>Takeaway.</b> Fork it, aim your own model at a brief, and a judge anyone can re-run decides whether your result joins the board.</p>
+    </div>
+    <p>Here is the whole loop, end to end: fork the template, point a capable model at a brief, and let it design a circuit. Today that model is Opus 4.8 or Fable 5; the harness is built to also accept the next-generation model you may hear called Mythos the day it ships. A hermetic judge then re-simulates that circuit from scratch with numpy alone — no network, nothing it cannot recompute — and runs four gates in order: STRUCTURE, REPRODUCIBILITY, PERFORMANCE, ANTI-OVERFIT. It stops at the first gate that fails. Pass all four and the run auto-registers as a new row on the public board, where anyone can re-run the same judge and get the same verdict. It is cheap, open, and reproducible by construction: the judge never trusts the model's word, only the math it can repeat.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 12.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+  </div>
+</section>
+
+<!-- ============================= CTA ============================= -->
+<section class="cta" id="run">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Run your own</p>
+      <h2>Close the loop yourself</h2>
+    </div>
+    <p>The same flow the last figure animates — four steps, all open:</p>
+    <ol>
+      <li><b>Fork the template.</b> Use the GitHub “Use this template” button, or run <code>bin/new-run.sh</code> to scaffold a fresh run.</li>
+      <li><b>Run the KICKOFF prompt with your model.</b> Point a capable model — Opus 4.8, Fable 5, or the next-generation Mythos — at the brief and let it design a circuit.</li>
+      <li><b>The four-gate judge grades it.</b> A hermetic judge re-simulates the circuit from scratch with numpy alone — no network — running STRUCTURE, REPRODUCIBILITY, PERFORMANCE, and ANTI-OVERFIT in order, stopping at the first failure.</li>
+      <li><b>Register on the scoreboard.</b> Pass all four and your run auto-registers as a new row anyone can re-verify.</li>
+    </ol>
+    <p style="margin-top:18px"><a href="/#run">See the run flow on the overview →</a> &nbsp;·&nbsp; <a href="https://github.com/QuantumMytheme/quantum-harness">The template repo →</a></p>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="mono">QuantumMytheme · quantum-harness</span>
+    <span class="mono">verifiable quantum design · numpy-only · no QPU</span>
+  </div>
+</footer>
+
+<script src="education.js"></script>
+</body>
+</html>
