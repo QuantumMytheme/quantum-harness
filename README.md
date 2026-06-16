@@ -85,6 +85,7 @@ re-verifiable record; **[SCOREBOARD.md](./SCOREBOARD.md)** is where accepted run
 | `test/*.test.mjs` | Measurement test suite — 82 tests (scorecard + transcript scrub + planner roster/walkthrough) |
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
 | `RUN-FLOW.md` · `bin/new-run.sh` | Start a design run — mint a fresh public repo from this template, run, commit the result back |
+| `HARDWARE.md` · `bench/quantum-judge/hardware_report.py` | Run a sim-verified design on a **real QPU** and report back — a labeled, partly-re-verifiable hardware overlay (sim score stays canonical) |
 | `LICENSE` | MIT |
 
 ## Quickstart

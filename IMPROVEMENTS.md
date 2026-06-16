@@ -122,16 +122,19 @@ map (topology) that must route a declared workload of two-qubit interactions wit
 - Ref: bench/quantum-judge/judge_verify.py `verify_architecture`, graph.py,
   references/aiaccel4.json, quantum-proof-arch.json, quantum-proof-arch-OVERFIT.json.
 
-## ☐ 10. Real-QPU optional swap (sim → hardware, judge contract preserved)
-Allow a run to optionally execute the candidate circuit on a real backend while keeping the
-deterministic numpy judge as the source of truth (hardware results are evidence, not the gate).
-- **Do:** add an optional adapter that submits `circuit.ops` to a provider backend behind a
-  flag, records counts/expectations into `meta`, and leaves verification on the hermetic
-  simulator; no provider SDK becomes a verification-root dependency.
-- **Done =** `judge_verify.py` still ACCEPTs/REJECTs purely from re-simulation with no network,
-  the recorded hardware expectation in `meta` is within a declared tolerance of the simulated
-  claim, and removing the provider SDK does NOT change any `test_judge.py` outcome.
-- Ref: bench/quantum-judge/sim.py (verification root), proof-bundle `meta`.
+## ◐ 10. Real-QPU optional swap (sim → hardware, judge contract preserved) — SPINE LANDED
+Run a sim-verified circuit on a real backend and report back, keeping the deterministic numpy
+judge as the source of truth (hardware results are a labeled overlay, not the gate).
+- **Landed:** `hardware-report@1` schema; `hardware_report.py` (recomputes the metric from raw
+  counts — re-verifiable — and requires the attested design to be sim-ACCEPTed; provenance is
+  attested/labeled); `run_on_hardware.py` adapter stub (optional qiskit/braket, no SDK at the
+  verification root); worked `hardware-report-bell_pops2.json`; `HARDWARE.md`; scoreboard
+  hardware-overlay section; 2 regression checks (now 28/28). Removing any provider SDK changes
+  nothing — the judge never imports one.
+- **Next:** real provider adapters wired (IBM/Braket); `classify` accuracy-from-counts; a
+  deterministic noisy-sim (density-matrix) judge mode so hardware reports score against a
+  reproducible noise prediction; a hardware column on the rendered scoreboard.
+- Ref: bench/quantum-judge/{hardware_report.py, run_on_hardware.py}, HARDWARE.md.
 
 ## ☑ 11. Anti-overfit hardening — the EXIT_OVERFIT held-out reject path is LIVE
 The explicit exit-6 reject path landed: a held-out generalization check the model is never told,

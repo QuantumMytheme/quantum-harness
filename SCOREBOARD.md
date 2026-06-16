@@ -229,6 +229,19 @@ can't qualify; generalization is the headline metric, and nothing simpler genera
 
 ---
 
+## Hardware overlay — validate on a real QPU
+
+The sim score is the canonical rank. If you have a quantum chip, you can attach a
+**hardware overlay** to any sim-ACCEPTed design: run the same circuit on your device and
+report the measured metric. A hardware report (`hardware-report@1`) is checked two ways —
+the metric is **recomputed from your raw counts** (re-verifiable; a number that doesn't
+match its own data is rejected), and the provenance is **attested** (backend, job id,
+calibration — trusted-but-labeled, since a device run isn't re-executable by a third
+party). A hardware overlay **never outranks** the sim score; it shows *"validated on
+`ibm_torino`, ⟨X₀X₁⟩ = 0.94, 4096 shots."* Full flow + format: **[HARDWARE.md](HARDWARE.md)**.
+
+---
+
 ## (f) Status — honest
 
 **Aggregation and the hosted site are Phase 1 — not built yet.** Today, what exists is

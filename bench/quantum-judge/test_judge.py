@@ -192,6 +192,21 @@ def main():
     record("classify under-fit training REJECTed (exit 5)",
            verify_code(b) == judge_verify.EXIT_PERFORMANCE)
 
+    # --- HARDWARE report overlay (real-QPU validation) -----------------------
+    hw = os.path.join(HERE, "hardware_report.py")
+    rep_path = os.path.join(HERE, "hardware-report-bell_pops2.json")
+    p = subprocess.run([sys.executable, hw, rep_path], capture_output=True, text=True)
+    record("hardware report consistent + sim-accepted (exit 0)", p.returncode == 0, p.stderr.strip())
+    rep = json.load(open(rep_path)); rep["measured"]["value"] = 0.30  # lie about the result
+    tmp = os.path.join(HERE, "_tmp_hw.json")
+    with open(tmp, "w") as f:
+        json.dump(rep, f)
+    try:
+        p = subprocess.run([sys.executable, hw, tmp], capture_output=True, text=True)
+        record("hardware report with a lying metric REJECTed (exit 4)", p.returncode == 4)
+    finally:
+        os.remove(tmp)
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

@@ -1,0 +1,18 @@
+{
+  "_comment": "WORKED EXAMPLE of a real-hardware run report. It attests the sim-verified bell_pops2 design (quantum-proof-pops.json) and records what an actual QPU measured: X-basis counts over the Bell state, from which the held-out observable <X0X1> is recomputed (~0.94, below the noiseless +1.00 — that gap is real-device error). The sim score stays the canonical rank; this is a labeled hardware overlay. Counts are illustrative (synthetic NISQ-like noise); replace with your device's real counts via run_on_hardware.py.",
+  "schema": "quantum-harness/hardware-report@1",
+  "attests": "bench/quantum-judge/quantum-proof-pops.json",
+  "problem_id": "bell_pops2",
+  "task": "populations",
+  "backend": "example:nisq-2q (synthetic)",
+  "n_shots": 4096,
+  "settings": [
+    { "pauli": "XX", "counts": { "00": 1980, "11": 1986, "01": 60, "10": 70 } }
+  ],
+  "measured": { "metric": "X0X1", "value": 0.9365 },
+  "tolerance": 0.01,
+  "calibration": { "two_qubit_error": 0.008, "readout_error": 0.012, "note": "snapshot at run time" },
+  "job_id": "example-0001",
+  "run_at": "2026-06-16",
+  "runner": "worked-example"
+}
