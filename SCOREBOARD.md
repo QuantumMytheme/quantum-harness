@@ -248,13 +248,15 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 `scoreboard/entries.json` per problem (the rules in (b)) and generates the data the
 **viewer renders** — the live board is the Scoreboard section at
 <https://quantum-harness.pages.dev/#scoreboard>. CI
-(`.github/workflows/scoreboard.yml`) is the merge gate: it re-verifies every committed
-entry's bundle (`scoreboard/verify.py`), runs the suites (28/28 + 82/82), and **fails any
-PR whose generated board is stale** (`node scoreboard/build.mjs --check`). What's still
-**convention, not yet automated:** cross-repo aggregation — entries whose `proof_bundle`
-lives in an external run repo are verified in *that* repo, not pulled in centrally yet.
-The numbers are real and already re-verifiable; the central multi-repo ingest is the
-remaining Phase-1 work.
+(`.github/workflows/scoreboard.yml`) is the merge gate: `scoreboard/verify.py` re-verifies
+every entry — **including entries whose bundle lives in an external run repo, which it
+fetches and re-runs against the canonical hidden references** — and **checks the reported
+metric matches the judge's own recompute** (no rank overclaim); it runs the suites
+(28/28 + 82/82) and **fails any PR whose generated board is stale**
+(`node scoreboard/build.mjs --check`). What's still manual: **discovery** — run repos are
+registered by PR adding a row to `scoreboard/entries.json` (there's a
+[PR template](.github/pull_request_template.md)); the board doesn't crawl GitHub for runs
+*yet*. Verification is automated and cross-repo; discovery is a PR.
 
 What this means in practice, right now:
 - **The numbers are real and already re-verifiable** — re-run `judge_verify.py` on any
