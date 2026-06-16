@@ -67,11 +67,26 @@ For a weighted observable (e.g. ⟨H⟩ for `vqe`), give one `settings` entry pe
 basis and a `measured.terms: [{coeff, pauli, setting}]`; the verifier sums them.
 Bitstring convention: qubit 0 = leftmost character (matches `sim.py`).
 
-**Supported today:** Pauli-observable metrics (`populations` held-out observables,
-`vqe` energy from Pauli-basis counts). **Next:** `classify` accuracy from per-point
-counts; an optional deterministic **noisy-simulation** judge mode (density-matrix +
-fixed seed) that *predicts* hardware fidelity and is itself re-verifiable, so a
-hardware report can be scored against a reproducible noise model.
+**Supported today:**
+- Pauli-observable metrics — `populations` held-out observables, `vqe` energy from
+  Pauli-basis counts.
+- **`classify` accuracy from per-point counts.** A classify report carries
+  `readout: {pauli, bias}` and `samples: [{counts, y}]`; `hardware_report.py`
+  recomputes each predicted label from its counts and the overall accuracy, and
+  rejects a report whose accuracy doesn't follow from its data. Worked example:
+  [`hardware-report-qml_sign1.json`](bench/quantum-judge/hardware-report-qml_sign1.json).
+- **Deterministic noisy-prediction judge mode.** When a problem's *hidden reference*
+  declares a `noise_model`, a bundle must additionally **predict the on-device metric**,
+  and the judge recomputes it exactly with a density-matrix simulation
+  ([`density_matrix.py`](bench/quantum-judge/density_matrix.py)) — so the prediction is
+  **re-verifiable with no shots**, and an inflated prediction is rejected (exit 4) just
+  like a fabricated ideal result. The noise model is a depolarizing channel
+  (`depolarizing_1q`, `depolarizing_2q`) taken from the reference, so it can't be gamed.
+  Worked problem `bellnoisy2`: a Bell state with ideal fidelity 1.0 and a **predicted
+  on-device fidelity 0.916** under 1q=0.01 / 2q=0.04 depolarizing. Compute your claim with:
+  ```sh
+  python3 bench/quantum-judge/density_matrix.py <proof-bundle.json>
+  ```
 
 ---
 This closes the loop: **design → sim-verify → run on silicon → report back**, with the

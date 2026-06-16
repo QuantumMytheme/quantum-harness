@@ -1,0 +1,8 @@
+{
+  "task": "state_prep",
+  "_comment": "Bell state |Phi+> on a noisy device. Ideal fidelity is 1.0, but the brief also states a depolarizing noise budget (1q p=0.01, 2q p=0.04) and asks the model to PREDICT the on-device fidelity. The judge re-derives that prediction exactly with a density-matrix sim (density_matrix.py), so it is re-verifiable, not sampled. noise_model lives here (authoritative) so it cannot be gamed.",
+  "target_statevector": [[0.7071067811865476, 0.0], [0.0, 0.0], [0.0, 0.0], [0.7071067811865476, 0.0]],
+  "tolerance": {"fidelity_reproduce": 1e-6, "noisy_reproduce": 1e-6},
+  "thresholds": {"fidelity": 0.999, "noisy_fidelity_min": 0.90},
+  "noise_model": {"model": "depolarizing", "depolarizing_1q": 0.01, "depolarizing_2q": 0.04}
+}

@@ -21,6 +21,8 @@ JUDGE = os.path.join(HERE, "judge_verify.py")
 
 sys.path.insert(0, HERE)
 import judge_verify  # noqa: E402
+import density_matrix as dm  # noqa: E402
+import numpy as np  # noqa: E402
 
 PASS = "\033[32m[PASS]\033[0m"
 FAIL = "\033[31m[FAIL]\033[0m"
@@ -217,6 +219,48 @@ def main():
         record("run_on_hardware -> hardware_report round-trip (exit 0)", p.returncode == 0, p.stderr.strip())
     finally:
         os.remove(rt)
+
+    # --- NOISY device prediction (deterministic density-matrix judge mode) ----
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-noisy.json"))
+    record("quantum-proof-noisy.json (genuine on-device prediction) ACCEPTs (exit 0)", code == 0, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-noisy-FORGED.json"))
+    record("inflated on-device prediction REJECTed (exit 4)",
+           code == judge_verify.EXIT_REPRODUCIBILITY, f"exit {code}: {out}")
+    noisy = load("quantum-proof-noisy.json")
+    b = copy.deepcopy(noisy); del b["claim"]["noisy_fidelity"]
+    record("missing noisy_fidelity claim REJECTed (exit 2 schema)",
+           verify_code(b) == judge_verify.EXIT_SCHEMA)
+    # idle X-pairs keep the IDEAL state (fidelity 1.0) but mix the NOISY one below
+    # the device floor -> the noisy performance gate fires (exit 5), not exit 4.
+    b = copy.deepcopy(noisy)
+    b["circuit"]["ops"] = b["circuit"]["ops"] + [{"gate": "x", "q": [0]}] * 2 + [{"gate": "x", "q": [1]}] * 2
+    b["constraints"]["native_gates"] = ["h", "cx", "x"]  # allow the idle gates so STRUCTURE passes
+    nm = judge_verify.load_reference("bellnoisy2")["noise_model"]
+    tgt = np.array([1, 0, 0, 1], dtype=complex) / np.sqrt(2)
+    b["claim"]["noisy_fidelity"] = float(dm.state_fidelity_dm(dm.simulate_density(b["circuit"], nm), tgt))
+    record("noisy fidelity below the device threshold REJECTed (exit 5)",
+           verify_code(b) == judge_verify.EXIT_PERFORMANCE)
+
+    # density-matrix sim sanity: depolarizing law <X> = 1 - 4p/3 on |+>, trace preserved.
+    rho_dm = dm.simulate_density({"n_qubits": 1, "ops": [{"gate": "h", "q": [0]}]}, {"depolarizing_1q": 0.06})
+    xexp = dm.expectation_pauli_dm(rho_dm, [{"coeff": 1.0, "pauli": "x"}], 1)
+    record("density-matrix depolarizing law <X> = 1 - 4p/3 (deterministic)",
+           abs(xexp - (1 - 4 * 0.06 / 3)) < 1e-9 and abs(np.trace(rho_dm).real - 1.0) < 1e-9)
+
+    # --- CLASSIFY accuracy-from-counts (hardware report overlay) ---------------
+    qrep = os.path.join(HERE, "hardware-report-qml_sign1.json")
+    p = subprocess.run([sys.executable, hw, qrep], capture_output=True, text=True)
+    record("classify hardware report (accuracy recomputed from counts) consistent (exit 0)",
+           p.returncode == 0, p.stderr.strip())
+    rep = json.load(open(qrep)); rep["measured"]["value"] = 0.5  # lie about accuracy
+    tmpq = os.path.join(HERE, "_tmp_hwq.json")
+    with open(tmpq, "w") as f:
+        json.dump(rep, f)
+    try:
+        p = subprocess.run([sys.executable, hw, tmpq], capture_output=True, text=True)
+        record("classify hardware report with a lying accuracy REJECTed (exit 4)", p.returncode == 4)
+    finally:
+        os.remove(tmpq)
 
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")

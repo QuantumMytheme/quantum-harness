@@ -53,13 +53,34 @@ def observable_expectation(pauli, counts):
     return acc / total
 
 
+def recompute_classify(report):
+    """Accuracy recomputed from PER-SAMPLE counts. Each labelled sample carries the
+    counts measured in the readout observable's eigenbasis; the predicted label is
+    (sign of <readout> - bias), and accuracy is the fraction matching the true label.
+    Makes a hardware classify run re-verifiable: the reported accuracy must follow
+    from the reported counts, just as a vqe energy must follow from its settings."""
+    ro = report["readout"]
+    pauli, bias = ro["pauli"], float(ro.get("bias", 0.0))
+    samples = report["samples"]
+    if not samples:
+        return 0.0
+    correct = 0
+    for s in samples:
+        pred = 1 if observable_expectation(pauli, s["counts"]) > bias else 0
+        correct += int(pred == int(s["y"]))
+    return correct / len(samples)
+
+
 def recompute(report):
     """Recompute the report's headline metric from its raw counts.
 
-    Two supported shapes:
+    Supported shapes:
       - single observable: settings=[{pauli, counts}], measured.metric == that pauli
       - weighted sum (vqe): measured.terms=[{coeff, pauli, setting}] indexing settings
+      - classify accuracy:  samples=[{counts, y}] + readout={pauli, bias}
     """
+    if "samples" in report:                # classify accuracy-from-counts
+        return recompute_classify(report)
     settings = report["settings"]
     m = report["measured"]
     if "terms" in m:                       # weighted Pauli sum (e.g. <H>)

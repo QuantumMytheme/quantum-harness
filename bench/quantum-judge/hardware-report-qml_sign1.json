@@ -1,0 +1,83 @@
+{
+  "schema": "quantum-harness/hardware-report@1",
+  "problem_id": "qml_sign1",
+  "task": "classify",
+  "attests": "bench/quantum-judge/quantum-proof-qml.json",
+  "backend": "local-ideal",
+  "n_shots": 4096,
+  "job_id": "emulated-deterministic",
+  "readout": {
+    "pauli": "X",
+    "bias": 0.0
+  },
+  "measured": {
+    "metric": "accuracy",
+    "value": 1.0
+  },
+  "samples": [
+    {
+      "x": [
+        -2.0
+      ],
+      "y": 0,
+      "counts": {
+        "0": 187,
+        "1": 3909
+      }
+    },
+    {
+      "x": [
+        -1.0
+      ],
+      "y": 0,
+      "counts": {
+        "0": 310,
+        "1": 3786
+      }
+    },
+    {
+      "x": [
+        1.0
+      ],
+      "y": 1,
+      "counts": {
+        "0": 3799,
+        "1": 297
+      }
+    },
+    {
+      "x": [
+        2.0
+      ],
+      "y": 1,
+      "counts": {
+        "0": 3906,
+        "1": 190
+      }
+    },
+    {
+      "x": [
+        -0.5
+      ],
+      "y": 0,
+      "counts": {
+        "0": 1074,
+        "1": 3022
+      }
+    },
+    {
+      "x": [
+        0.5
+      ],
+      "y": 1,
+      "counts": {
+        "0": 3036,
+        "1": 1060
+      }
+    }
+  ],
+  "tolerance": 0.001,
+  "provenance": {
+    "note": "emulated counts (seeded binomial sampling of the ideal X-basis distribution) \u2014 demonstrates classify accuracy-from-counts re-verification; the sim score stays canonical."
+  }
+}

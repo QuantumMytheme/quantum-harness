@@ -1,0 +1,10 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "state_prep",
+  "problem_id": "bellnoisy2",
+  "_comment": "Worked NOISY-PREDICTION example. Prepares |Phi+> (ideal fidelity 1.0) and predicts the on-device fidelity 0.91615881 under the problem's depolarizing budget. The judge recomputes both numbers; the noisy one comes from a density-matrix sim and is re-verifiable.",
+  "circuit": {"n_qubits": 2, "ops": [{"gate": "h", "q": [0]}, {"gate": "cx", "q": [0, 1]}]},
+  "constraints": {"n_qubits": 2, "native_gates": ["h", "cx"], "coupling_map": [[0, 1]], "max_depth": 4, "max_two_qubit_gates": 1},
+  "claim": {"fidelity": 1.0, "noisy_fidelity": 0.9161588148148144},
+  "classical_baseline": {"fidelity": 0.5}
+}

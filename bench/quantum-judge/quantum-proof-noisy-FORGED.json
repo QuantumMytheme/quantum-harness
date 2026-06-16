@@ -1,0 +1,10 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "state_prep",
+  "problem_id": "bellnoisy2",
+  "_comment": "FORGERY: the circuit is genuine (ideal fidelity 1.0) but the on-device prediction is inflated to 0.98 — claiming the noisy device does far better than the declared depolarizing budget allows. The judge recomputes 0.91615881 from the density-matrix sim and REJECTS at exit 4 (reproducibility): a noisy prediction cannot be fabricated any more than an ideal one.",
+  "circuit": {"n_qubits": 2, "ops": [{"gate": "h", "q": [0]}, {"gate": "cx", "q": [0, 1]}]},
+  "constraints": {"n_qubits": 2, "native_gates": ["h", "cx"], "coupling_map": [[0, 1]], "max_depth": 4, "max_two_qubit_gates": 1},
+  "claim": {"fidelity": 1.0, "noisy_fidelity": 0.98},
+  "classical_baseline": {"fidelity": 0.5}
+}

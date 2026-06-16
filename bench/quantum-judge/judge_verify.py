@@ -159,6 +159,9 @@ def verify_state_prep(bundle, ref, checks):
         raise Reject(EXIT_PERFORMANCE, f"fidelity {actual:.6f} below classical baseline {baseline}")
     checks["performance"] = {"threshold": threshold, "baseline": baseline, "achieved": actual}
 
+    # OPTIONAL re-verifiable noisy device prediction (only if the ref declares one).
+    check_noisy_prediction(bundle, ref, circuit, checks, "fidelity", target=target)
+
     check_holdout(state, int(circuit["n_qubits"]), ref, checks)
 
 
@@ -189,6 +192,9 @@ def verify_vqe(bundle, ref, checks):
         raise Reject(EXIT_PERFORMANCE, f"energy {energy:.6f} worse than classical baseline {baseline}")
     checks["performance"] = {"ground_state_energy": e0, "gap": gap, "gap_budget": gap_budget,
                              "baseline": baseline}
+
+    # OPTIONAL re-verifiable noisy device prediction (only if the ref declares one).
+    check_noisy_prediction(bundle, ref, circuit, checks, "energy", terms=terms)
 
     check_holdout(state, n, ref, checks)
 
@@ -225,6 +231,53 @@ def check_holdout(state, n, ref, checks):
         if f + 1e-12 < fmin:
             raise Reject(EXIT_OVERFIT, f"held-out fidelity {f:.4f} below {fmin}; overfit to the visible target")
     checks["anti_overfit"] = {"checks": results, "passed": True}
+
+
+def check_noisy_prediction(bundle, ref, circuit, checks, kind, target=None, terms=None):
+    """Re-verifiable NOISY device prediction (deterministic — no shots).
+
+    Fires ONLY for problems whose hidden reference declares a `noise_model`. The
+    bundle must additionally predict the metric UNDER that noise; the judge
+    recomputes it exactly with a density-matrix simulation and REJECTS an overclaim
+    at exit 4 (reproducibility) or a device-target miss at exit 5 (performance). The
+    noise model is taken from the REFERENCE, never the bundle, so it cannot be gamed.
+    Backward-compatible: references without a noise_model skip this entirely.
+    """
+    noise = ref.get("noise_model")
+    if not noise:
+        return
+    import density_matrix as dm
+
+    n = int(circuit["n_qubits"])
+    rho = dm.simulate_density(circuit, noise)
+    if kind == "fidelity":
+        val = dm.state_fidelity_dm(rho, target)
+        claim_key, thr_key = "noisy_fidelity", "noisy_fidelity_min"
+    else:
+        val = dm.expectation_pauli_dm(rho, terms, n)
+        claim_key, thr_key = "noisy_energy", "noisy_energy_gap_max"
+    checks["noisy_prediction"] = {"model": noise, kind: round(val, 8), "purity": round(dm.purity(rho), 8)}
+
+    claimed = bundle.get("claim", {}).get(claim_key)
+    if claimed is None:
+        raise Reject(EXIT_SCHEMA, f"reference declares a noise_model; claim.{claim_key} is required")
+    tol = float(ref.get("tolerance", {}).get("noisy_reproduce", 1e-6))
+    if abs(float(claimed) - val) > tol:
+        raise Reject(
+            EXIT_REPRODUCIBILITY,
+            f"claimed {claim_key} {claimed} != recomputed {val:.6f} under the device noise model (tol {tol:g})",
+        )
+
+    th = ref.get("thresholds", {})
+    if kind == "fidelity" and thr_key in th:
+        m = float(th[thr_key])
+        if val + 1e-12 < m:
+            raise Reject(EXIT_PERFORMANCE, f"noisy fidelity {val:.4f} below device threshold {m}")
+    elif kind == "energy" and thr_key in th:
+        e0 = float(ref["ground_state_energy"])
+        gapmax = float(th[thr_key])
+        if (val - e0) > gapmax + 1e-12:
+            raise Reject(EXIT_PERFORMANCE, f"noisy energy gap {val - e0:.6f} above device budget {gapmax} (E0={e0})")
 
 
 def verify_populations(bundle, ref, checks):
