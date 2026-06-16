@@ -78,6 +78,21 @@
       "judge_exit": 0,
       "verified_at": "2026-06-16",
       "why_it_scores": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes."
+    },
+    {
+      "problem_id": "h2vqe",
+      "task": "vqe",
+      "paradigm": "hardware-efficient ansatz (Ry-Ry-CX-Ry-Ry) for the H₂ ground state",
+      "paradigm_short": "hardware-efficient-h2",
+      "model": "reference-baseline",
+      "model_usage": "hand-authored worked example — the bar to beat, not a model run",
+      "verified_metric": { "name": "energy_gap_to_E0", "value": 0.0004047113, "energy": -1.8507944128, "ground_state_energy": -1.851199124123644, "gap_budget": 0.005, "classical_baseline": -1.8302 },
+      "resource_costs": { "two_qubit_gates": 1, "depth": 3, "n_qubits": 2 },
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-h2.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "why_it_scores": "Reaches within 4e-4 Ha of the exact H₂ ground energy (E0 = -1.8512) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline."
     }
   ]
 }

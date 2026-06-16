@@ -1,0 +1,37 @@
+{
+  "task": "vqe",
+  "_comment": "H2/STO-3G 2-qubit qubit Hamiltonian (O'Malley et al. 2016 style, R~0.75A). E0 = exact (FCI) ground energy = min eigenvalue. The mean-field product-state baseline is ~0.021 Ha higher, so the gap budget forces an ENTANGLED ansatz that captures the correlation energy. ground_state_energy + hamiltonian_terms stay hidden here.",
+  "hamiltonian_terms": [
+    {
+      "coeff": -0.4804,
+      "pauli": "II"
+    },
+    {
+      "coeff": 0.3435,
+      "pauli": "ZI"
+    },
+    {
+      "coeff": -0.4347,
+      "pauli": "IZ"
+    },
+    {
+      "coeff": 0.5716,
+      "pauli": "ZZ"
+    },
+    {
+      "coeff": 0.091,
+      "pauli": "YY"
+    },
+    {
+      "coeff": 0.091,
+      "pauli": "XX"
+    }
+  ],
+  "ground_state_energy": -1.851199124123644,
+  "tolerance": {
+    "energy_reproduce": 1e-06
+  },
+  "thresholds": {
+    "energy_gap": 0.005
+  }
+}

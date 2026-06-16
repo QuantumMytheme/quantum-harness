@@ -1,0 +1,76 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "vqe",
+  "problem_id": "h2vqe",
+  "_comment": "FORGERY: same ansatz, but claims it reached the exact FCI ground energy E0. The judge recomputes the ansatz's actual energy and REJECTS the overclaim (exit 4).",
+  "circuit": {
+    "n_qubits": 2,
+    "ops": [
+      {
+        "gate": "ry",
+        "q": [
+          0
+        ],
+        "params": [
+          -0.20943951023931984
+        ]
+      },
+      {
+        "gate": "ry",
+        "q": [
+          1
+        ],
+        "params": [
+          3.0368728984701328
+        ]
+      },
+      {
+        "gate": "cx",
+        "q": [
+          0,
+          1
+        ]
+      },
+      {
+        "gate": "ry",
+        "q": [
+          0
+        ],
+        "params": [
+          -3.141592653589793
+        ]
+      },
+      {
+        "gate": "ry",
+        "q": [
+          1
+        ],
+        "params": [
+          -3.036872898470133
+        ]
+      }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 2,
+    "native_gates": [
+      "ry",
+      "cx"
+    ],
+    "coupling_map": [
+      [
+        0,
+        1
+      ]
+    ],
+    "max_depth": 6,
+    "max_two_qubit_gates": 2
+  },
+  "claim": {
+    "energy": -1.851199124123644
+  },
+  "classical_baseline": {
+    "energy": -1.8302,
+    "note": "best mean-field / product (computational-basis) state \u2014 misses the correlation energy"
+  }
+}

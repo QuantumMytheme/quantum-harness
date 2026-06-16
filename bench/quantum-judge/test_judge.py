@@ -220,6 +220,13 @@ def main():
     finally:
         os.remove(rt)
 
+    # --- H2 molecular VQE (headroom problem) ----------------------------------
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-h2.json"))
+    record("quantum-proof-h2.json (H2 ground-state ansatz) ACCEPTs (exit 0)", code == 0, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-h2-FORGED.json"))
+    record("H2 overclaim (claims exact E0 the ansatz misses) REJECTed (exit 4)",
+           code == judge_verify.EXIT_REPRODUCIBILITY, f"exit {code}: {out}")
+
     # --- NOISY device prediction (deterministic density-matrix judge mode) ----
     code, out = run_cli(os.path.join(HERE, "quantum-proof-noisy.json"))
     record("quantum-proof-noisy.json (genuine on-device prediction) ACCEPTs (exit 0)", code == 0, f"exit {code}: {out}")
