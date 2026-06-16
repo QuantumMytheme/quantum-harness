@@ -55,8 +55,10 @@ Three reasons, in plain terms:
 3. **For the curious.** It's a place to point a capable autonomous model at a **BRIEF** and watch
    it hill-climb: loop until the judge ACCEPTs, then try to beat the current best verified score.
 
-Want to do your own run? **[RUN-FLOW.md](./RUN-FLOW.md)** walks you from template to a committed,
-re-verifiable record; **[SCOREBOARD.md](./SCOREBOARD.md)** is where accepted runs are ranked.
+**New here? → [GETTING-STARTED.md](./GETTING-STARTED.md) — your first run in three commands** (remix
+the current frontier, your model molds it, it auto-registers). Then **[RUN-FLOW.md](./RUN-FLOW.md)** is
+the full lifecycle, **[SCOREBOARD.md](./SCOREBOARD.md)** is where runs are ranked, and
+**[ACCESS.md](./ACCESS.md)** shows how to validate on a real (or rented) quantum chip.
 
 ## Repo layout
 
@@ -84,7 +86,10 @@ re-verifiable record; **[SCOREBOARD.md](./SCOREBOARD.md)** is where accepted run
 | `lib/planner-*.mjs` | Planner roster / walkthrough used by the run orchestration |
 | `test/*.test.mjs` | Measurement test suite — 82 tests (scorecard + transcript scrub + planner roster/walkthrough) |
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
-| `RUN-FLOW.md` · `bin/new-run.sh` | Start a design run — mint a fresh public repo from this template, run, commit the result back |
+| `GETTING-STARTED.md` | Your first run in three commands — remix the frontier, your model molds it, auto-register |
+| `RUN-FLOW.md` · `bin/new-run.sh` | Mint a fresh public run repo from this template (`--remix <problem>` pre-loads the frontier), run, commit back |
+| `bin/ingredients.mjs` | Assemble prior verified designs for a problem into a remix pack — how runs **compound** |
+| `ACCESS.md` | Get or rent a quantum chip (often free / under $1) and overlay a real-hardware result |
 | `HARDWARE.md` · `bench/quantum-judge/hardware_report.py` | Run a sim-verified design on a **real QPU** and report back — a labeled, partly-re-verifiable hardware overlay (sim score stays canonical) |
 | `LICENSE` | MIT |
 
