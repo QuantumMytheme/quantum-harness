@@ -2,7 +2,7 @@
 
 [![judge](https://img.shields.io/badge/score-machine--checked-2ea44f)](bench/quantum-judge/README.md)
 [![no self-report](https://img.shields.io/badge/numbers-re--verifiable-blue)](RUBRIC.md)
-[![phase 1](https://img.shields.io/badge/aggregation-Phase%201%20(not%20built)-lightgrey)](#status-honest)
+[![phase 1](https://img.shields.io/badge/board-viewer%20live%20%C2%B7%20CI%20gated-2ea44f)](https://quantum-harness.pages.dev/#scoreboard)
 
 The scoreboard is the public answer to one question: **on this exact problem, which
 design currently leads — and can I re-derive that for myself?** It exists because a
@@ -244,12 +244,17 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 
 ## (f) Status — honest
 
-**Aggregation and the hosted site are Phase 1 — not built yet.** Today, what exists is
-the **format and the convention above**, plus the judge that makes any entry
-re-verifiable. Entries live in **run repos** (the permanent records) and are registered
-by PR; there is no central database, no auto-ranking service, and no public web
-leaderboard *yet*. The live showcase at <https://quantum-harness.pages.dev> is a viewer
-of the bench, not the aggregated board.
+**Phase 1 is now partly shipped.** An **aggregator** (`scoreboard/build.mjs`) ranks
+`scoreboard/entries.json` per problem (the rules in (b)) and generates the data the
+**viewer renders** — the live board is the Scoreboard section at
+<https://quantum-harness.pages.dev/#scoreboard>. CI
+(`.github/workflows/scoreboard.yml`) is the merge gate: it re-verifies every committed
+entry's bundle (`scoreboard/verify.py`), runs the suites (28/28 + 82/82), and **fails any
+PR whose generated board is stale** (`node scoreboard/build.mjs --check`). What's still
+**convention, not yet automated:** cross-repo aggregation — entries whose `proof_bundle`
+lives in an external run repo are verified in *that* repo, not pulled in centrally yet.
+The numbers are real and already re-verifiable; the central multi-repo ingest is the
+remaining Phase-1 work.
 
 What this means in practice, right now:
 - **The numbers are real and already re-verifiable** — re-run `judge_verify.py` on any

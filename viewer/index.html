@@ -224,7 +224,7 @@
         <thead>
           <tr><th>Problem · task</th><th>Paradigm</th><th>Verified metric</th><th>Cost</th><th>Model</th><th>Proof</th></tr>
         </thead>
-        <tbody>
+        <tbody id="sb-body">
           <tr>
             <td><b>ghz3</b> · state_prep</td><td><span class="ptag">chain-cascade</span></td>
             <td class="num">fidelity <b>1.000</b><span class="sub">≥ 0.99 · base 0.5</span></td><td class="num">2q 2 · depth 3</td>
@@ -260,11 +260,12 @@
     </div>
     <p class="figcap"><b>Table 1.</b> Seeded leaderboard. <b>Model</b> = <span class="mono">reference-baseline</span> — hand-authored
       worked examples, not a model run; the bar to beat. A real run names the model it pointed at the BRIEF and links its own
-      public run repo. Model is provenance, never a ranking key — the judge re-simulates regardless of author.</p>
+      public run repo. Model is provenance, never a ranking key — the judge re-simulates regardless of author.
+      <span id="sb-meta" class="dimnum"></span></p>
 
     <div class="why-leads">
       <h3>Why each leads</h3>
-      <ul>
+      <ul id="sb-why">
         <li><b>ghz3</b> — perfect fidelity at the minimal cost for GHZ on a line; nothing cheaper reaches the target.</li>
         <li><b>isingbell2</b> — the exact ground state (gap 0) at depth 2; entangling beats the product-state baseline.</li>
         <li><b>bell_pops2</b> — matches the visible populations <em>and</em> the hidden ⟨X₀X₁⟩=+1; clears the gate the impostor fails.</li>
@@ -327,6 +328,7 @@
   </div>
 </footer>
 
+<script src="scoreboard-data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

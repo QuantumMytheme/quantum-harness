@@ -298,8 +298,27 @@ function setupTheme() {
   });
 }
 
+/* ----------------------------- scoreboard -------------------------------- */
+function renderScoreboard() {
+  const d = window.SCOREBOARD_DATA, body = document.getElementById('sb-body');
+  if (!d || !d.rows || !body) return;            // keep the static fallback rows
+  body.innerHTML = d.rows.map(r =>
+    '<tr>' +
+    `<td><b>${r.problem_id}</b> · ${r.task}${r.rank > 1 ? ` <span class="dimnum">#${r.rank}</span>` : ''}</td>` +
+    `<td><span class="ptag">${r.paradigm_short}</span></td>` +
+    `<td class="num">${r.metricName} <b>${r.metricValue}</b><span class="sub">${r.metricSub}</span></td>` +
+    `<td class="num">${r.costLabel}</td>` +
+    `<td><span class="mtag">${r.model}</span></td>` +
+    `<td><a href="${r.bundleUrl}">bundle ↗</a></td>` +
+    '</tr>').join('');
+  const why = document.getElementById('sb-why');
+  if (why) why.innerHTML = d.rows.map(r => `<li><b>${r.problem_id}</b> — ${r.why}</li>`).join('');
+  const meta = document.getElementById('sb-meta');
+  if (meta) meta.textContent = `· ${d.count} entr${d.count === 1 ? 'y' : 'ies'}, generated ${d.generated}`;
+}
+
 /* -------------------------------- boot ----------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
-  setupTheme(); ambient(); pipeline(); blochSection(); topologySection(); classifierSection();
+  setupTheme(); ambient(); pipeline(); blochSection(); topologySection(); classifierSection(); renderScoreboard();
   const y = document.getElementById('year'); if (y) y.textContent = '2026';
 });

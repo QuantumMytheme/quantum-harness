@@ -1,0 +1,30 @@
+name: scoreboard
+# Merge gate + aggregator freshness. On every push/PR: re-verify the bench and every
+# committed scoreboard entry, then fail if the generated board is stale. No bot commits —
+# contributors regenerate locally (`node scoreboard/build.mjs`) and commit the data file.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install judge deps (numpy only)
+        run: pip install numpy
+      - name: Measurement tests
+        run: node --test test/*.test.mjs
+      - name: Judge regression
+        run: python3 bench/quantum-judge/test_judge.py
+      - name: Re-verify scoreboard entries (judge ACCEPT on every committed bundle)
+        run: python3 scoreboard/verify.py
+      - name: Scoreboard data is fresh (entries.json -> viewer/scoreboard-data.js)
+        run: node scoreboard/build.mjs --check
