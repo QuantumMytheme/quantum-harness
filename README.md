@@ -40,6 +40,24 @@ fresh verifier grades against the rubric and the model loops until green; **(4) 
 bench** — the judge; **(5) computed measurement** — a transcript-fed autonomy scorecard plus a
 secret scrub. The domain is new; the discipline is not.
 
+## Why this exists
+
+Three reasons, in plain terms:
+
+1. **Contribute to science.** Every accepted run adds to an open, reproducible, re-verifiable
+   corpus of verified quantum designs — and anyone can check any claim by re-running the judge.
+   Correctness is scored without human taste: the simulator recomputes the number, so a bundle
+   either holds up or it doesn't.
+2. **A scoreboard across paradigms.** The same judge-scored problems let you compare design
+   approaches head-to-head — which ansatz, which qubit topology, which feature map (and how each
+   stacks up against the classical baseline) currently leads. The frontier is public, ranked by a
+   verified metric, and re-verifiable by anyone.
+3. **For the curious.** It's a place to point a capable autonomous model at a **BRIEF** and watch
+   it hill-climb: loop until the judge ACCEPTs, then try to beat the current best verified score.
+
+Want to do your own run? **[RUN-FLOW.md](./RUN-FLOW.md)** walks you from template to a committed,
+re-verifiable record; **[SCOREBOARD.md](./SCOREBOARD.md)** is where accepted runs are ranked.
+
 ## Repo layout
 
 | Path | What it is |

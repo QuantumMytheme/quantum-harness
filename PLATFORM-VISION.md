@@ -180,6 +180,12 @@ results, and its metrics. Search and filter by problem, qubits, depth, score, ta
 — scores are precomputed by the judge and published. This is the smallest thing that makes the
 directory and transparent-scoring capabilities real, using only what Phase 0 already emits.
 
+Concretely, this "directory" **is a scoreboard**: per problem and per paradigm (ansatz / qubit
+topology / feature map, plus the classical baseline), the judge-ACCEPTED runs are ranked by their
+verified metric, and every entry is re-verifiable — anyone can re-run the judge and reproduce the
+ranking. The leading entry per problem is the current frontier, held honest by the same gates.
+The format and current standings live in [SCOREBOARD.md](./SCOREBOARD.md).
+
 ### Phase 2 — interactive in-browser circuit runner
 
 Port the statevector simulator to run client-side (WASM/JS), so the directory's "view" becomes
