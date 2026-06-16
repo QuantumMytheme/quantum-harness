@@ -69,7 +69,7 @@ After the arc, the learner does the one thing the whole platform exists for:
 - **Pick or write a BRIEF** — a concrete, simulator-verifiable quantum design problem.
 - **Point their *own* capable model at it** — their Claude subscription, or their token /
   API credits. Model-agnostic by design: Opus 4.8 and Fable 5 today, and ready for the
-  next-generation models you're anticipating (**"Mythos" / "Lythos"**) the day they ship.
+  next-generation models you're anticipating (**"Mythos"**) the day they ship.
   The judge does not care *who* produced a bundle; it only re-simulates the circuit.
 - **Inject the parameters they want to study** into the public repo's BRIEF and
   constraints — qubit count, depth budget, native gate set, coupling map, ansatz family,

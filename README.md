@@ -2,7 +2,7 @@
 
 **quantum-harness** is a public, MIT-licensed prompt harness for **quantum chip and
 quantum-processing architecture design**: you point a highly-capable autonomous model
-(today Opus 4.8; built to be ready for Fable 5 / "Lythos" when it arrives) at a hard
+(today Opus 4.8; built to be ready for Fable 5 / "Mythos" when it arrives) at a hard
 quantum design problem, and it produces a **proof bundle** that a hermetic, deterministic
 judge either **ACCEPTs or REJECTs** — no human in the scoring loop, no model grading its own
 homework. The model's autonomy is measured separately from the raw session transcript. The
@@ -66,7 +66,7 @@ re-verifiable record; **[SCOREBOARD.md](./SCOREBOARD.md)** is where accepted run
 | `bench/quantum-judge/graph.py` | Hermetic graph helpers (degrees / connectivity / routing cost) for the architecture task |
 | `bench/quantum-judge/judge_verify.py` | The judge — feed it a proof bundle, get ACCEPT (exit 0) or REJECT (non-zero) |
 | `bench/quantum-judge/capture.py` | Builds a well-formed proof bundle from a circuit using the *same* simulator |
-| `bench/quantum-judge/test_judge.py` | 26/26 regression checks (accept the worked examples, reject every class of forgery) |
+| `bench/quantum-judge/test_judge.py` | 29/29 regression checks (accept the worked examples, reject every class of forgery) |
 | `bench/quantum-judge/references/<id>.json` | **Hidden ground truth** — target/Hamiltonian + thresholds (incl. the held-out `holdout` block, e.g. `references/bell_pops2.json`, `references/aiaccel4.json`, `references/qml_sign1.json`); the answer key the author never sees |
 | `bench/quantum-judge/quantum-proof-poc.json` | Worked **ghz3** proof bundle (state_prep) |
 | `bench/quantum-judge/quantum-proof-vqe.json` | Worked **isingbell2** proof bundle (vqe) |
@@ -99,7 +99,7 @@ node --test test/*.test.mjs
 # 2. Verify a proof bundle — ACCEPT (exit 0) / REJECT (non-zero)
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-poc.json
 
-# 3. Judge regression suite — 26/26 checks (accept the worked examples, reject every forgery)
+# 3. Judge regression suite — 29/29 checks (accept the worked examples, reject every forgery)
 python3 bench/quantum-judge/test_judge.py
 
 # 4. Build a bundle from your own circuit, using the same simulator the judge uses
@@ -200,7 +200,7 @@ The adversarial fixture `quantum-proof-FORGED.json` omits the second `CX`, so it
 fidelity is **0.25** — but it *claims* **1.0**. The reproducibility gate recomputes the number
 and rejects it (exit 4). The `quantum-proof-OVERFIT.json` fixture matches the visible
 populations but fails the held-out ⟨X₀X₁⟩, and is rejected at exit 6. Both rejections are
-anti-cheat regressions, locked into the 26/26 judge suite.
+anti-cheat regressions, locked into the 29/29 judge suite.
 
 ## Honest boundary: a simulator-only bench
 

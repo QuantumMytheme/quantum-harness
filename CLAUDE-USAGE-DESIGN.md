@@ -10,7 +10,7 @@
 > machine-measured (a transcript scorecard).**
 >
 > This design is **model-agnostic**: today it is pointed at Opus 4.8, but it is authored to
-> be fed Fable 5 / "Lythos" the moment they arrive — nothing here binds to a model version.
+> be fed Fable 5 / "Mythos" the moment they arrive — nothing here binds to a model version.
 
 ## 1. The five layers
 
@@ -145,7 +145,7 @@ bounded only by the problem's difficulty.
 - **Anti-cheat is regression-pinned.** `quantum-proof-FORGED.json` (omits the 2nd CX, claims
   fidelity 1.0 but is truly 0.25) MUST be rejected at exit 4, and the wrong-phase
   `quantum-proof-OVERFIT.json` impostor MUST be rejected at the held-out anti-overfit gate
-  (exit 6); `test_judge.py` holds the line at 26/26 checks. Faking a number — or overfitting
+  (exit 6); `test_judge.py` holds the line at 29/29 checks. Faking a number — or overfitting
   the visible spec — is caught by the judge, not by trust.
 
 ---
@@ -180,7 +180,7 @@ THE ENVIRONMENT (already in place — consult, don't rebuild)
   problems with no holdout block (ghz3, isingbell2) anti-overfit additionally holds by
   construction (ground truth lives only in the hidden reference), so exit 6 is simply not
   triggered for them. capture.py builds a well-formed bundle from a raw circuit using the SAME
-  simulator. test_judge.py is the 26/26 regression line.
+  simulator. test_judge.py is the 29/29 regression line.
 - Five worked problems ship with committed reference solutions and committed passing
   bundles: ghz3 (state_prep, linear [0-1-2] coupling, fidelity ≥ 0.99), isingbell2 (vqe,
   H = −X₀X₁ − Z₀Z₁, energy within 0.05 of −2), bell_pops2 (populations — the anti-overfit
@@ -218,7 +218,7 @@ HOW TO WORK
 
 DONE
 - Bench-done = all H + R1–R8 + A1–A3 + S1 + S2 in ONE fresh-verifier run: node --test
-  test/*.test.mjs is 82/82, python3 bench/quantum-judge/test_judge.py is 26/26, and every
+  test/*.test.mjs is 82/82, python3 bench/quantum-judge/test_judge.py is 29/29, and every
   submitted bundle exits 0 under judge_verify.py (including under a relocated
   QH_REFERENCES_DIR). Submission-done = S3 + S4 + an S1 re-check in a second short run.
 - If time runs short, the designated cuts are stretch problems — record the cut in "Honest
@@ -242,7 +242,7 @@ Begin: orient, then post your plan as a short markdown file (PLAN.md), then go.
 ## Appendix C — Model-agnostic by construction
 
 Nothing in this design names a model version as a dependency. The brief, rubric, bench, and
-scorecard would grade Opus 4.8, Fable 5, or "Lythos" identically — the judge re-simulates
+scorecard would grade Opus 4.8, Fable 5, or "Mythos" identically — the judge re-simulates
 the same circuits and the scorecard parses the same transcript shape regardless of which
 model produced them. As more capable autonomous models arrive, the only change is the model
 pointed at the kickoff message; the contract, the friction removal, the self-correction loop,

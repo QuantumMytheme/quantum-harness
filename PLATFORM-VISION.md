@@ -117,7 +117,7 @@ in [EDUCATION.md](./EDUCATION.md).
 ### The subscription model
 
 "Run your own run" needs compute: a capable autonomous model (today Opus 4.8; built to be ready
-for Fable 5 / "Lythos") pointed at a brief. A **subscription** provisions that capacity. The
+for Fable 5 / "Mythos") pointed at a brief. A **subscription** provisions that capacity. The
 harness side stays unchanged — the model still produces a proof bundle the judge grades — so the
 subscription is purely the *fuel*, never part of the trust path. The judge does not care which
 model (or which human) produced a bundle; it only re-simulates the circuit.
@@ -167,7 +167,7 @@ its own and strictly additive — nothing earlier is thrown away.
 ### Phase 0 — the harness (today, done)
 
 This repo. The deterministic judge, the hermetic numpy simulator, the proof-bundle schema, the
-worked problems (`ghz3`, `isingbell2`, `bell_pops2`, `aiaccel4`, `qml_sign1`), the 26/26
+worked problems (`ghz3`, `isingbell2`, `bell_pops2`, `aiaccel4`, `qml_sign1`), the 29/29
 regression suite, the autonomy scorecard, and the forkable template.
 **The engine works on a laptop, in CI, or on a Raspberry Pi.** Everything below consumes its
 output; nothing below changes its trust model.

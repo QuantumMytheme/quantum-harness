@@ -27,7 +27,7 @@ A pull request is mergeable **only if both** of these are true:
 
 1. **The judge ACCEPTs the bundle** — `judge_verify.py` exits `0`.
 2. **The regression suite is green** — `python3 bench/quantum-judge/test_judge.py` passes
-   (26/26) **and** `node --test test/*.test.mjs` passes (82 tests: scorecard, transcript scrub,
+   (29/29) **and** `node --test test/*.test.mjs` passes (82 tests: scorecard, transcript scrub,
    planner roster/walkthrough).
 
 No human reviewer overrides a REJECT into a merge. The point of the harness is that correctness is
@@ -202,7 +202,7 @@ solvers. If a number belongs to the answer key, it belongs only in `references/<
 Before you open a PR, confirm:
 
 - [ ] `python3 bench/quantum-judge/judge_verify.py <your-bundle>.json` exits `0` (ACCEPT).
-- [ ] `python3 bench/quantum-judge/test_judge.py` passes (26/26).
+- [ ] `python3 bench/quantum-judge/test_judge.py` passes (29/29).
 - [ ] `node --test test/*.test.mjs` passes (82 tests).
 - [ ] (New problem) a hidden reference exists in `references/`, a worked reference solution is
       wired into the suite, and at least one adversarial fixture is rejected.

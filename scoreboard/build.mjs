@@ -51,8 +51,18 @@ function rankGroup(list) {
   })
 }
 
+// seeds (entries.json) + auto-discovered run-repo entries (discovered.json), deduped
+let discovered = []
+try { discovered = JSON.parse(readFileSync(join(ROOT, 'scoreboard', 'discovered.json'), 'utf8')).entries || [] } catch { /* none yet */ }
+const seen = new Set()
+const allEntries = [...data.entries, ...discovered].filter((e) => {
+  const k = `${e.run_repo}|${e.proof_bundle}|${e.problem_id}`
+  if (seen.has(k)) return false
+  seen.add(k); return true
+})
+
 const byProblem = {}
-for (const e of data.entries) (byProblem[e.problem_id] ||= []).push(e)
+for (const e of allEntries) (byProblem[e.problem_id] ||= []).push(e)
 const problems = Object.keys(byProblem)
 const rows = []
 for (const pid of problems) {

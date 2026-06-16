@@ -92,7 +92,7 @@ Use these as the templates for the BRIEF+RUBRIC of any new run:
 `bench/quantum-judge/quantum-proof-FORGED.json` omits the 2nd CX and claims fidelity `1.0` while
 the circuit truly yields `0.25`; `judge_verify.py` MUST reject it at the **REPRODUCIBILITY**
 gate (exit 4). `quantum-proof-OVERFIT.json` passes structure/reproducibility/performance but MUST
-be rejected at the held-out **ANTI-OVERFIT** gate (exit 6). `test_judge.py` is the 26/26
+be rejected at the held-out **ANTI-OVERFIT** gate (exit 6). `test_judge.py` is the 29/29
 regression: accept the worked examples, reject every class of forgery (including the overfit
 impostor). Never weaken these to make a run pass.
 

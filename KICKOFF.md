@@ -3,7 +3,7 @@
 > Paste as the FIRST and only substantive message of an autonomous session, at your
 > strongest effort, in the **QuantumMytheme/quantum-harness** repo. Set the GOAL below
 > with `/goal` so it survives compaction. This template is **model-agnostic**: it works
-> for Opus 4.8 today and is built to be READY for Fable 5 / "Lythos" when they arrive.
+> for Opus 4.8 today and is built to be READY for Fable 5 / "Mythos" when they arrive.
 > One run = one `<problem_id>`. Fill the `«placeholders»`. A filled-in `ghz3` example is
 > at the bottom; copy it and edit.
 >
@@ -103,7 +103,7 @@ python3 bench/quantum-judge/capture.py <circuit.json> «problem_id» --task «st
 # the one command that decides the run — exit 0 = ACCEPT:
 python3 bench/quantum-judge/judge_verify.py my-proof.json ; echo "EXIT=$?"
 
-# the regression harness must stay 26/26 (accepts the worked examples; rejects every forgery and the held-out overfit):
+# the regression harness must stay 29/29 (accepts the worked examples; rejects every forgery and the held-out overfit):
 python3 bench/quantum-judge/test_judge.py
 
 # the committed adversarial fixture MUST reject at exit 4 (claims fidelity 1.0, truly 0.25):
@@ -130,7 +130,7 @@ python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-FO
 
 1. **Judge ACCEPTs** — `python3 bench/quantum-judge/judge_verify.py <your-bundle>.json`
    exits **0**, AND the regression suite `python3 bench/quantum-judge/test_judge.py` is
-   still **26/26** (you did not weaken a gate to pass).
+   still **29/29** (you did not weaken a gate to pass).
 2. **Tests green** — `node --test test/*.test.mjs` passes (**82 tests**: scorecard +
    transcript scrub + planner roster/walkthrough). A red measurement harness invalidates
    the autonomy claim.

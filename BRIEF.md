@@ -30,7 +30,7 @@ circuit → re-simulated result → constraint check + reproducibility check + t
 ## Who it's for
 
 The public, pointing an autonomous model (today Opus 4.8; built to be READY for Fable 5 /
-"Lythos") at a hard quantum design problem and getting back a **machine-checkable verdict** with
+"Mythos") at a hard quantum design problem and getting back a **machine-checkable verdict** with
 the model's autonomy measured from the raw transcript. The model is the designer. The judge is a
 **fresh verifier with no stake in the design** — it did not author the circuit and re-derives
 every claimed number from scratch on a hermetic pure-numpy simulator. No conversational claim
@@ -207,7 +207,7 @@ pass. Concretely, for this session:
   `judge_verify.py quantum-proof-arch.json`, and `judge_verify.py quantum-proof-qml.json`;
 - the anti-overfit impostors are REJECTED at exit 6: `judge_verify.py quantum-proof-OVERFIT.json`,
   `judge_verify.py quantum-proof-arch-OVERFIT.json`, and `judge_verify.py quantum-proof-qml-OVERFIT.json`;
-- the bench self-test is green: `python3 bench/quantum-judge/test_judge.py` → `26/26 checks passed`;
+- the bench self-test is green: `python3 bench/quantum-judge/test_judge.py` → `29/29 checks passed`;
 - the measurement suite is green: `node --test test/*.test.mjs` → 82 tests pass, 0 fail;
 - the same bundles still ACCEPT when the references are relocated via `QH_REFERENCES_DIR` to a
   directory outside your tree (anti-overfit, proven not assumed).

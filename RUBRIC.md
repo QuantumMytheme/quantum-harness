@@ -148,7 +148,7 @@ check — anti-overfit.
       degree-over-budget → exit 3).
 - [ ] **R8 — Verifiability of artifacts (bench self-test green, capture round-trips).** The
       whole bench re-derives soundly: `python3 bench/quantum-judge/test_judge.py` reports
-      `26/26 checks passed` (exit 0). Within it, the `capture.py` check proves it builds a
+      `29/29 checks passed` (exit 0). Within it, the `capture.py` check proves it builds a
       well-formed bundle from a raw circuit using the SAME simulator and that bundle ACCEPTs
       under the judge — so artifacts are reproducible by tool, not hand-authored. Every R
       above is mirrored by a named regression check, so a fresh verifier reproduces every
@@ -201,7 +201,7 @@ check — anti-overfit.
 
 - **Bench-done** = all H + R1–R8 + A1–A3 + S1 + S2 pass in ONE fresh-verifier run:
   `node --test test/*.test.mjs` is 82/82, `python3 bench/quantum-judge/test_judge.py` is
-  26/26, and every submitted bundle exits 0 under `judge_verify.py` (including under a
+  29/29, and every submitted bundle exits 0 under `judge_verify.py` (including under a
   relocated `QH_REFERENCES_DIR`).
 - **Submission-done** = S3 + S4 pass, plus an S1 re-check, in a second short verifier run.
 

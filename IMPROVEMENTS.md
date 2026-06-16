@@ -1,7 +1,7 @@
 # Outstanding asks / improvement backlog
 
 > The running list of enhancements for quantum-harness, captured across the seed sessions.
-> Each new verifiable run (a future Fable 5 / "Lythos" run, or an Opus 4.8 run today) picks
+> Each new verifiable run (a future Fable 5 / "Mythos" run, or an Opus 4.8 run today) picks
 > an item from here and turns its delta proposal into that run's BRIEF + RUBRIC. "Done" is
 > phrased so a fresh verifier sub-agent (the judge) can grade it without a human — every
 > criterion binds to `judge_verify.py`, a reference under `references/`, or a metric.
@@ -100,7 +100,7 @@ not just ideal statevector — a more honest fidelity for hardware-leaning runs.
   reference; ideal mode stays the default so existing problems are unaffected.
 - **Done =** `judge_verify.py --noise` reproduces a claimed noisy fidelity within tolerance
   for a problem whose `references/*.json` declares a noise level, the ideal-mode regression in
-  `test_judge.py` is unchanged (still 26/26), and a claim of ideal fidelity 1.0 under noise>0
+  `test_judge.py` is unchanged (still 29/29), and a claim of ideal fidelity 1.0 under noise>0
   is REJECTED at exit 4.
 - Ref: bench/quantum-judge/sim.py, judge_verify.py PERFORMANCE gate.
 
@@ -129,7 +129,7 @@ judge as the source of truth (hardware results are a labeled overlay, not the ga
   counts — re-verifiable — and requires the attested design to be sim-ACCEPTed; provenance is
   attested/labeled); `run_on_hardware.py` adapter stub (optional qiskit/braket, no SDK at the
   verification root); worked `hardware-report-bell_pops2.json`; `HARDWARE.md`; scoreboard
-  hardware-overlay section; 2 regression checks (now 28/28). Removing any provider SDK changes
+  hardware-overlay section; 2 regression checks (now 29/29). Removing any provider SDK changes
   nothing — the judge never imports one.
 - **Next:** real provider adapters wired (IBM/Braket); `classify` accuracy-from-counts; a
   deterministic noisy-sim (density-matrix) judge mode so hardware reports score against a
@@ -148,7 +148,7 @@ TESTED gate (not by-construction only) for any problem declaring a held-out chec
   wrong-phase impostor |Φ−⟩ that still matches the visible Z-basis populations is REJECTED at
   ANTI-OVERFIT (exit 6) on the held-out ⟨X0X1⟩=+1 check (`quantum-proof-OVERFIT.json`); the
   impostor passes structure/reproducibility/performance and fails ONLY the held-out gate.
-  `test_judge.py` is now 26/26 (was 12/12) with the overfit-rejection regression added.
+  `test_judge.py` is now 29/29 (was 12/12) with the overfit-rejection regression added.
 - Ref: bench/quantum-judge/judge_verify.py `check_holdout` / EXIT_OVERFIT (6),
   references/bell_pops2.json, quantum-proof-pops.json, quantum-proof-OVERFIT.json.
 
@@ -160,7 +160,7 @@ Add a committed adversarial fixture for EACH judge gate so every reject path has
   named for the exit it must produce.
 - **Done =** `test_judge.py` asserts each new fixture is REJECTED at its exact exit code
   (3 / 5 / 6), the existing exit-4 forgery still rejects, and the worked examples still ACCEPT
-  — total green count grows from 26/26. Note: the ANTI-OVERFIT (exit 6) fixture now exists
+  — total green count grows from 29/29. Note: the ANTI-OVERFIT (exit 6) fixture now exists
   (`quantum-proof-OVERFIT.json`, shipped with item 11) and is asserted in `test_judge.py`;
   remaining scope is the dedicated STRUCTURE (3) and PERFORMANCE (5) per-class fixtures named
   for their exit code.

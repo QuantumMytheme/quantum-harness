@@ -33,7 +33,7 @@ placed in its own bundle is caught at the reproducibility (4) / performance (5) 
 |------|----------|---------------|----------------|
 | H1 | `bench/quantum-judge/quantum-proof-FORGED.json` | `python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-FORGED.json; echo $?` | exit **4** (claims 1.0, recomputes 0.25) — fabrication rejected |
 | H2 | `README` "Honest limits" section | manual read; spot-check 3 claims vs `judge_verify.py` docstring + `sim.py` | states pure-numpy statevector (no noise/shots), refs held-out in contest |
-| H3 | `bench/quantum-judge/test_judge.py` | `python3 bench/quantum-judge/test_judge.py; echo $?` | exit **0**, prints `26/26 checks passed` — numbers re-derived, not staged |
+| H3 | `bench/quantum-judge/test_judge.py` | `python3 bench/quantum-judge/test_judge.py; echo $?` | exit **0**, prints `29/29 checks passed` — numbers re-derived, not staged |
 | H4 | `README` provenance manifest | manual read | names authored-bundle / pre-built `bench/` env / fresh-seed-from-fieldops (no shared git history) accurately |
 
 ## R — Verifiable chain
@@ -56,7 +56,7 @@ placed in its own bundle is caught at the reproducibility (4) / performance (5) 
 | R7 (regression) | architecture | `test_judge.py` checks "ring topology ACCEPTs", "arch-OVERFIT exit 6", "tampered routing_cost exit 4", "over-budget routing exit 5", "degree-over-budget exit 3" | `python3 bench/quantum-judge/test_judge.py` | each PASS |
 | R7b | classify quality (QML feature map) | `quantum-proof-qml.json` + `references/qml_sign1.json` | `python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-qml.json; echo $?` | exit **0** — the `Ry(x)` low-frequency map generalizes to the held-out test set; the `Ry(7x)` overfit map REJECTs at exit **6** (`quantum-proof-qml-OVERFIT.json`) |
 | R7b (regression) | classify | `test_judge.py` checks "low-frequency map ACCEPTs", "qml-OVERFIT exit 6", "tampered train_accuracy exit 4", "under-fit training exit 5" | `python3 bench/quantum-judge/test_judge.py` | each PASS |
-| R8 | verifiability of artifacts | full bench self-test + `capture.py` round-trip | `python3 bench/quantum-judge/test_judge.py; echo $?` | exit **0**, `26/26 checks passed`; check "capture.py output ACCEPTs under judge" PASS |
+| R8 | verifiability of artifacts | full bench self-test + `capture.py` round-trip | `python3 bench/quantum-judge/test_judge.py; echo $?` | exit **0**, `29/29 checks passed`; check "capture.py output ACCEPTs under judge" PASS |
 
 ## A — Autonomy evidence (transcript-computed)
 
@@ -86,7 +86,7 @@ placed in its own bundle is caught at the reproducibility (4) / performance (5) 
 
 ```
 node --test test/*.test.mjs                                   # expect: 82 pass, 0 fail
-python3 bench/quantum-judge/test_judge.py                     # expect: 26/26 checks passed (exit 0)
+python3 bench/quantum-judge/test_judge.py                     # expect: 29/29 checks passed (exit 0)
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-poc.json    # expect exit 0
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-vqe.json    # expect exit 0
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-pops.json   # expect exit 0 (genuine Bell, passes held-out check)

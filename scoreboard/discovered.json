@@ -1,0 +1,45 @@
+{
+  "topic": "quantum-harness-run",
+  "org": "QuantumMytheme",
+  "count": 1,
+  "entries": [
+    {
+      "_comment": "This run repo's scoreboard entry. It is auto-DISCOVERED by the harness (topic 'quantum-harness-run' + this file) — no PR to the central entries.json needed. The aggregator fetches it, re-judges the linked proof_bundle against the canonical hidden reference, and checks the metric matches before ranking it.",
+      "problem_id": "tfim3",
+      "task": "vqe",
+      "paradigm": "hardware-efficient (Ry layer + open-chain CX, 1 layer)",
+      "paradigm_short": "hardware-efficient",
+      "model": "opus-4.8",
+      "model_usage": "FIRST REAL MODEL RUN — Opus 4.8 designed the ansatz and tuned its parameters against the bench until the judge ACCEPTed; auto-discovered from this public run repo",
+      "verified_metric": {
+        "name": "energy_gap_to_E0",
+        "value": 0.014258023432029088,
+        "energy": -2.9947640963492943,
+        "ground_state_energy": -3.0090221197813234,
+        "gap_budget": 0.05,
+        "classical_baseline": -2.72
+      },
+      "resource_costs": {
+        "two_qubit_gates": 2,
+        "depth": 3,
+        "n_qubits": 3
+      },
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-hwe",
+      "run_branch": "main",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "judge_exit": 0,
+      "verified_at": "2026-06-16",
+      "hardware_reports": [
+        {
+          "backend": "local-noisy (emulated)",
+          "metric": "energy",
+          "value": -2.903418,
+          "shots": 8192,
+          "report_url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json"
+        }
+      ],
+      "why_it_scores": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1.",
+      "_discovered_from": "QuantumMytheme/run-tfim3-hwe"
+    }
+  ]
+}

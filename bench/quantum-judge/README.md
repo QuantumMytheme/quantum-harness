@@ -46,7 +46,7 @@ in it depends on wall-clock time or unseeded RNG.
 | `graph.py` | dependency-free graph utilities (degree, connectivity, routing cost) for the `architecture` task |
 | `judge_verify.py` | the four-gate judge; consumes a proof bundle, returns an exit code |
 | `capture.py` | builds a well-formed proof bundle from a circuit IR using the SAME simulator |
-| `test_judge.py` | 26/26 regression suite: accept the worked examples, reject every class of forgery |
+| `test_judge.py` | 29/29 regression suite: accept the worked examples, reject every class of forgery |
 | `references/<problem_id>.json` | **hidden ground truth** (target state / Hamiltonian / workload / train set + thresholds; may declare a held-out check) |
 | `quantum-proof-poc.json` | worked `state_prep` example (GHZ-3) — must ACCEPT |
 | `quantum-proof-vqe.json` | worked `vqe` example (Ising/Bell-2) — must ACCEPT |
@@ -421,7 +421,7 @@ python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-FO
 
 ```sh
 python3 bench/quantum-judge/test_judge.py
-# ... 26/26 checks passed   (exit 0)
+# ... 29/29 checks passed   (exit 0)
 ```
 
 The suite asserts the worked bundles ACCEPT (including the genuine `populations`

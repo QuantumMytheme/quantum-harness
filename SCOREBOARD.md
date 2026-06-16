@@ -125,7 +125,7 @@ As a Markdown row (how a problem's board renders):
 > **`model` is provenance, never a ranking key.** Models are model-agnostic *fuel*. The
 > judge does not care who — or what — produced a bundle; it only re-simulates. Today
 > people drive runs with Opus 4.8 / Fable 5, and the harness is built to be ready for the
-> next-gen models you may hear called *Mythos* / *Lythos* — but the board ranks **designs**,
+> next-gen models you may hear called *Mythos* — but the board ranks **designs**,
 > not authors. Record `model` so the corpus is honest about provenance; rank on the
 > verified metric and resource costs.
 
@@ -150,7 +150,7 @@ merge gate; no maintainer scores anything by taste. The flow mirrors
    - `judge_verify.py <proof_bundle>` exits `0` (re-run against the held-out references —
      no self-reported numbers survive this), **and**
    - the regression suite stays green: `python3 bench/quantum-judge/test_judge.py` is
-     `26/26` **and** `node --test test/*.test.mjs` is `82/82`.
+     `29/29` **and** `node --test test/*.test.mjs` is `82/82`.
 4. **Re-verification, not negotiation.** No human reviewer overrides a REJECT into a
    merge. If the judge accepts and the suite is green, the row earns its place; the
    ranking follows mechanically from (b).
@@ -252,11 +252,16 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 every entry — **including entries whose bundle lives in an external run repo, which it
 fetches and re-runs against the canonical hidden references** — and **checks the reported
 metric matches the judge's own recompute** (no rank overclaim); it runs the suites
-(28/28 + 82/82) and **fails any PR whose generated board is stale**
-(`node scoreboard/build.mjs --check`). What's still manual: **discovery** — run repos are
-registered by PR adding a row to `scoreboard/entries.json` (there's a
-[PR template](.github/pull_request_template.md)); the board doesn't crawl GitHub for runs
-*yet*. Verification is automated and cross-repo; discovery is a PR.
+(29/29 + 82/82) and **fails any PR whose generated board is stale**
+(`node scoreboard/build.mjs --check`). **Discovery is automated too:** a run repo opts in
+with the GitHub topic `quantum-harness-run` + a `scoreboard-entry.json` at its root;
+`scoreboard/discover.mjs` (scheduled via `.github/workflows/discover.yml`) crawls the org for
+tagged repos, ingests their entries into `scoreboard/discovered.json`, re-verifies them, and
+rebuilds the board — **no PR needed** (the [PR template](.github/pull_request_template.md)
+still works if you prefer). Seeds live in `entries.json`, discovered runs in `discovered.json`;
+the aggregator merges both. The one manual step for a fully-live board is the Cloudflare
+deploy — automated if you add a `CLOUDFLARE_API_TOKEN` repo secret (the discover workflow
+deploys when it's present).
 
 What this means in practice, right now:
 - **The numbers are real and already re-verifiable** — re-run `judge_verify.py` on any

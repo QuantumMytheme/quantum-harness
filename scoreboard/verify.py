@@ -95,8 +95,23 @@ def verify_entry(e):
             os.remove(cleanup)
 
 
+def all_entries():
+    """Seeds (entries.json) + auto-discovered run-repo entries (discovered.json), deduped."""
+    out, seen = [], set()
+    src = list(DATA["entries"])
+    try:
+        src += json.load(open(os.path.join(ROOT, "scoreboard", "discovered.json"))).get("entries", [])
+    except FileNotFoundError:
+        pass
+    for e in src:
+        k = (e.get("run_repo"), e.get("proof_bundle"), e.get("problem_id"))
+        if k not in seen:
+            seen.add(k); out.append(e)
+    return out
+
+
 def main():
-    entries = DATA["entries"]
+    entries = all_entries()
     bad = 0
     for e in entries:
         ok, msg = verify_entry(e)
