@@ -247,6 +247,7 @@ table.results td.num { font-family: var(--mono); font-size: 13px; color: var(--i
 table.results td.num b { color: var(--pass); font-size: 15px; }
 table.results .sub { display: block; color: var(--faint); font-size: 11px; margin-top: 3px; }
 table.results a { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.hwlink { color: var(--accent-2) !important; margin-left: 8px; }
 .ptag { font-family: var(--mono); font-size: 11px; color: var(--accent); border: 1px solid var(--rule-2); border-radius: 4px; padding: 3px 7px; white-space: nowrap; }
 .mtag { font-family: var(--mono); font-size: 11px; color: var(--faint); border: 1px dashed var(--rule-2); border-radius: 4px; padding: 3px 7px; white-space: nowrap; }
 .why-leads { margin-top: 26px; }

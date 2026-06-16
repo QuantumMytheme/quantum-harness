@@ -65,6 +65,9 @@ for (const pid of problems) {
       costLabel: cost(e), model: e.model,
       bundleUrl: `${e.run_repo}/blob/main/${e.proof_bundle}`,
       why: e.why_it_scores,
+      hardware: (e.hardware_reports && e.hardware_reports[0])
+        ? { backend: e.hardware_reports[0].backend, metric: e.hardware_reports[0].metric, value: e.hardware_reports[0].value, url: e.hardware_reports[0].report_url }
+        : null,
     })
   })
 }

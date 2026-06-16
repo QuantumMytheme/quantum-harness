@@ -22,7 +22,8 @@ window.SCOREBOARD_DATA = {
       "costLabel": "2q 2 · depth 3",
       "model": "reference-baseline",
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-poc.json",
-      "why": "Perfect fidelity (1.000) at the minimal cost for a 3-qubit GHZ state on the [0-1-2] coupling map: depth 3, two CX. No design reaches the target with fewer entangling gates, so this is the optimum — only a tie at lower cost could outrank it."
+      "why": "Perfect fidelity (1.000) at the minimal cost for a 3-qubit GHZ state on the [0-1-2] coupling map: depth 3, two CX. No design reaches the target with fewer entangling gates, so this is the optimum — only a tie at lower cost could outrank it.",
+      "hardware": null
     },
     {
       "problem_id": "isingbell2",
@@ -35,7 +36,8 @@ window.SCOREBOARD_DATA = {
       "costLabel": "2q 1 · depth 2",
       "model": "reference-baseline",
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-vqe.json",
-      "why": "Reaches the EXACT ground state (gap 0.000 to E0 = -2) at depth 2 with a single CX. The Bell state is the true ground state of H = -X0X1 - Z0Z1, and entangling beats the best product-state baseline (-1). You cannot improve on a zero gap — only a tie at lower cost competes."
+      "why": "Reaches the EXACT ground state (gap 0.000 to E0 = -2) at depth 2 with a single CX. The Bell state is the true ground state of H = -X0X1 - Z0Z1, and entangling beats the best product-state baseline (-1). You cannot improve on a zero gap — only a tie at lower cost competes.",
+      "hardware": null
     },
     {
       "problem_id": "bell_pops2",
@@ -48,7 +50,8 @@ window.SCOREBOARD_DATA = {
       "costLabel": "2q 1 · depth 2",
       "model": "reference-baseline",
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-pops.json",
-      "why": "Matches the visible 50/50 populations AND the HIDDEN held-out ⟨X0X1⟩ = +1 — the genuine |Φ+>, not a phase-flipped impostor that games only the visible spec. It clears the anti-overfit gate (exit 6) that the OVERFIT fixture fails, at depth 2 with one CX."
+      "why": "Matches the visible 50/50 populations AND the HIDDEN held-out ⟨X0X1⟩ = +1 — the genuine |Φ+>, not a phase-flipped impostor that games only the visible spec. It clears the anti-overfit gate (exit 6) that the OVERFIT fixture fails, at depth 2 with one CX.",
+      "hardware": null
     },
     {
       "problem_id": "aiaccel4",
@@ -61,7 +64,8 @@ window.SCOREBOARD_DATA = {
       "costLabel": "edges 4 · deg 2",
       "model": "reference-baseline",
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-arch.json",
-      "why": "A ring routes BOTH the visible and the held-out workload at cost 2 within the degree-2 budget, beating the linear-chain baseline (4). It generalizes — the overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6. Only a sparser map at equal cost could outrank it."
+      "why": "A ring routes BOTH the visible and the held-out workload at cost 2 within the degree-2 budget, beating the linear-chain baseline (4). It generalizes — the overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6. Only a sparser map at equal cost could outrank it.",
+      "hardware": null
     },
     {
       "problem_id": "qml_sign1",
@@ -74,7 +78,8 @@ window.SCOREBOARD_DATA = {
       "costLabel": "ops 1 · 1 qubit",
       "model": "reference-baseline",
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-qml.json",
-      "why": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes."
+      "why": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes.",
+      "hardware": null
     },
     {
       "problem_id": "tfim3",
@@ -87,7 +92,13 @@ window.SCOREBOARD_DATA = {
       "costLabel": "2q 2 · depth 3",
       "model": "opus-4.8",
       "bundleUrl": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/quantum-proof-tfim3.json",
-      "why": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1."
+      "why": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1.",
+      "hardware": {
+        "backend": "local-noisy (emulated)",
+        "metric": "energy",
+        "value": -2.903418,
+        "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json"
+      }
     }
   ]
 };

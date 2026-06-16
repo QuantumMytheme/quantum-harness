@@ -207,6 +207,17 @@ def main():
     finally:
         os.remove(tmp)
 
+    # run_on_hardware -> hardware_report round-trip on the local backend (no QPU/creds)
+    roh, rt = os.path.join(HERE, "run_on_hardware.py"), os.path.join(HERE, "_tmp_hwrt.json")
+    with open(rt, "w") as f:
+        subprocess.run([sys.executable, roh, os.path.join(HERE, "quantum-proof-pops.json"),
+                        "--observable", "XX", "--backend", "local-ideal", "--seed", "0"], stdout=f, check=True)
+    try:
+        p = subprocess.run([sys.executable, hw, rt], capture_output=True, text=True)
+        record("run_on_hardware -> hardware_report round-trip (exit 0)", p.returncode == 0, p.stderr.strip())
+    finally:
+        os.remove(rt)
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

@@ -93,6 +93,9 @@
       "proof_bundle": "quantum-proof-tfim3.json",
       "judge_exit": 0,
       "verified_at": "2026-06-16",
+      "hardware_reports": [
+        { "backend": "local-noisy (emulated)", "metric": "energy", "value": -2.903418, "shots": 8192, "report_url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json" }
+      ],
       "why_it_scores": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1."
     }
   ]
