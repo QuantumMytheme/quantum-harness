@@ -74,3 +74,18 @@ test('overview links to the education page; sitemap lists its canonical URL', ()
   assert.match(html, /href="education\.html"/)
   assert.match(readFileSync(v('sitemap.xml'), 'utf8'), /<loc>https:\/\/quantummytheme\.com\/education<\/loc>/)
 })
+
+// --- field notebook (lab) page ----------------------------------------------
+test('field notebook page exists, is wired, linked, and has all 6 sections', () => {
+  assert.ok(existsSync(v('lab.html')), 'viewer/lab.html should exist')
+  assert.ok(existsSync(v('lab.js')), 'viewer/lab.js should exist')
+  const lab = readFileSync(v('lab.html'), 'utf8')
+  assert.match(lab, /rel="canonical" href="https:\/\/quantummytheme\.com\/lab"/)
+  assert.match(lab, /<script src="lab\.js">/)
+  assert.match(html, /href="lab\.html"/) // overview links to it
+  assert.match(readFileSync(v('sitemap.xml'), 'utf8'), /<loc>https:\/\/quantummytheme\.com\/lab<\/loc>/)
+  const js = readFileSync(v('lab.js'), 'utf8')
+  for (const sec of ['front', 'brief', 'field', 'atlas', 'register', 'primer']) {
+    assert.match(js, new RegExp(`${sec}:\\s*sec`), `lab.js SECTIONS should include ${sec}`)
+  }
+})
