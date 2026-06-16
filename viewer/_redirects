@@ -1,0 +1,4 @@
+# Canonicalize www -> apex (301). Cloudflare Pages evaluates full-URL rules
+# for custom domains attached to this project, so this fires only for the
+# www host; apex requests pass straight through. Query strings are preserved.
+https://www.quantummytheme.com/* https://quantummytheme.com/:splat 301
