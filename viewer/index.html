@@ -18,10 +18,10 @@
       <div class="logo"><b>QuantumMytheme</b> · quantum-harness</div>
       <div class="right">
         <nav>
-          <a href="#judge">Judge</a>
-          <a href="#state">State</a>
-          <a href="#topology">Topology</a>
-          <a href="#qml">QML</a>
+          <a href="#why">Why</a>
+          <a href="#judge">Bench</a>
+          <a href="#scoreboard">Scoreboard</a>
+          <a href="#run">Run yours</a>
         </nav>
         <button id="themeToggle" class="themebtn" aria-label="Switch colour theme">
           <span class="dotmark" aria-hidden="true"></span><span id="themeLabel">Luminous mode</span>
@@ -49,8 +49,52 @@
       <div class="metric ok"><b>82/82</b><span>measurement</span></div>
       <div class="metric"><b>numpy</b><span>only · offline</span></div>
     </div>
+
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/QuantumMytheme/quantum-harness/generate">Use this template ↗</a>
+      <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness">View on GitHub ↗</a>
+      <a class="btn" href="#scoreboard">See the scoreboard</a>
+      <a class="btn" href="#run">Do your own run</a>
+    </div>
   </div>
 </header>
+
+<!-- ===================== WHY ===================== -->
+<section id="why">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Why this exists</p>
+      <h2>A public workbench for verified quantum design</h2>
+      <p class="lead">QuantumMytheme is a place to do your own harness-preparation work: mint a public run, point your
+        own model at a problem, and produce a result anyone can re-check. Three reasons it's worth your time.</p>
+    </div>
+
+    <div class="why">
+      <div class="why-item">
+        <span class="why-n">01</span>
+        <h3>Contribute to science</h3>
+        <p>Every accepted run adds to an open, reproducible, re-verifiable corpus of quantum designs. Correctness is
+          scored without human taste — the simulator recomputes the number, so a result holds up or it doesn't.</p>
+      </div>
+      <div class="why-item">
+        <span class="why-n">02</span>
+        <h3>A scoreboard across paradigms</h3>
+        <p>The same hidden-graded problems let you compare design approaches head to head — which ansatz, which
+          topology, which feature map (and how each beats the classical baseline) currently leads. The frontier is public.</p>
+      </div>
+      <div class="why-item">
+        <span class="why-n">03</span>
+        <h3>For the curious, to hill-climb</h3>
+        <p>Point a capable model at a BRIEF and watch it loop to ACCEPT — then try to beat the best verified score with
+          fewer gates, a sparser map, or a simpler feature map. Hill-climb on a number a machine checks for you.</p>
+      </div>
+    </div>
+
+    <blockquote class="pull">Models are model-agnostic fuel. The judge doesn't care who — or what — produced a bundle;
+      it only re-simulates. Drive a run with <b>Opus 4.8</b> or <b>Fable 5</b> today; the harness is built to be ready for
+      the next-gen models you may know as <b>Mythos</b> / <b>Lythos</b>.</blockquote>
+  </div>
+</section>
 
 <!-- ===================== 1 · JUDGE ===================== -->
 <section id="judge">
@@ -161,6 +205,110 @@
       </div>
     </div>
     <p class="figcap"><b>Figure 4.</b> Decision curve of the feature map; held-out test accuracy below threshold triggers the anti-overfit gate (exit 6).</p>
+  </div>
+</section>
+
+<!-- ===================== SCOREBOARD ===================== -->
+<section id="scoreboard">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Scoreboard · the current frontier</p>
+      <h2>Seeded leaderboard — the baselines to beat</h2>
+      <p class="lead">A per-problem leaderboard of judge-ACCEPTED designs, ranked by the verified metric. Seeded with the
+        harness's reference baselines; every number is the judge's own and re-verifiable
+        (<span class="mono">scoreboard/verify.py</span> → 5/5 exit 0). No score here is self-reported.</p>
+    </div>
+
+    <div class="panel results-wrap">
+      <table class="results">
+        <thead>
+          <tr><th>Problem · task</th><th>Paradigm</th><th>Verified metric</th><th>Cost</th><th>Model</th><th>Proof</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>ghz3</b> · state_prep</td><td><span class="ptag">chain-cascade</span></td>
+            <td class="num">fidelity <b>1.000</b><span class="sub">≥ 0.99 · base 0.5</span></td><td class="num">2q 2 · depth 3</td>
+            <td><span class="mtag">reference-baseline</span></td>
+            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-poc.json">bundle ↗</a></td>
+          </tr>
+          <tr>
+            <td><b>isingbell2</b> · vqe</td><td><span class="ptag">minimal-bell-ansatz</span></td>
+            <td class="num">gap <b>0.000</b> to E₀=−2<span class="sub">budget 0.05 · base −1</span></td><td class="num">2q 1 · depth 2</td>
+            <td><span class="mtag">reference-baseline</span></td>
+            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-vqe.json">bundle ↗</a></td>
+          </tr>
+          <tr>
+            <td><b>bell_pops2</b> · populations</td><td><span class="ptag">phase-correct-bell</span></td>
+            <td class="num">⟨X₀X₁⟩ <b>+1.00</b><span class="sub">held-out · pops dev 0</span></td><td class="num">2q 1 · depth 2</td>
+            <td><span class="mtag">reference-baseline</span></td>
+            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-pops.json">bundle ↗</a></td>
+          </tr>
+          <tr>
+            <td><b>aiaccel4</b> · architecture</td><td><span class="ptag">ring</span></td>
+            <td class="num">routing <b>2</b><span class="sub">budget 2 · base 4 · held-out 2</span></td><td class="num">edges 4 · deg 2</td>
+            <td><span class="mtag">reference-baseline</span></td>
+            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-arch.json">bundle ↗</a></td>
+          </tr>
+          <tr>
+            <td><b>qml_sign1</b> · classify</td><td><span class="ptag">low-frequency-encoding</span></td>
+            <td class="num">test <b>100%</b><span class="sub">held-out · train 100%</span></td><td class="num">ops 1 · 1 qubit</td>
+            <td><span class="mtag">reference-baseline</span></td>
+            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-qml.json">bundle ↗</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="figcap"><b>Table 1.</b> Seeded leaderboard. <b>Model</b> = <span class="mono">reference-baseline</span> — hand-authored
+      worked examples, not a model run; the bar to beat. A real run names the model it pointed at the BRIEF and links its own
+      public run repo. Model is provenance, never a ranking key — the judge re-simulates regardless of author.</p>
+
+    <div class="why-leads">
+      <h3>Why each leads</h3>
+      <ul>
+        <li><b>ghz3</b> — perfect fidelity at the minimal cost for GHZ on a line; nothing cheaper reaches the target.</li>
+        <li><b>isingbell2</b> — the exact ground state (gap 0) at depth 2; entangling beats the product-state baseline.</li>
+        <li><b>bell_pops2</b> — matches the visible populations <em>and</em> the hidden ⟨X₀X₁⟩=+1; clears the gate the impostor fails.</li>
+        <li><b>aiaccel4</b> — a ring routes the visible <em>and</em> held-out workloads within budget; the overfit path is rejected.</li>
+        <li><b>qml_sign1</b> — 100% train and held-out test with one rotation; a high-frequency map overfits and can't qualify.</li>
+      </ul>
+    </div>
+
+    <div class="cta">
+      <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/SCOREBOARD.md">Full scoreboard + rules ↗</a>
+      <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/scoreboard/entries.json">entries.json ↗</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== RUN YOURS ===================== -->
+<section id="run">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Do your own run</p>
+      <h2>Bring your own model. Take rank 1.</h2>
+      <p class="lead">Each run lives in its own public repo. You bring the model — your Claude subscription, or API /
+        token credits. The judge never holds your credits; it only structures the run and verifies the output.</p>
+    </div>
+
+    <div class="split">
+      <ol class="runsteps">
+        <li><b>Mint a run repo</b> from the template — a fresh public repo in the org (or <span class="mono">bin/new-run.sh</span>).</li>
+        <li><b>Pick or write a BRIEF</b> — the problem stated conceptually; the answer key stays host-side with the judge.</li>
+        <li><b>Run the kickoff</b> with your model — it self-corrects against the rubric until the judge ACCEPTs.</li>
+        <li><b>Commit the result back</b> — the proof bundle, the verdict (exit 0), the scrubbed transcript, the scorecard; push, and register a scoreboard row.</li>
+      </ol>
+      <div class="aside">
+        <div class="panel" style="padding:20px">
+          <p class="note" style="margin-bottom:14px">The run repo is the permanent, public, re-verifiable record. Anyone re-runs the judge on your committed bundle and gets the same verdict — that's the whole contract.</p>
+          <div class="cta" style="margin:0">
+            <a class="btn primary" href="https://github.com/QuantumMytheme/quantum-harness/generate">Use this template ↗</a>
+            <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/RUN-FLOW.md">Run flow ↗</a>
+            <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/CONTRIBUTING.md">Contribute ↗</a>
+            <a class="btn" href="https://github.com/QuantumMytheme">The org ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
