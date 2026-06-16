@@ -1,0 +1,14 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "aiaccel4",
+  "task": "architecture",
+  "_attack": "Overfit topology: a linear path 0-1-2-3 tuned to the VISIBLE disjoint pairs [[0,1],[2,3]] (routing cost 2 — passes structure/reproducibility/performance), but the HELD-OUT cross-pairs [[0,3],[1,2]] cost 4 on a path (dist(0,3)=3) — over the held-out budget of 2. REJECTED at the anti-overfit gate (exit 6); a ring would have generalized.",
+  "architecture": {
+    "n_qubits": 4,
+    "coupling_map": [[0, 1], [1, 2], [2, 3]]
+  },
+  "constraints": { "n_qubits": 4, "max_degree": 2, "connected": true },
+  "claim": { "routing_cost": 2 },
+  "classical_baseline": { "routing_cost": 4 },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

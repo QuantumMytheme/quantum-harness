@@ -1,0 +1,13 @@
+{
+  "_comment": "HELD-OUT ANTI-OVERFIT demonstrator. The BRIEF tells the model to prepare the Bell state |Phi+> whose Z-basis populations are 50/50 between |00> and |11>. The judge auto-grades the VISIBLE spec (the population distribution) at the reproducibility/performance gates, and HOLDS OUT the X-parity <X0X1> = +1 — which the model is never told. A circuit that matches the populations with the wrong relative phase (|Phi->) passes structure/reproducibility/performance but is REJECTED at the anti-overfit gate (exit 6). This is the held-out reference that gives exit 6 teeth.",
+  "problem_id": "bell_pops2",
+  "task": "populations",
+  "n_qubits": 2,
+  "population_target": [0.5, 0.0, 0.0, 0.5],
+  "tolerance": { "populations_reproduce": 1e-06, "populations_match": 1e-03 },
+  "holdout": {
+    "observables": [
+      { "pauli": "XX", "expected": 1.0, "tolerance": 0.02, "note": "|Phi+> has <X0X1> = +1; a wrong-phase |Phi-> that matches the populations has -1" }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "quantum-harness",
+  "version": "0.1.0",
+  "private": false,
+  "description": "A verifiable-run prompt harness for quantum chip / quantum-processing architecture design — point a capable autonomous model at a quantum design problem and get a machine-checkable verdict. Derived from the ClaudeFarms fieldops-harness pattern.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "autonomy-scorecard": "bin/autonomy-scorecard.mjs",
+    "prepare-transcript": "bin/prepare-transcript.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "judge": "python3 bench/quantum-judge/judge_verify.py",
+    "judge:test": "python3 bench/quantum-judge/test_judge.py"
+  }
+}

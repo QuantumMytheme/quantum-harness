@@ -1,0 +1,21 @@
+# node
+node_modules/
+npm-debug.log*
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# scratch
+_tmp_*.json
+*.prepared.jsonl
+.DS_Store
+
+# --- CONTEST MODE ---------------------------------------------------------
+# In the public TEMPLATE, bench/quantum-judge/references/ is committed so the
+# judge is exercisable and contributors can see the schema. For a LIVE contest
+# you hold ground truth OUT of the model's repo and point the judge at it with
+# QH_REFERENCES_DIR=/secret/refs. To do that, uncomment:
+# bench/quantum-judge/references/

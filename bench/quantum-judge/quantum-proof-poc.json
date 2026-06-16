@@ -1,0 +1,30 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "ghz3",
+  "task": "state_prep",
+  "circuit": {
+    "n_qubits": 3,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "cx", "q": [1, 2] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 3,
+    "max_depth": 6,
+    "native_gates": ["h", "cx", "rz", "rx", "ry", "sx", "x", "cz"],
+    "coupling_map": [[0, 1], [1, 2]],
+    "max_two_qubit_gates": 4
+  },
+  "claim": { "fidelity": 1.0 },
+  "classical_baseline": {
+    "fidelity": 0.5,
+    "note": "the best unentangled product state overlaps the GHZ state with fidelity 0.5"
+  },
+  "meta": {
+    "author": "worked-example",
+    "framework": "json-ir",
+    "note": "linear-chain GHZ preparation respecting the [0-1-2] coupling map"
+  }
+}

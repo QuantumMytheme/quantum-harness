@@ -1,0 +1,28 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "bell_pops2",
+  "task": "populations",
+  "circuit": {
+    "n_qubits": 2,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 2,
+    "max_depth": 4,
+    "native_gates": ["h", "cx", "z", "x", "rz", "ry", "rx", "cz"],
+    "coupling_map": [[0, 1]],
+    "max_two_qubit_gates": 2
+  },
+  "claim": { "populations": [0.5, 0.0, 0.0, 0.5] },
+  "classical_baseline": {
+    "note": "matching the 50/50 Z-basis populations is the visible spec; the hidden X-parity check is what distinguishes the true Bell state |Phi+> from a wrong-phase impostor"
+  },
+  "meta": {
+    "author": "worked-example",
+    "framework": "json-ir",
+    "note": "the genuine Bell state: h q0; cx 0,1 -> |Phi+>, populations 50/50 AND <X0X1>=+1"
+  }
+}

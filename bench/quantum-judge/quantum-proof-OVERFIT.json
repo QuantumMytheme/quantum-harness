@@ -1,0 +1,24 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "bell_pops2",
+  "task": "populations",
+  "_attack": "Overfit fraud: this circuit appends Z to qubit 1, producing |Phi-> = (|00> - |11>)/sqrt2. Its Z-basis populations are STILL 50/50 — so it matches the visible spec AND its honest populations claim — but its X-parity <X0X1> = -1, not the held-out +1. It overfit the part it could see. The judge passes structure (exit 3), reproducibility (exit 4) and performance (exit 5), then REJECTS at the ANTI-OVERFIT gate (exit 6) on the held-out observable the model was never told.",
+  "circuit": {
+    "n_qubits": 2,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "z", "q": [1] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 2,
+    "max_depth": 4,
+    "native_gates": ["h", "cx", "z", "x", "rz", "ry", "rx", "cz"],
+    "coupling_map": [[0, 1]],
+    "max_two_qubit_gates": 2
+  },
+  "claim": { "populations": [0.5, 0.0, 0.0, 0.5] },
+  "classical_baseline": { "note": "matches the visible populations spec but with the wrong relative phase" },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

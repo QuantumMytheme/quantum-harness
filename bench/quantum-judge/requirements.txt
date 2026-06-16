@@ -1,0 +1,13 @@
+# The verifiable bench depends on numpy ONLY — by design. A judge that re-derives
+# ground truth must run identically on a laptop, in CI, and on a Raspberry Pi,
+# with no network and no heavyweight quantum SDK at the verification root.
+numpy>=1.24
+
+# --- OPTIONAL AUTHORING ADAPTERS ------------------------------------------
+# These are NOT required to run the judge. Contributors who prefer to design
+# circuits in a framework can install one and export to the proof-bundle IR
+# (see bench/quantum-judge/README.md). The judge still re-verifies with numpy.
+# qiskit>=1.0
+# qiskit-aer>=0.14
+# pennylane>=0.35
+# cirq>=1.3

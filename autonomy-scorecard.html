@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Autonomy Scorecard</title>
+<style>
+  body{font:15px/1.5 "Hanken Grotesk",Inter,"Liberation Sans",Arial,sans-serif;color:#3D3833;background:#FFFFFF;max-width:1000px;margin:40px auto;padding:0 20px}
+  h1{font-size:24px;font-weight:700;color:#101010;letter-spacing:-0.01em;margin:0 0 4px}
+  .sub{color:#938A81;font-size:13px;margin:0 0 8px}
+  .hero{display:flex;gap:56px;flex-wrap:wrap;margin:30px 0 38px}
+  .stat .n{font-size:48px;font-weight:700;line-height:1;color:#101010;font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+  .stat.key .n{color:#D87254}
+  .stat .l{color:#938A81;font-size:12px;line-height:1.4;margin-top:7px;max-width:210px}
+  h2{font-size:14px;font-weight:700;color:#101010;margin:36px 0 6px}
+  h2 .cap{font-weight:400;font-size:12.5px;color:#938A81}
+  .fig{color:#938A81;font-size:12px;margin:2px 0 0}
+  table{border-collapse:collapse;width:100%;margin:4px 0 10px}
+  th{text-align:left;font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#938A81;padding:4px 16px 5px 0}
+  td{text-align:left;padding:8px 16px 8px 0;vertical-align:top}
+  tr+tr td{border-top:1px solid #ECE7E2}
+  .ts{white-space:nowrap;color:#938A81;font-size:12px;font-variant-numeric:tabular-nums}
+  .msg{color:#101010;word-break:break-word}
+  .cls{white-space:nowrap;font-size:12.5px;color:#3D3833}
+  .tool{font-size:12.5px;color:#3D3833;white-space:nowrap}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+  .ov{font-size:11px;font-style:italic;color:#938A81}
+  .empty{color:#938A81;font-style:italic}
+  .scale{color:#938A81;font-size:13px;margin:10px 0 4px}
+  .scale b{font-weight:600;color:#3D3833;font-variant-numeric:tabular-nums}
+  footer{margin-top:40px;border-top:1px solid #ECE7E2;padding-top:12px;color:#938A81;font-size:12px;line-height:1.55}
+  code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#6B645D}
+</style></head><body>
+<h1>Autonomy Scorecard</h1>
+<p class="sub">Autonomy scorecard — computed from the raw session transcript, not narrated. Generated 2026-06-16 04:58:24Z.</p>
+
+<div class="hero">
+  <div class="stat key"><div class="n">0</div><div class="l">human messages after kickoff (0 steering + 0 approval-gate)</div></div>
+  <div class="stat"><div class="n">0m</div><div class="l">longest unattended stretch</div></div>
+  <div class="stat"><div class="n">0</div><div class="l">failures self-caught &amp; fixed before any human pointed them out</div></div>
+  <div class="stat"><div class="n">0</div><div class="l">agents orchestrated (0 subagents, 0 workflows)</div></div>
+</div>
+
+<h2>Timeline</h2>
+<svg width="960" height="84"></svg>
+<p class="fig">Gray bars: model/tool events per interval (height proportional to count). Terracotta ticks: human touchpoints — classified in the table below. Solid triangle: kickoff.</p>
+
+<div class="scale"><b>0</b> tokens (<b>0</b> output) · <b>0</b> API calls · <b>0</b> tool calls · <b>0m</b> wall-clock</div>
+
+<h2>Every human intervention, verbatim <span class="cap">— approval-gate is the product's HITL design working, not steering</span></h2>
+<table><tr><th>when</th><th>class</th><th>message</th></tr>
+<tr><td colspan="3" class="empty">none — zero human messages after kickoff</td></tr>
+</table>
+
+<h2>Self-caught failures <span class="cap">— error tool-results the model detected and acted on before the next human message</span></h2>
+<table><tr><th>error at</th><th>what broke</th><th>model acted at</th></tr>
+<tr><td colspan="3" class="empty">none detected</td></tr>
+</table>
+
+<h2>Verifier activity <span class="cap">— sub-agents / workflows spawned to grade, verify, or adversarially check the work</span></h2>
+<table><tr><th>when</th><th>tool</th><th>what</th></tr>
+<tr><td colspan="3" class="empty">none detected</td></tr>
+</table>
+
+<footer>Methodology: parsed from Claude Code transcript JSONL (uuid-deduped; API usage deduped by requestId keeping max output_tokens; meta/sidechain/auto-continuation entries excluded). Approval-gate messages are HITL design working, counted separately from steering. An error episode still unresolved when the transcript ends is NOT counted as self-caught. Regenerate: <code>node bin/autonomy-scorecard.mjs &lt;transcript.jsonl…&gt;</code></footer>
+</body></html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuantumMytheme · quantum-harness — verifiable quantum design</title>
+<meta name="description" content="An interactive preprint-style showcase of the quantum-harness verifiable-run bench: a four-gate judge, a Bloch sphere, a coupling-map topology, and a QML decision boundary — hermetic and reproducible." />
+<link rel="stylesheet" href="style.css" />
+<script>/* set theme before paint to avoid flash */(function(){try{var q=new URLSearchParams(location.search).get('theme');var t=q||localStorage.getItem('qh-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+</head>
+<body>
+
+<!-- ===================== TITLE BLOCK ===================== -->
+<header class="hero">
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="brandbar">
+      <div class="logo"><b>QuantumMytheme</b> · quantum-harness</div>
+      <div class="right">
+        <nav>
+          <a href="#judge">Judge</a>
+          <a href="#state">State</a>
+          <a href="#topology">Topology</a>
+          <a href="#qml">QML</a>
+        </nav>
+        <button id="themeToggle" class="themebtn" aria-label="Switch colour theme">
+          <span class="dotmark" aria-hidden="true"></span><span id="themeLabel">Luminous mode</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="preprint">Preprint · verifiable-run harness</p>
+    <h1>Quantum design, <span class="ket">machine-checked.</span></h1>
+    <p class="subtitle">A prompt harness that grades a model's quantum design with a hermetic, deterministic judge.</p>
+
+    <div class="abstract">
+      <span class="lbl">Abstract</span>
+      <p>We point a capable model at a hard quantum design problem and grade its answer with a hermetic,
+        deterministic judge — four gates, no human in the scoring loop, every claim reproducible on a laptop
+        (numpy only, no QPU). A submission is re-derived from scratch and rejected if it violates its constraints,
+        fabricates a result, underperforms, or overfits a held-out check. The figures below run the real bench
+        math in your browser and are interactive.</p>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><b>4</b><span>active gates</span></div>
+      <div class="metric"><b>5</b><span>task types</span></div>
+      <div class="metric ok"><b>26/26</b><span>judge suite</span></div>
+      <div class="metric ok"><b>82/82</b><span>measurement</span></div>
+      <div class="metric"><b>numpy</b><span>only · offline</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== 1 · JUDGE ===================== -->
+<section id="judge">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">The judge</p>
+      <h2>Four gates, first failure wins</h2>
+      <p class="lead">Every submission passes through four gates in order; the first it fails sets the exit code and
+        the verdict. Choose a submission and run it.</p>
+    </div>
+
+    <div class="controls">
+      <select id="bundleSel" class="btn" aria-label="Choose a submission"></select>
+      <button id="runBtn" class="btn primary">Run the judge ▸</button>
+      <span class="chip">re-simulated, not trusted</span>
+    </div>
+
+    <div class="pipeline">
+      <div class="gate"><div class="gnum">GATE 01</div><div class="gexit">exit 3</div><div class="gname">Structure</div><div class="gdetail">—</div><div class="pip"></div></div>
+      <div class="gate"><div class="gnum">GATE 02</div><div class="gexit">exit 4</div><div class="gname">Reproducibility</div><div class="gdetail">—</div><div class="pip"></div></div>
+      <div class="gate"><div class="gnum">GATE 03</div><div class="gexit">exit 5</div><div class="gname">Performance</div><div class="gdetail">—</div><div class="pip"></div></div>
+      <div class="gate"><div class="gnum">GATE 04</div><div class="gexit">exit 6</div><div class="gname">Anti-overfit</div><div class="gdetail">—</div><div class="pip"></div></div>
+    </div>
+
+    <div class="verdict-row">
+      <span id="verdict" class="verdict">ready</span>
+      <span class="note">The anti-overfit gate fires only when a problem holds out a check the model never saw — an observable, a workload, or a test set.</span>
+    </div>
+    <p class="figcap"><b>Figure 1.</b> A proof bundle is re-derived from scratch and passed through the four gates; the first failure decides the exit code.</p>
+  </div>
+</section>
+
+<!-- ===================== 2 · STATE ===================== -->
+<section id="state">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">State preparation</p>
+      <h2>Entanglement leaves the surface</h2>
+      <p class="lead">Stepping the GHZ circuit. The sphere shows qubit 0; the bars show the full state, with colour
+        encoding the complex phase of each amplitude. When the entangling gate fires, qubit 0's vector retreats from
+        the surface to the centre — the signature of a maximally entangled state.</p>
+    </div>
+
+    <div class="split">
+      <div class="panel" style="padding:14px"><canvas id="bloch" class="stage"></canvas></div>
+      <div class="aside">
+        <div class="controls" style="margin:0">
+          <button id="blochPrev" class="btn">◂ prev</button>
+          <button id="blochNext" class="btn primary">next gate ▸</button>
+          <span class="steps" id="blochSteps" aria-hidden="true"></span>
+        </div>
+        <div class="panel" style="padding:12px"><canvas id="bars" class="stage"></canvas></div>
+        <div class="panel readout" id="blochReadout" style="padding:6px 16px"></div>
+      </div>
+    </div>
+    <p class="figcap"><b>Figure 2.</b> Qubit 0 of the GHZ circuit on the Bloch sphere; the amplitude bars are coloured by phase (hue) and amplitude (brightness).</p>
+  </div>
+</section>
+
+<!-- ===================== 3 · TOPOLOGY ===================== -->
+<section id="topology">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Architecture — topology</p>
+      <h2>A topology that generalizes, or overfits</h2>
+      <p class="lead">Routing a workload of qubit interactions across a coupling map. A ring routes both the visible
+        and the held-out workload within budget; a linear path tuned to the visible pairs exceeds the held-out
+        budget and is rejected at the anti-overfit gate.</p>
+    </div>
+
+    <div class="split">
+      <div class="panel" style="padding:14px"><canvas id="topo" class="stage"></canvas></div>
+      <div class="aside">
+        <div class="controls" style="margin:0">
+          <button class="btn" data-mode="ring" aria-pressed="true">Ring</button>
+          <button class="btn" data-mode="path" aria-pressed="false">Path</button>
+        </div>
+        <div class="controls" style="margin:0">
+          <button class="btn" data-wl="vis" aria-pressed="false">Visible workload</button>
+          <button class="btn" data-wl="held" aria-pressed="true">Held-out workload</button>
+        </div>
+        <div class="panel readout" id="topoReadout" style="padding:6px 16px"></div>
+        <p class="note">Select <b>Path</b> with the <b>held-out workload</b>: the topology that aced the visible pairs now routes [0–3] the long way and exceeds the budget.</p>
+      </div>
+    </div>
+    <p class="figcap"><b>Figure 3.</b> Routing cost is the summed shortest-path distance over the required interactions; the held-out workload is the anti-overfit gate.</p>
+  </div>
+</section>
+
+<!-- ===================== 4 · QML ===================== -->
+<section id="qml">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Quantum machine learning</p>
+      <h2>The overfit, in one parameter</h2>
+      <p class="lead">A quantum feature map Ry(scale·x) labels points by the sign of ⟨X⟩ = sin(scale·x). Filled
+        dots are training data; ringed dots are the held-out test set. Raise the frequency: the curve still threads
+        every training point, but the test points are misclassified — what the held-out gate catches.</p>
+    </div>
+
+    <div class="split">
+      <div class="panel" style="padding:14px"><canvas id="clf" class="stage"></canvas></div>
+      <div class="aside">
+        <div class="controls" style="margin:0"><span class="chip" id="scaleTag">scale = 1.0</span></div>
+        <label class="note" for="scale">Feature-map frequency — drag from generalize to overfit</label>
+        <input id="scale" type="range" min="0.3" max="8" step="0.1" value="1" />
+        <div class="panel readout" id="clfReadout" style="padding:6px 16px"></div>
+      </div>
+    </div>
+    <p class="figcap"><b>Figure 4.</b> Decision curve of the feature map; held-out test accuracy below threshold triggers the anti-overfit gate (exit 6).</p>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="legend">
+      <span class="wheel" aria-hidden="true"></span>
+      <small>hue = phase&nbsp;·&nbsp;brightness = amplitude<br>(luminous mode)</small>
+    </div>
+    <div style="text-align:right">
+      <div class="mono" style="color:var(--ink-2)">QuantumMytheme / quantum-harness</div>
+      <div class="mono" style="margin-top:6px"><span class="tag">MIT</span> <span class="tag">numpy-only judge</span> <span class="tag">offline</span></div>
+      <div class="mono" style="margin-top:9px;color:var(--faint)">Phase 2 of the platform — the bench, made visible · <span id="year">2026</span></div>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

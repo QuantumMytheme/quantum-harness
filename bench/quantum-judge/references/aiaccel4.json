@@ -1,0 +1,9 @@
+{
+  "_comment": "ARCHITECTURE (topology) anti-overfit demonstrator. The BRIEF tells the model the VISIBLE workload (the two-qubit interaction pairs an AI primitive needs) and asks for a 4-qubit hardware coupling map under a degree<=2 connectivity budget. The judge HOLDS OUT a second workload. A ring topology routes both cheaply (generalizes); a linear-path topology overfit to the visible disjoint pairs blows the held-out cross-pair budget and is REJECTED at exit 6.",
+  "problem_id": "aiaccel4",
+  "task": "architecture",
+  "n_qubits": 4,
+  "workload": [[0, 1], [2, 3]],
+  "thresholds": { "routing_cost_max": 2 },
+  "holdout": { "workload": [[0, 3], [1, 2]], "routing_cost_max": 2 }
+}

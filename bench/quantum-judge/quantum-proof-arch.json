@@ -1,0 +1,20 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "aiaccel4",
+  "task": "architecture",
+  "architecture": {
+    "n_qubits": 4,
+    "coupling_map": [[0, 1], [1, 2], [2, 3], [3, 0]]
+  },
+  "constraints": { "n_qubits": 4, "max_degree": 2, "connected": true },
+  "claim": { "routing_cost": 2 },
+  "classical_baseline": {
+    "routing_cost": 4,
+    "note": "a linear chain costs more to route this workload than the ring"
+  },
+  "meta": {
+    "author": "worked-example",
+    "framework": "json-ir",
+    "note": "ring topology: routes the visible pairs AND the held-out cross-pairs at distance 1"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "HIDDEN GROUND TRUTH held host-side by the judge — the analog of fieldops' signing key that never enters the sandbox. The BRIEF tells the model the target CONCEPTUALLY ('the 3-qubit GHZ state'); this exact amplitude vector + thresholds are what judge_verify.py grades against and are NOT given to the model during a live run. For a contest, hold this directory out of the model's repo and point the judge at it via QH_REFERENCES_DIR. It is committed here so the public template's judge is exercisable in CI.",
+  "problem_id": "ghz3",
+  "task": "state_prep",
+  "n_qubits": 3,
+  "target_statevector": [
+    [0.7071067811865476, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.7071067811865476, 0.0]
+  ],
+  "thresholds": { "fidelity": 0.99 },
+  "tolerance": { "fidelity_reproduce": 1e-06 }
+}

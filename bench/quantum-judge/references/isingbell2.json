@@ -1,0 +1,13 @@
+{
+  "_comment": "HIDDEN GROUND TRUTH for the VQE worked example. The BRIEF states the Hamiltonian abstractly; the judge holds these terms AND the exact ground-state energy (from offline diagonalization) and recomputes <psi|H|psi> from the model's circuit. The model cannot fabricate the energy.",
+  "problem_id": "isingbell2",
+  "task": "vqe",
+  "n_qubits": 2,
+  "hamiltonian_terms": [
+    { "coeff": -1.0, "pauli": "XX" },
+    { "coeff": -1.0, "pauli": "ZZ" }
+  ],
+  "ground_state_energy": -2.0,
+  "thresholds": { "energy_gap": 0.05 },
+  "tolerance": { "energy_reproduce": 1e-06 }
+}

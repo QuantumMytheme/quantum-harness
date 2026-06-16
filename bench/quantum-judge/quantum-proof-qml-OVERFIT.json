@@ -1,0 +1,16 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "qml_sign1",
+  "task": "classify",
+  "_attack": "Overfit feature map: a HIGH-frequency encoding Ry(7x). <X> = sin(7x) happens to classify all four training points correctly (train accuracy 1.0 — passes structure/reproducibility/performance), but sin(7x) oscillates, so the held-out test points x=+/-0.5 land on the wrong side (test accuracy 0.0). REJECTED at the anti-overfit gate (exit 6) — the textbook overfit.",
+  "feature_map": {
+    "n_qubits": 1,
+    "ops": [
+      { "gate": "ry", "q": [0], "feature": 0, "scale": 7.0 }
+    ]
+  },
+  "readout": { "pauli": "X", "bias": 0.0 },
+  "claim": { "train_accuracy": 1.0 },
+  "classical_baseline": { "note": "fits the training points by overfitting their exact locations" },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

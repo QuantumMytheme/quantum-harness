@@ -1,0 +1,25 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "isingbell2",
+  "task": "vqe",
+  "circuit": {
+    "n_qubits": 2,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 2,
+    "max_depth": 4,
+    "native_gates": ["h", "cx", "rz", "rx", "ry", "cz", "x"],
+    "coupling_map": [[0, 1]],
+    "max_two_qubit_gates": 2
+  },
+  "claim": { "energy": -2.0 },
+  "classical_baseline": {
+    "energy": -1.0,
+    "note": "best unentangled product state reaches energy -1; the entangled Bell state reaches the true ground -2"
+  },
+  "meta": { "author": "worked-example", "framework": "json-ir" }
+}

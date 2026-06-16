@@ -1,0 +1,20 @@
+{
+  "_comment": "QML CLASSIFIER anti-overfit demonstrator. The BRIEF gives the model the TRAINING set (visible) and asks for a quantum feature map that classifies it. The judge HOLDS OUT a test set placed in the gap between training points. A genuine low-frequency feature map Ry(x) generalizes; a high-frequency Ry(7x) nails the training points but oscillates and misclassifies the held-out test — the textbook overfit, caught at exit 6.",
+  "problem_id": "qml_sign1",
+  "task": "classify",
+  "n_features": 1,
+  "train": [
+    { "x": [-2.0], "y": 0 },
+    { "x": [-1.0], "y": 0 },
+    { "x": [1.0], "y": 1 },
+    { "x": [2.0], "y": 1 }
+  ],
+  "thresholds": { "train_accuracy_min": 1.0 },
+  "holdout": {
+    "test": [
+      { "x": [-0.5], "y": 0 },
+      { "x": [0.5], "y": 1 }
+    ],
+    "test_accuracy_min": 0.99
+  }
+}

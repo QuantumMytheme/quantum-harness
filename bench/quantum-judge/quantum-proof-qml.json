@@ -1,0 +1,21 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "qml_sign1",
+  "task": "classify",
+  "feature_map": {
+    "n_qubits": 1,
+    "ops": [
+      { "gate": "ry", "q": [0], "feature": 0, "scale": 1.0 }
+    ]
+  },
+  "readout": { "pauli": "X", "bias": 0.0 },
+  "claim": { "train_accuracy": 1.0 },
+  "classical_baseline": {
+    "note": "a low-frequency feature map Ry(x) separates the data by the sign of x and generalizes"
+  },
+  "meta": {
+    "author": "worked-example",
+    "framework": "json-ir",
+    "note": "<X> = sin(x); the decision boundary is x=0, which generalizes to the held-out test"
+  }
+}

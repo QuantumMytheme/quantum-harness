@@ -1,0 +1,23 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "ghz3",
+  "task": "state_prep",
+  "_attack": "Fabricated-result fraud: this circuit omits the second CX, so it prepares (|00>+|11>)/√2 ⊗ |0> = (|000>+|110>)/√2, whose fidelity with GHZ is only 0.25 — but the bundle CLAIMS fidelity 1.0. judge_verify.py must recompute 0.25, see it disagree with the claim, and REJECT (exit 4, reproducibility). This is the canonical 'the model lied about its result' forgery the bench exists to catch.",
+  "circuit": {
+    "n_qubits": 3,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 3,
+    "max_depth": 6,
+    "native_gates": ["h", "cx", "rz", "rx", "ry", "sx", "x", "cz"],
+    "coupling_map": [[0, 1], [1, 2]],
+    "max_two_qubit_gates": 4
+  },
+  "claim": { "fidelity": 1.0 },
+  "classical_baseline": { "fidelity": 0.5 },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}
