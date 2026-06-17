@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Education · QuantumMytheme — from machine learning to your own quantum-harness run</title>
-<meta name="description" content="An interactive curriculum: from hand-written rules to machine learning, transformers, the classical compute stack, and simulating a quantum computer — ending where you fork the harness and run your own model against the judge." />
+<title>Education · QuantumMytheme — from a bit and a qubit up to LLMs, real quantum hardware, and your own run</title>
+<meta name="description" content="An interactive curriculum climbing two ladders at once: the classical one from a single bit through logic, chips, machine learning, transformers and state-space models; and the quantum one from a single qubit through entanglement, algorithms, error correction and real hardware — ending where you prove a design in simulation and run it for real." />
 <link rel="canonical" href="https://quantummytheme.com/education" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="QuantumMytheme" />
 <meta property="og:url" content="https://quantummytheme.com/education" />
-<meta property="og:title" content="Education — from machine learning to your own quantum-harness run" />
-<meta property="og:description" content="Twelve interactive slices: rules → learning → transformers → the silicon stack → simulating a quantum computer → forking the harness and running your own model." />
+<meta property="og:title" content="Education — from a bit and a qubit to your own quantum run" />
+<meta property="og:description" content="Two interactive ladders: classical (bit → logic → chips → ML → transformers → SSMs) and quantum (qubit → entanglement → algorithms → error correction → real hardware), closing on prove-in-sim then run-for-real." />
 <meta property="og:image" content="https://quantummytheme.com/og.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://quantummytheme.com/og.png" />
@@ -23,10 +23,19 @@
   .controls { margin-bottom: 12px; }
   .controls:empty { display: none; }
   canvas.edu-stage { display: block; width: 100%; height: 340px; border-radius: 4px; background: var(--stage-bg); }
-  .contents { font-family: var(--mono); font-size: 12.5px; columns: 2; column-gap: 40px; max-width: 760px; margin-top: 24px; }
+  .contents { font-family: var(--mono); font-size: 12.5px; columns: 2; column-gap: 40px; max-width: 820px; margin-top: 24px; }
   .contents a { display: block; padding: 4px 0; color: var(--faint); text-decoration: none; break-inside: avoid; }
   .contents a:hover { color: var(--ink); }
   .contents a b { color: var(--accent); font-weight: 400; margin-right: 8px; }
+  .contents .ph { display: block; break-inside: avoid; margin: 12px 0 2px; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); }
+  .contents .ph:first-child { margin-top: 0; }
+  .partsep { border-top: 1px solid var(--rule); }
+  .partsep .wrap { padding-top: clamp(34px, 4vw, 56px); padding-bottom: 2px; }
+  .partsep .pl { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+  .partsep h3 { font-family: var(--serif); font-weight: 700; font-size: clamp(20px, 2.4vw, 26px); margin-top: 6px; color: var(--ink); letter-spacing: -0.01em; }
+  .partsep p { font-size: 14.5px; color: var(--faint); margin-top: 6px; max-width: var(--measure); }
+  .partsep + section { border-top: none; }
+  html[data-theme="dark"] .partsep h3 { font-family: var(--mono); font-weight: 600; }
   .cta h2::before { content: none; }
   .cta ol { margin: 16px 0 0 20px; max-width: var(--measure); }
   .cta li { margin: 9px 0; color: var(--ink-2); }
@@ -58,33 +67,86 @@
       </div>
     </div>
 
-    <p class="preprint">Curriculum · learn by watching it run</p>
-    <h1>From machine learning to your <span class="ket">own quantum run.</span></h1>
-    <p class="subtitle">The arc from hand-written rules to a quantum coprocessor, told one idea at a time — each with a small thing you can poke.</p>
+    <p class="preprint">Curriculum · from the smallest unit, up</p>
+    <h1>From a bit and a qubit to your <span class="ket">own quantum run.</span></h1>
+    <p class="subtitle">Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Each rung is a small thing you can poke.</p>
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Twelve slices, in order. How machines stopped following coded rules and started learning from data; how that scaled into neural networks and transformers; how the classical silicon stack actually runs it; and where quantum processors fit alongside. It ends where you take over — forking the template, pointing your own model at a brief, and watching a judge anyone can re-run decide whether your result joins the board. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Twenty slices in four parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today, then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
-      <a href="#m-rules-to-learning"><b>01</b>From rules to learning</a>
-      <a href="#m-machine-learning"><b>02</b>Learning a boundary</a>
-      <a href="#m-big-data"><b>03</b>Scale changes everything</a>
-      <a href="#m-neural-nets"><b>04</b>Networks that learn features</a>
-      <a href="#m-transformers"><b>05</b>Attention</a>
-      <a href="#m-slm-llm"><b>06</b>Small and large models</a>
-      <a href="#m-pretrain-posttrain"><b>07</b>Pretraining, then post-training</a>
-      <a href="#m-inference-zoo"><b>08</b>The modern inference zoo</a>
-      <a href="#m-classical-stack"><b>09</b>How silicon runs all this</a>
-      <a href="#m-quantum-sim"><b>10</b>Simulating a quantum computer</a>
-      <a href="#m-hybrid-quantum"><b>11</b>Hybrid classical–quantum</a>
-      <a href="#m-your-run"><b>12</b>Your turn: fork and run</a>
+      <span class="ph">Part 0 · how we got here</span>
+      <a href="#m-history"><b>00</b>Inventions &amp; moments</a>
+      <span class="ph">Part I · classical — bit → intelligence</span>
+      <a href="#m-bit"><b>01</b>What is a bit?</a>
+      <a href="#m-rules-to-learning"><b>02</b>From rules to learning</a>
+      <a href="#m-machine-learning"><b>03</b>Learning a boundary</a>
+      <a href="#m-big-data"><b>04</b>Scale changes everything</a>
+      <a href="#m-neural-nets"><b>05</b>Networks that learn features</a>
+      <a href="#m-transformers"><b>06</b>Attention</a>
+      <a href="#m-architectures"><b>07</b>Beyond attention: SSMs &amp; hybrids</a>
+      <a href="#m-slm-llm"><b>08</b>Small and large models</a>
+      <a href="#m-pretrain-posttrain"><b>09</b>Pretraining, then post-training</a>
+      <a href="#m-inference-zoo"><b>10</b>The modern inference zoo</a>
+      <a href="#m-classical-stack"><b>11</b>How silicon runs all this</a>
+      <span class="ph">Part II · quantum — qubit → hardware</span>
+      <a href="#m-qubit"><b>12</b>What is a qubit?</a>
+      <a href="#m-entanglement"><b>13</b>Two qubits, and the 2ⁿ explosion</a>
+      <a href="#m-quantum-algorithms"><b>14</b>What quantum is good for</a>
+      <a href="#m-noise-qec"><b>15</b>Noise, NISQ &amp; error correction</a>
+      <a href="#m-hardware-zoo"><b>16</b>The quantum hardware zoo</a>
+      <a href="#m-hybrid-quantum"><b>17</b>Hybrid classical–quantum</a>
+      <span class="ph">Part III · scale &amp; your run</span>
+      <a href="#m-qubit-explorer"><b>18</b>Theoretical vs real qubit counts</a>
+      <a href="#m-your-run"><b>19</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
 
+<!-- ===================== PART 0 ===================== -->
+<section id="m-history" data-rail="History">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">How we got here</p>
+      <h2>Inventions and turning points</h2>
+      <p class="takeaway"><b>Takeaway.</b> Two long arcs — one classical, one quantum — and you are about to climb both.</p>
+    </div>
+    <p>The machine in front of you is the sediment of a handful of ideas, each impractical until it wasn't. Boolean logic became algebra; Shannon named the bit; the transistor gave the bit a body; the integrated circuit packed millions of them onto a fingernail; and a single 2017 paper's attention mechanism became the backbone of today's language models. Quantum computing runs a second, younger arc that starts with Feynman's 1981 observation: simulating quantum physics on a classical computer seems to cost exponentially more than the physics itself — so perhaps a computer built from quantum parts would not. The two arcs are still converging. This page climbs both, from the smallest unit to a run you can launch yourself.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="history" aria-label="A two-lane timeline of computing and quantum-computing milestones; hovering a node reveals its year and significance"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 0.</b> Two lanes — classical above the line, quantum below. Hover any milestone for the detail; left idle, it walks through them in order.</p>
+  </div>
+</section>
+
+<!-- ===================== PART I divider ===================== -->
+<div class="partsep"><div class="wrap">
+  <p class="pl">Part I · Classical</p>
+  <h3>From a switch to intelligence</h3>
+  <p>Start at the smallest unit — one switch — and climb: logic, arithmetic, the chip, then the leap from coded rules to systems that learn, scale into neural networks and transformers, branch into state-space models, and finally the silicon that runs all of it.</p>
+</div></div>
+
 <!-- ============================= 1 ============================= -->
+<section id="m-bit">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Classical · the unit</p>
+      <h2>What is a bit?</h2>
+      <p class="takeaway"><b>Takeaway.</b> Everything a classical computer does is built from one thing — a switch that is on or off.</p>
+    </div>
+    <p>A bit is the smallest unit of information: a single yes/no, 0 or 1. Physically it is a switch, and in a modern chip that switch is a transistor — a gate that either blocks current or lets it through, with no moving parts. One switch is not much; the power comes from wiring them together. A few transistors make a logic gate (AND, OR, XOR); gates combine into an adder that does arithmetic; adders and memory cells become a processor; and billions of transistors on a chip become everything else. There is no other magic underneath — a computer is an enormous, fast arrangement of switches. Hold onto this picture, because a qubit will break it in a precise and useful way.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="bit" aria-label="Two input bits feed a logic gate to an output lamp; a truth table highlights the current row, with a half-adder mode"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 1.</b> Toggle inputs <em>A</em> and <em>B</em>, pick a gate, and watch the output and the highlighted truth-table row. Switch to <em>half-adder</em> mode to see two gates add two bits — XOR for the sum, AND for the carry.</p>
+  </div>
+</section>
+
+<!-- ============================= 2 ============================= -->
 <section id="m-rules-to-learning">
   <div class="wrap">
     <div class="sec-head">
@@ -97,11 +159,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="rules-to-learning" aria-label="A staircase of hand-written rules dissolves into data points and a learned boundary settles in"></canvas>
     </div>
-    <p class="figcap"><b>Fig 1.</b> A hand-coded staircase rule (with the points it gets wrong) melts into the data; a learned boundary then settles and corrects them. Click to flip between the two.</p>
+    <p class="figcap"><b>Fig 2.</b> A hand-coded staircase rule (with the points it gets wrong) melts into the data; a learned boundary then settles and corrects them. Click to flip between the two.</p>
   </div>
 </section>
 
-<!-- ============================= 2 ============================= -->
+<!-- ============================= 3 ============================= -->
 <section id="m-machine-learning">
   <div class="wrap">
     <div class="sec-head">
@@ -114,11 +176,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="machine-learning" aria-label="A flexibility slider morphs a decision boundary from smooth to jagged while train and test accuracy update"></canvas>
     </div>
-    <p class="figcap"><b>Fig 2.</b> Drag <em>flexibility</em>: training accuracy keeps climbing while test accuracy peaks and then falls once the boundary starts chasing noise. Toggle the held-out test points to watch them.</p>
+    <p class="figcap"><b>Fig 3.</b> Drag <em>flexibility</em>: training accuracy keeps climbing while test accuracy peaks and then falls once the boundary starts chasing noise. Toggle the held-out test points to watch them.</p>
   </div>
 </section>
 
-<!-- ============================= 3 ============================= -->
+<!-- ============================= 4 ============================= -->
 <section id="m-big-data">
   <div class="wrap">
     <div class="sec-head">
@@ -131,11 +193,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="big-data" aria-label="A sparse dataset grows dense, hand-tuned feature knobs fade as a learned-feature lattice forms, and an error curve falls"></canvas>
     </div>
-    <p class="figcap"><b>Fig 3.</b> As data and compute grow, hand-tuned feature knobs fade and a learned-representation lattice lights up; the error curve falls and flattens. Hover to scrub the scale.</p>
+    <p class="figcap"><b>Fig 4.</b> As data and compute grow, hand-tuned feature knobs fade and a learned-representation lattice lights up; the error curve falls and flattens. Hover to scrub the scale.</p>
   </div>
 </section>
 
-<!-- ============================= 4 ============================= -->
+<!-- ============================= 5 ============================= -->
 <section id="m-neural-nets">
   <div class="wrap">
     <div class="sec-head">
@@ -148,11 +210,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="neural-nets" aria-label="A small multilayer network with activations lighting up left to right on a forward pass"></canvas>
     </div>
-    <p class="figcap"><b>Fig 4.</b> A real forward pass: activations sweep left to right, edge weight and sign (color) shaping each neuron. Click to replay; train a step to watch the loss tick down.</p>
+    <p class="figcap"><b>Fig 5.</b> A real forward pass: activations sweep left to right, edge weight and sign (color) shaping each neuron. Click to replay; train a step to watch the loss tick down.</p>
   </div>
 </section>
 
-<!-- ============================= 5 ============================= -->
+<!-- ============================= 6 ============================= -->
 <section id="m-transformers">
   <div class="wrap">
     <div class="sec-head">
@@ -165,11 +227,28 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="transformers" aria-label="An attention grid over seven tokens; hovering a token fans out weighted bonds to the tokens it attends to"></canvas>
     </div>
-    <p class="figcap"><b>Fig 5.</b> Hover a token to light its attention row and fan weighted bonds to what it attends to (illustrative weights, not a trained model). Toggle <em>parallel</em> vs <em>recurrent</em> to see one-hop attention against step-by-step reading.</p>
+    <p class="figcap"><b>Fig 6.</b> Hover a token to light its attention row and fan weighted bonds to what it attends to (illustrative weights, not a trained model). Toggle <em>parallel</em> vs <em>recurrent</em> to see one-hop attention against step-by-step reading.</p>
   </div>
 </section>
 
-<!-- ============================= 6 ============================= -->
+<!-- ============================= 7 ============================= -->
+<section id="m-architectures">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Architectures</p>
+      <h2>Beyond attention: SSMs and hybrids</h2>
+      <p class="takeaway"><b>Takeaway.</b> Attention is powerful but its cost grows with the square of the context; state-space models trade some flexibility for near-linear scaling, and the frontier increasingly mixes both.</p>
+    </div>
+    <p>The transformer's all-pairs attention is its strength and its bill: comparing every token to every other is O(n²) in the length of the context, so doubling the context roughly quadruples the work and the memory. Two ideas push back. A recurrent network reads one token at a time through a single hidden state — linear work, but inherently sequential and hard to train at length. State-space models (the S4 line, then Mamba) revive that recurrent idea with a twist: a <em>selective</em> state that can be computed as a parallel scan in near-linear time and run with constant memory per step at inference, which makes very long contexts cheap. Neither wins outright, so frontier systems increasingly hybridize — a few attention layers for precise recall, many state-space layers for cheap long-range mixing. A separate trick, mixture-of-experts, grows a model's parameter count while routing each token to only a few of its many expert sub-networks, buying capacity without paying full compute on every token. Architecture, in the end, is a choice about what to spend — the same lesson the silicon section makes concrete.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="architectures" aria-label="A plot of compute cost versus sequence length comparing attention's quadratic curve to a linear state-space curve, with a lineage of architectures below"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 7.</b> Drag <em>context</em> and watch attention's n² curve pull away from the linear-time curve. Pick an architecture along the ribbon — RNN, Transformer, SSM/Mamba, Hybrid, Mixture-of-Experts — to read its key idea and scaling.</p>
+  </div>
+</section>
+
+<!-- ============================= 8 ============================= -->
 <section id="m-slm-llm">
   <div class="wrap">
     <div class="sec-head">
@@ -182,11 +261,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="slm-llm" aria-label="A size slider raises capability with diminishing returns while cost and latency rise; a right-sized band marks the smallest model that clears the task bar"></canvas>
     </div>
-    <p class="figcap"><b>Fig 6.</b> Drag model size: capability climbs with diminishing returns while cost and latency keep rising. The shaded band marks the smallest size that clears the task bar — the right-sized choice.</p>
+    <p class="figcap"><b>Fig 8.</b> Drag model size: capability climbs with diminishing returns while cost and latency keep rising. The shaded band marks the smallest size that clears the task bar — the right-sized choice.</p>
   </div>
 </section>
 
-<!-- ============================= 7 ============================= -->
+<!-- ============================= 9 ============================= -->
 <section id="m-pretrain-posttrain">
   <div class="wrap">
     <div class="sec-head">
@@ -199,11 +278,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="pretrain-posttrain" aria-label="A broad corpus funnels into a base model, then a refinement stage snaps the diffuse output into ordered lanes"></canvas>
     </div>
-    <p class="figcap"><b>Fig 7.</b> A broad corpus funnels into a base model; past the divider, post-training snaps the diffuse output into ordered behavior. Hover the left half to hold the base model alone.</p>
+    <p class="figcap"><b>Fig 9.</b> A broad corpus funnels into a base model; past the divider, post-training snaps the diffuse output into ordered behavior. Hover the left half to hold the base model alone.</p>
   </div>
 </section>
 
-<!-- ============================= 8 ============================= -->
+<!-- ============================= 10 ============================= -->
 <section id="m-inference-zoo">
   <div class="wrap">
     <div class="sec-head">
@@ -216,11 +295,11 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="inference-zoo" aria-label="A general-vs-purposeful by cloud-vs-on-device map of model archetypes with a central tools/agents node tying them together"></canvas>
     </div>
-    <p class="figcap"><b>Fig 8.</b> Model archetypes placed on two axes — cloud vs on-device, general vs purposeful — with a central tools/retrieval/agents node. Hover any node for its trade-off; hover the center to see a hybrid span the grid.</p>
+    <p class="figcap"><b>Fig 10.</b> Model archetypes placed on two axes — cloud vs on-device, general vs purposeful — with a central tools/retrieval/agents node. Hover any node for its trade-off; hover the center to see a hybrid span the grid.</p>
   </div>
 </section>
 
-<!-- ============================= 9 ============================= -->
+<!-- ============================= 11 ============================= -->
 <section id="m-classical-stack">
   <div class="wrap">
     <div class="sec-head">
@@ -233,28 +312,103 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="classical-stack" aria-label="A work token flows through source, IR, ISA and accelerator stages while a systolic matmul grid pulses diagonally"></canvas>
     </div>
-    <p class="figcap"><b>Fig 9.</b> Source → IR → ISA → accelerator, then the work dissolves into a systolic matmul array sweeping diagonally. Hover a stage to freeze and label it; hover the grid to light a row × column dot product.</p>
+    <p class="figcap"><b>Fig 11.</b> Source → IR → ISA → accelerator, then the work dissolves into a systolic matmul array sweeping diagonally. Hover a stage to freeze and label it; hover the grid to light a row × column dot product.</p>
   </div>
 </section>
 
-<!-- ============================= 10 ============================= -->
-<section id="m-quantum-sim">
+<!-- ===================== PART II divider ===================== -->
+<div class="partsep"><div class="wrap">
+  <p class="pl">Part II · Quantum</p>
+  <h3>The same ladder, built from qubits</h3>
+  <p>Now climb the second arc. Start at one qubit — superposition and measurement — then two and the 2ⁿ explosion of entanglement, what the speedups really are and aren't, why noise forces error correction, and the very different machines being built to run it all.</p>
+</div></div>
+
+<!-- ============================= 12 ============================= -->
+<section id="m-qubit">
   <div class="wrap">
     <div class="sec-head">
-      <p class="eyebrow">Statevector · sim.py</p>
-      <h2>Simulating a quantum computer</h2>
-      <p class="takeaway"><b>Takeaway.</b> Gates transform a vector of complex amplitudes without changing its length; measurement turns squared magnitudes into outcome probabilities.</p>
+      <p class="eyebrow">Quantum · the unit</p>
+      <h2>What is a qubit?</h2>
+      <p class="takeaway"><b>Takeaway.</b> A qubit is not a bit that is "both 0 and 1" — it is a direction, set by amplitudes whose squared magnitudes are the odds you read 0 or 1.</p>
     </div>
-    <p>A quantum computer with <em>n</em> qubits is described by 2<sup>n</sup> complex numbers called amplitudes — the statevector. Each gate is a unitary matrix that this repo's <code>sim.py</code> multiplies into the statevector, transforming it without changing its overall length; an H gate, for instance, turns the starting state |0⟩ into amplitudes of 1/√2 for both |0⟩ and |1⟩. Each amplitude has a phase (an angle), and the differences in phase between amplitudes carry real physical information and can interfere — an overall phase shared by every amplitude is not observable. You never observe amplitudes directly either: measuring collapses the state to one basis outcome, and the probability of each outcome is that amplitude's squared magnitude. Because the squared magnitudes always sum to 1, the same <code>simulate()</code> that grades a submitted circuit is just bookkeeping these amplitudes gate by gate.</p>
+    <p>A classical bit is a switch. A qubit is described instead by two complex numbers — amplitudes for |0⟩ and |1⟩ — that you can picture as an arrow on a sphere, the Bloch sphere. Before measurement the qubit is in a superposition: the arrow can point anywhere on the surface, not just at the poles. A gate is a rotation of that arrow, and this repo's <code>sim.py</code> applies each gate as a matrix multiply that never changes the arrow's length. Two things make qubits more than fuzzy bits. First, amplitudes carry a phase — an angle — and differences in phase let possibilities interfere, reinforcing some outcomes and cancelling others; an overall phase shared by every amplitude is invisible. Second, you never see the amplitudes: measuring collapses the qubit to 0 or 1 with probability equal to that amplitude's squared magnitude, and the rest is gone. Superposition is less "both at once" than "a definite direction you can only sample."</p>
     <div class="panel edu-fig">
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="quantum-sim" aria-label="Phase-colored amplitude bars and a Bloch sphere update as you apply single-qubit gates"></canvas>
     </div>
-    <p class="figcap"><b>Fig 10.</b> Apply gates (H, X, Z, S, T, Rx) to one qubit: the phase-colored amplitude bars and the Bloch arrow update, the arrow staying on the sphere's surface — length preserved. Probabilities below always sum to one.</p>
+    <p class="figcap"><b>Fig 12.</b> Apply gates (H, X, Z, S, T, Rx) to one qubit: the phase-colored amplitude bars and the Bloch arrow update, the arrow staying on the sphere's surface — length preserved. The probabilities below always sum to one.</p>
   </div>
 </section>
 
-<!-- ============================= 11 ============================= -->
+<!-- ============================= 13 ============================= -->
+<section id="m-entanglement">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Quantum · scale</p>
+      <h2>Two qubits, and the 2ⁿ explosion</h2>
+      <p class="takeaway"><b>Takeaway.</b> Each added qubit doubles the description — n qubits need 2ⁿ amplitudes — and entanglement is the part of that state no single qubit holds on its own.</p>
+    </div>
+    <p>One qubit took two amplitudes. Two qubits take four — one each for |00⟩, |01⟩, |10⟩, |11⟩ — and every qubit you add doubles the count, so n qubits are described by 2ⁿ complex numbers. That statevector is exactly what <code>sim.py</code> tracks, gate by gate, and it is the reason simulating a quantum computer gets expensive so fast. The doubling buys something a classical register cannot express: entanglement. Start two qubits in |00⟩, put the first into superposition with an H, and let it flip the second only when it is 1 — a CNOT — and you reach (|00⟩+|11⟩)/√2, a state where neither qubit has a definite value yet their values are perfectly correlated. Measure one and the other's outcome is instantly fixed, every time. The whole holds information the parts do not, and that surplus is where a quantum computer's advantage hides.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="entanglement" aria-label="Four phase-colored amplitude bars for a two-qubit state, an entanglement readout, and a measurement that correlates the two qubits"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 13.</b> Apply H₀, CNOT and the rest to a two-qubit state — or hit <em>Bell pair</em> — and watch the four amplitudes and the entanglement readout. <em>Measure</em> collapses the state; when it is entangled, the two qubits' outcomes always agree.</p>
+  </div>
+</section>
+
+<!-- ============================= 14 ============================= -->
+<section id="m-quantum-algorithms">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Quantum · algorithms</p>
+      <h2>What quantum computers are actually good for</h2>
+      <p class="takeaway"><b>Takeaway.</b> Quantum speedups come from interference — arranging amplitudes so wrong answers cancel and the right one grows — and they exist for some problems, not all.</p>
+    </div>
+    <p>A quantum computer is not a faster classical computer; it is a machine that computes with amplitudes, and its essential trick is interference. Grover's search makes this visible: start every candidate answer with equal amplitude, then repeat two steps — mark the right answer by flipping its sign, then reflect every amplitude about the average — and the marked answer's amplitude grows while the rest shrink, reaching near-certainty in about √N steps instead of the ~N a classical scan needs. That is a quadratic speedup, and it is provably the best any quantum search can do. Other algorithms reach further: Shor's factors large numbers far faster than any known classical method, which is why it threatens RSA; and the original motivation, Feynman's, is that simulating quantum chemistry and materials seems to cost a classical computer exponentially more than it costs nature. But many problems get no quantum speedup at all — it will not, for instance, simply make today's AI models run faster — and today's noisy machines mostly run heuristic variational loops with no proof of advantage. Being honest about which is which is the whole game.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="quantum-algorithms" aria-label="Grover's algorithm shown as amplitude bars: an oracle flips the marked answer's sign and a diffusion step amplifies it over several iterations"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 14.</b> Grover's amplitude amplification. <em>Step</em> applies the oracle then the reflection; the marked bar climbs toward certainty in ~√N steps. Click any bar to mark it, and keep stepping past the optimum to watch the amplitude overshoot and fall.</p>
+  </div>
+</section>
+
+<!-- ============================= 15 ============================= -->
+<section id="m-noise-qec">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Quantum · reliability</p>
+      <h2>Noise, NISQ, and error correction</h2>
+      <p class="takeaway"><b>Takeaway.</b> Real qubits are noisy; the fix is to spread one protected "logical" qubit across many physical ones — which only helps once the hardware is below an error threshold.</p>
+    </div>
+    <p>Today's qubits decohere — they lose their state in a tiny fraction of a second, and every gate adds a fraction of a percent of error. Machines at this stage are called NISQ: noisy, intermediate-scale, and too error-prone to run long algorithms directly. The way out is error correction: encode one logical qubit across many physical qubits so the most likely errors can be detected and undone without measuring — and destroying — the data itself. The leading scheme, the surface code, lays qubits on a grid of code distance d and uses roughly 2d²−1 physical qubits per logical qubit. It comes with a threshold: below about a 1% physical error rate, making the code larger drives the logical error rate down exponentially; above it, a larger code only makes things worse. Crossing below that threshold — shown convincingly for the first time in 2024 — is the hinge the whole field turns on, because past it reliability becomes a matter of spending more qubits. The cost is steep, which is exactly what the explorer ahead lets you feel.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="noise-qec" aria-label="A surface-code grid of physical qubits forming one logical qubit, with sparse errors, beside a plot of logical error rate versus code distance"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 15.</b> Left: a distance-d surface-code patch — one logical qubit built from ≈2d²−1 physical ones, with errors flickering at your chosen rate. Right: raise d and the logical error falls fast <em>below</em> the ~1% threshold, but rises if you push the physical error above it.</p>
+  </div>
+</section>
+
+<!-- ============================= 16 ============================= -->
+<section id="m-hardware-zoo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Quantum · hardware</p>
+      <h2>The quantum hardware zoo</h2>
+      <p class="takeaway"><b>Takeaway.</b> There is no single kind of quantum computer — superconducting, trapped-ion, neutral-atom, and photonic machines trade qubit count, fidelity, speed, and temperature against one another.</p>
+    </div>
+    <p>Just as inference runs on many kinds of silicon, qubits are built in several physical ways, each with a different bargain. Superconducting circuits — IBM's and Google's path — switch fast and pack the most qubits onto a chip, but live near absolute zero and lose coherence quickly. Trapped ions — Quantinuum, IonQ — hold the highest gate fidelities and let any qubit talk to any other, at the cost of slower gates and fewer qubits. Neutral atoms held in tweezers of light — Atom Computing, QuEra — reach into the hundreds and thousands and can be rearranged between shots, with fidelities climbing fast. Photonic machines — PsiQuantum, Xanadu — encode qubits in light, promising room-temperature operation and natural networking but still early in maturity. None has won outright; the harness is deliberately hardware-agnostic, because a design proven in simulation should be runnable on whichever machine you can reach.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="hardware-zoo" aria-label="A map of quantum hardware modalities placed by qubit count and gate fidelity, each with example machines and a trade-off note"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 16.</b> The four leading modalities placed by qubit count and gate fidelity. Hover any node for its trade-off and example machines (as of 2026); left idle, it cycles through them.</p>
+  </div>
+</section>
+
+<!-- ============================= 17 ============================= -->
 <section id="m-hybrid-quantum">
   <div class="wrap">
     <div class="sec-head">
@@ -262,29 +416,53 @@
       <h2>Hybrid classical–quantum</h2>
       <p class="takeaway"><b>Takeaway.</b> A classical optimizer steers; the quantum device only measures energy — the loop repeats until the energy stops dropping.</p>
     </div>
-    <p>Today's quantum devices are noisy and shallow, so the useful near-term algorithms keep most of the work classical and hand the device only one job: prepare a parameterized circuit and estimate the average energy of its state against a chosen Hamiltonian. A classical optimizer on an ordinary computer reads that energy, nudges the circuit's parameters, and asks the device to measure again — the variational loop behind VQE (ground-state energies) and QAOA (combinatorial optimization). The variational principle guarantees the true expectation value of the energy can never fall below the actual ground state, so the optimizer always has a floor to descend toward; shallow circuits accumulate less hardware error, keeping the estimate close to that true value, and the cost is averaged over many repeated measurements to beat down sampling noise. This repo's <code>isingbell2</code> task is exactly this loop made checkable: a classical optimizer drives a small circuit to the ground state of H = −X0X1 − Z0Z1, whose energy is −2.</p>
+    <p>Today's quantum devices are noisy and shallow, so the useful near-term algorithms keep most of the work classical and hand the device only one job: prepare a parameterized circuit and estimate the average energy of its state against a chosen Hamiltonian. A classical optimizer on an ordinary computer reads that energy, nudges the circuit's parameters, and asks the device to measure again — the variational loop behind VQE (ground-state energies) and QAOA (combinatorial optimization). The variational principle guarantees the true expectation value of the energy can never fall below the actual ground state, so the optimizer always has a floor to descend toward; shallow circuits accumulate less hardware error, keeping the estimate close to that true value, and the cost is averaged over many repeated measurements to beat down sampling noise. This repo's <code>isingbell2</code> task is exactly this loop made checkable: a classical optimizer drives a small circuit to the ground state of H = −X₀X₁ − Z₀Z₁, whose energy is −2.</p>
     <div class="panel edu-fig">
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="hybrid-quantum" aria-label="A variational loop between a classical optimizer and a quantum circuit, with an energy trace descending toward the ground state"></canvas>
     </div>
-    <p class="figcap"><b>Fig 11.</b> The variational loop: optimizer → parameters → circuit → energy → back. Run or step it and watch the energy descend toward the ground-state floor. Raise the step size to make it overshoot; add noise to see what averaging removes.</p>
+    <p class="figcap"><b>Fig 17.</b> The variational loop: optimizer → parameters → circuit → energy → back. Run or step it and watch the energy descend toward the ground-state floor. Raise the step size to make it overshoot; add noise to see what averaging removes.</p>
   </div>
 </section>
 
-<!-- ============================= 12 ============================= -->
+<!-- ===================== PART III divider ===================== -->
+<div class="partsep"><div class="wrap">
+  <p class="pl">Part III · Scale &amp; your run</p>
+  <h3>From the chips that exist to a run you launch</h3>
+  <p>Put numbers on it. Feel how fast simulation costs explode, see where today's real chips sit against both the simulation wall and the error-correction tax — then close the loop the whole project is built around: prove a design in simulation with a classical model, then run it for real.</p>
+</div></div>
+
+<!-- ============================= 18 ============================= -->
+<section id="m-qubit-explorer">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Scale · experiment</p>
+      <h2>Theoretical limits vs the chips that exist</h2>
+      <p class="takeaway"><b>Takeaway.</b> Each qubit doubles the classical memory needed to simulate it, so today's chips are already impossible to simulate exactly — yet still far too small, once you pay the error-correction tax, to threaten hard problems.</p>
+    </div>
+    <p>Move the slider and watch two walls at once. To simulate n qubits exactly, a classical computer must store 2ⁿ amplitudes; at 16 bytes each that is 16&nbsp;MB at 20 qubits, 16&nbsp;GB at 30, and about 16&nbsp;petabytes at 50 — comparable to the entire memory of the largest supercomputers, which is why exact classical simulation stalls around fifty qubits, and only clever lossy tricks reach a little further. Real chips crossed that line years ago: the machines plotted here carry from dozens to over a thousand physical qubits, all comfortably beyond what we can simulate exactly. But the second panel shows the other wall. Once you pay the surface-code tax — very roughly a thousand physical qubits for one reliable logical qubit — today's hardware yields only a handful of protected qubits, while factoring RSA-2048 needs thousands of logical qubits, and so on the order of a million physical ones by recent estimates (and roughly twenty times that by estimates from only a few years ago). Today's machines sit in the gap: too big to simulate exactly, too small to error-correct into advantage. That gap is the whole reason this project exists.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="qubit-explorer" aria-label="Two stacked panels sharing a qubit-count slider: top shows classical simulation memory hitting a wall near fifty qubits with real chips plotted beyond it; bottom shows error-corrected logical qubits versus milestones"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 18.</b> One slider, two panels. <b>A</b>: the memory to simulate n qubits, with the classical-simulation wall and the real chips that sit past it. <b>B</b>: how many error-corrected logical qubits those physical qubits buy, against milestones from today's chips to breaking RSA-2048.</p>
+  </div>
+</section>
+
+<!-- ============================= 19 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
       <p class="eyebrow">Your turn</p>
-      <h2>Your turn: fork and run</h2>
-      <p class="takeaway"><b>Takeaway.</b> Fork it, aim your own model at a brief, and a judge anyone can re-run decides whether your result joins the board.</p>
+      <h2>Your turn: prove, then run</h2>
+      <p class="takeaway"><b>Takeaway.</b> Prove a design in simulation with a classical model, let a judge anyone can re-run check it, then take the verified design to real silicon.</p>
     </div>
-    <p>Here is the whole loop, end to end: fork the template, point a capable model at a brief, and let it design a circuit. Today that model is Opus 4.8 or Fable 5; the harness is built to also accept the next-generation model you may hear called Mythos the day it ships. A hermetic judge then re-simulates that circuit from scratch with numpy alone — no network, nothing it cannot recompute — and runs four gates in order: STRUCTURE, REPRODUCIBILITY, PERFORMANCE, ANTI-OVERFIT. It stops at the first gate that fails. Pass all four and the run auto-registers as a new row on the public board, where anyone can re-run the same judge and get the same verdict. It is cheap, open, and reproducible by construction: the judge never trusts the model's word, only the math it can repeat.</p>
+    <p>Here is the whole loop, end to end. Fork the template, point a capable classical model at a brief, and let it design a circuit — today that model is Opus 4.8 or Fable 5, and the harness is built to also accept the next-generation model you may hear called Mythos the day it ships. A hermetic judge then re-simulates that circuit from scratch with numpy alone — no network, nothing it cannot recompute — and runs four gates in order: STRUCTURE, REPRODUCIBILITY, PERFORMANCE, ANTI-OVERFIT, stopping at the first that fails. Pass all four and the run auto-registers as a new row on the public board, where anyone can re-run the same judge and get the same verdict. Then comes the bridge the explorer set up: because the design is small and proven, you can take it to a real quantum chip, run it, and attach a hardware report whose headline number is recomputed from the raw measurement counts — so the simulation keeps the canonical score while the hardware run is an honestly-labeled overlay. Theoretical proof first, with the world's best classical models; real silicon second. It is cheap, open, and reproducible by construction.</p>
     <div class="panel edu-fig">
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 12.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 19.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 
@@ -295,12 +473,13 @@
       <p class="eyebrow">Run your own</p>
       <h2>Close the loop yourself</h2>
     </div>
-    <p>The same flow the last figure animates — four steps, all open:</p>
+    <p>The same flow the last figure animates — prove in simulation, then run for real, all open:</p>
     <ol>
       <li><b>Fork the template.</b> Use the GitHub “Use this template” button, or run <code>bin/new-run.sh</code> to scaffold a fresh run.</li>
-      <li><b>Run the KICKOFF prompt with your model.</b> Point a capable model — Opus 4.8, Fable 5, or the next-generation Mythos — at the brief and let it design a circuit.</li>
+      <li><b>Run the KICKOFF prompt with your model.</b> Point a capable classical model — Opus 4.8, Fable 5, or the next-generation Mythos — at the brief and let it design a circuit.</li>
       <li><b>The four-gate judge grades it.</b> A hermetic judge re-simulates the circuit from scratch with numpy alone — no network — running STRUCTURE, REPRODUCIBILITY, PERFORMANCE, and ANTI-OVERFIT in order, stopping at the first failure.</li>
       <li><b>Register on the scoreboard.</b> Pass all four and your run auto-registers as a new row anyone can re-verify.</li>
+      <li><b>Run it on real hardware (optional).</b> Take the verified design to a QPU and attach a hardware report whose metric is recomputed from the raw counts — the sim keeps the score, the chip run is a labeled overlay. See <a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/HARDWARE.md">HARDWARE.md</a>.</li>
     </ol>
     <p style="margin-top:18px"><a href="index.html#run">See the run flow on the overview →</a> &nbsp;·&nbsp; <a href="https://github.com/QuantumMytheme/quantum-harness">The template repo →</a></p>
   </div>
@@ -309,7 +488,7 @@
 <footer class="foot">
   <div class="wrap">
     <span class="mono">QuantumMytheme · quantum-harness</span>
-    <span class="mono">verifiable quantum design · numpy-only · no QPU</span>
+    <span class="mono">verifiable quantum design · numpy-only · no QPU required</span>
   </div>
 </footer>
 

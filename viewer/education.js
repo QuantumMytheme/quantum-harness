@@ -3650,6 +3650,794 @@
 };
   // ==========================================================================
 
+  // ===================== EXPANSION: foundations + quantum track =====================
+
+// ───── bit (what is a bit? — logic-gate playground) ─────
+  EDU["bit"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(0); });
+
+  var A = 1, B = 0;                       // input bits
+  var gate = 'AND';                       // AND OR XOR NAND
+  var adder = false;                      // half-adder mode
+  var GATES = { AND: function (a, b) { return a && b ? 1 : 0; },
+                OR:  function (a, b) { return a || b ? 1 : 0; },
+                XOR: function (a, b) { return a !== b ? 1 : 0; },
+                NAND:function (a, b) { return a && b ? 0 : 1; } };
+
+  // ---- controls ----
+  function mk(label, fn, cls) {
+    var b = document.createElement('button'); b.type = 'button';
+    b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = label;
+    b.addEventListener('click', function () { fn(b); if (K.reduced) draw(0); });
+    controls.appendChild(b); return b;
+  }
+  var aBtn = mk('A = 1', function () { A ^= 1; aBtn.textContent = 'A = ' + A; });
+  var bBtn = mk('B = 0', function () { B ^= 1; bBtn.textContent = 'B = ' + B; });
+  var sep = document.createElement('span'); sep.className = 'chip'; sep.textContent = 'gate'; controls.appendChild(sep);
+  var gbtns = {};
+  ['AND', 'OR', 'XOR', 'NAND'].forEach(function (g) {
+    gbtns[g] = mk(g, function () { gate = g; syncGates(); });
+  });
+  var adderBtn = mk('Half-adder', function () { adder = !adder; syncGates(); }, '');
+  function syncGates() {
+    for (var g in gbtns) gbtns[g].setAttribute('aria-pressed', (!adder && gate === g) ? 'true' : 'false');
+    for (var g2 in gbtns) gbtns[g2].disabled = adder;
+    adderBtn.setAttribute('aria-pressed', adder ? 'true' : 'false');
+  }
+  syncGates();
+
+  function rr(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2); ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  // draw a wire with optional travelling pulses when it carries a 1
+  function wire(x0, y0, x1, y1, on, t, col, faint) {
+    ctx.strokeStyle = on ? col : faint; ctx.globalAlpha = on ? 1 : 0.55;
+    ctx.lineWidth = on ? 2.4 : 1.4; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.globalAlpha = 1;
+    if (on && !K.reduced) {
+      var len = Math.hypot(x1 - x0, y1 - y0);
+      for (var k = 0; k < 3; k++) {
+        var ph = ((t * 0.09 + k / 3) % 1);
+        var px = x0 + (x1 - x0) * ph, py = y0 + (y1 - y0) * ph;
+        ctx.fillStyle = col; ctx.globalAlpha = 0.9 * Math.sin(Math.PI * ph);
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      }
+    }
+  }
+  // a switch glyph that glows when its bit is 1
+  function node(x, y, label, val, col, faint, ink) {
+    var on = !!val, r = 19;
+    ctx.fillStyle = on ? col : K.v('--panel'); ctx.globalAlpha = on ? 0.16 : 1;
+    rr(x - r, y - r, r * 2, r * 2, 7); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = on ? col : faint; ctx.lineWidth = on ? 2 : 1.3; rr(x - r, y - r, r * 2, r * 2, 7); ctx.stroke();
+    ctx.fillStyle = on ? col : faint; ctx.font = '600 17px ' + (K.v('--mono') || 'monospace');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(val | 0), x, y + 1);
+    ctx.fillStyle = ink; ctx.font = '12px ' + (K.v('--mono') || 'monospace'); ctx.textBaseline = 'alphabetic';
+    ctx.fillText(label, x, y - r - 7);
+  }
+  // a gate body (trapezoidal) with name + output
+  function gateBody(cx, cy, name, col, faint, ink) {
+    var gw = 78, gh = 64;
+    ctx.fillStyle = K.v('--panel'); rr(cx - gw / 2, cy - gh / 2, gw, gh, 9); ctx.fill();
+    ctx.strokeStyle = faint; ctx.lineWidth = 1.4; rr(cx - gw / 2, cy - gh / 2, gw, gh, 9); ctx.stroke();
+    ctx.fillStyle = ink; ctx.font = '600 14px ' + (K.v('--mono') || 'monospace');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(name, cx, cy);
+  }
+
+  function draw(t) {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'),
+        col = K.v('--accent'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('a bit is one switch · 0 or 1 · wire switches together and you get logic', 14, 22);
+
+    var ax = W * 0.13, ay = H * 0.34, by = H * 0.60;
+    var gx = W * 0.49, gy = (ay + by) / 2;
+    var ox = W * 0.84;
+
+    if (!adder) {
+      var out = GATES[gate](A, B);
+      wire(ax + 19, ay, gx - 40, gy - 14, A === 1, t, col, faint);
+      wire(ax + 19, by, gx - 40, gy + 14, B === 1, t, col, faint);
+      wire(gx + 40, gy, ox - 22, gy, out === 1, t, col, faint);
+      gateBody(gx, gy, gate, col, faint, ink);
+      node(ax, ay, 'A', A, col, faint, ink2);
+      node(ax, by, 'B', B, col, faint, ink2);
+      node(ox, gy, gate === 'NAND' ? 'OUT' : 'OUT', out, col, faint, ink2);
+      // truth table
+      truth(faint, ink, ink2, col, mono, [['OUT', GATES[gate]]]);
+      ctx.fillStyle = ink2; ctx.font = '12px ' + mono; ctx.textAlign = 'center';
+      ctx.fillText(A + ' ' + gate + ' ' + B + ' = ' + out, gx, H - 96);
+    } else {
+      var sum = GATES.XOR(A, B), carry = GATES.AND(A, B);
+      var gxorY = gy - 30, gandY = gy + 30;
+      wire(ax + 19, ay, gx - 40, gxorY - 12, A === 1, t, col, faint);
+      wire(ax + 19, by, gx - 40, gxorY + 12, B === 1, t, col, faint);
+      wire(ax + 19, ay, gx - 40, gandY - 12, A === 1, t, col, faint);
+      wire(ax + 19, by, gx - 40, gandY + 12, B === 1, t, col, faint);
+      wire(gx + 40, gxorY, ox - 22, gxorY, sum === 1, t, col, faint);
+      wire(gx + 40, gandY, ox - 22, gandY, carry === 1, t, col, faint);
+      gateBody(gx, gxorY, 'XOR', col, faint, ink);
+      gateBody(gx, gandY, 'AND', col, faint, ink);
+      node(ax, ay, 'A', A, col, faint, ink2);
+      node(ax, by, 'B', B, col, faint, ink2);
+      node(ox, gxorY, 'SUM', sum, col, faint, ink2);
+      node(ox, gandY, 'CARRY', carry, col, faint, ink2);
+      truth(faint, ink, ink2, col, mono, [['SUM', GATES.XOR], ['CARRY', GATES.AND]]);
+      ctx.fillStyle = ink2; ctx.font = '12px ' + mono; ctx.textAlign = 'center';
+      ctx.fillText('half-adder: ' + A + ' + ' + B + ' = ' + (carry * 2 + sum) + '  (carry ' + carry + ', sum ' + sum + ')', gx, H - 96);
+    }
+  }
+
+  // truth table strip across the bottom; current (A,B) row highlighted
+  function truth(faint, ink, ink2, col, mono, cols) {
+    var rows = [[0, 0], [0, 1], [1, 0], [1, 1]];
+    var x0 = 14, y0 = H - 80, cw = 36, rh = 17;
+    ctx.font = '11px ' + mono; ctx.textBaseline = 'middle';
+    var headers = ['A', 'B'].concat(cols.map(function (c) { return c[0]; }));
+    ctx.textAlign = 'center';
+    for (var h = 0; h < headers.length; h++) { ctx.fillStyle = faint; ctx.fillText(headers[h], x0 + cw * (h + 0.5), y0); }
+    for (var r = 0; r < rows.length; r++) {
+      var cur = rows[r][0] === A && rows[r][1] === B, yy = y0 + rh * (r + 1);
+      if (cur) { ctx.fillStyle = col; ctx.globalAlpha = 0.12; ctx.fillRect(x0, yy - rh / 2, cw * headers.length, rh); ctx.globalAlpha = 1; }
+      var vals = [rows[r][0], rows[r][1]].concat(cols.map(function (c) { return c[1](rows[r][0], rows[r][1]); }));
+      for (var v = 0; v < vals.length; v++) {
+        ctx.fillStyle = cur ? (v >= 2 ? col : ink) : ink2;
+        ctx.fillText(String(vals[v]), x0 + cw * (v + 0.5), yy);
+      }
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  if (K.reduced) draw(0); else K.loop(draw);
+};
+
+  // ───── architectures (beyond attention: SSMs & hybrids) ─────
+  EDU["architectures"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(0); });
+
+  // sequence length n in "k tokens": slider 1..256
+  var n = 64, sel = 'attention';
+  var ARCH = {
+    rnn:       { name: 'RNN / LSTM',        cost: 'lin', idea: 'reads one token at a time through a single hidden state', cx: 'O(n) work, but sequential — hard to parallelize' },
+    attention: { name: 'Transformer',       cost: 'quad', idea: 'every token attends to every other, in parallel', cx: 'O(n²) compute & memory in sequence length' },
+    ssm:       { name: 'SSM · Mamba',       cost: 'lin', idea: 'a selective state space scans the sequence in linear time', cx: '~O(n) work, O(1) memory per step at inference' },
+    hybrid:    { name: 'Hybrid',            cost: 'both', idea: 'interleaves a few attention layers with many SSM layers', cx: 'mostly linear, attention only where it pays' },
+    moe:       { name: 'Mixture-of-Experts',cost: 'moe', idea: 'routes each token to a few of many expert sub-networks', cx: 'more parameters, ~same active compute per token' }
+  };
+  var ORDER = ['rnn', 'attention', 'ssm', 'hybrid', 'moe'];
+
+  function mk(label, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label;
+    b.addEventListener('click', function () { fn(); if (K.reduced) draw(0); }); controls.appendChild(b); return b; }
+  var abtn = {};
+  var lbl = document.createElement('span'); lbl.className = 'chip'; lbl.textContent = 'architecture'; controls.appendChild(lbl);
+  ORDER.forEach(function (k) { abtn[k] = mk(ARCH[k].name, function () { sel = k; sync(); }); });
+  var slab = document.createElement('label'); slab.className = 'chip'; slab.style.marginLeft = '8px'; slab.textContent = 'context';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '4'; range.max = '256'; range.step = '1'; range.value = String(n);
+  range.style.marginLeft = '6px'; range.setAttribute('aria-label', 'context length'); slab.appendChild(range); controls.appendChild(slab);
+  range.addEventListener('input', function () { n = parseInt(range.value, 10); if (K.reduced) draw(0); });
+  function sync() { ORDER.forEach(function (k) { abtn[k].setAttribute('aria-pressed', sel === k ? 'true' : 'false'); }); }
+  sync();
+
+  function draw(t) {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule'),
+        col = K.v('--accent'), col2 = K.v('--accent-2'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+
+    // ---- plot: cost vs sequence length ----
+    var px0 = 56, px1 = W - 20, py0 = 26, py1 = H * 0.62;
+    var nmax = 256;
+    function X(nn) { return px0 + (nn / nmax) * (px1 - px0); }
+    var ymax = 1.0;                                   // normalised: attention(nmax)=1
+    function Yq(nn) { return (nn / nmax) * (nn / nmax); }    // n^2 normalised
+    function Yl(nn) { return (nn / nmax); }                  // n normalised
+    function Y(v) { return py1 - v * (py1 - py0); }
+    // axes
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px0, py1); ctx.lineTo(px1, py1); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
+    ctx.save(); ctx.translate(16, (py0 + py1) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center';
+    ctx.fillText('compute / memory', 0, 0); ctx.restore();
+    ctx.textAlign = 'right'; ctx.fillText('sequence length →', px1, py1 + 14);
+
+    var showQ = sel === 'attention' || sel === 'hybrid' || sel === 'moe';
+    var showL = sel === 'rnn' || sel === 'ssm' || sel === 'hybrid';
+    // quadratic curve (attention)
+    function curve(fn, c, alpha, lw) {
+      ctx.strokeStyle = c; ctx.globalAlpha = alpha; ctx.lineWidth = lw; ctx.beginPath();
+      for (var i = 0; i <= 120; i++) { var nn = (i / 120) * nmax; var x = X(nn), y = Y(fn(nn)); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    curve(Yq, col, showQ ? 1 : 0.22, showQ ? 2 : 1.2);
+    curve(Yl, col2, showL ? 1 : 0.22, showL ? 2 : 1.2);
+    // labels on curves
+    ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillStyle = col; ctx.globalAlpha = showQ ? 1 : 0.5; ctx.fillText('attention  ~n²', X(nmax * 0.62) + 4, Y(Yq(nmax * 0.62)) - 4); ctx.globalAlpha = 1;
+    ctx.fillStyle = col2; ctx.globalAlpha = showL ? 1 : 0.5; ctx.fillText('SSM / RNN  ~n', X(nmax) - 90, Y(Yl(nmax)) - 8); ctx.globalAlpha = 1;
+
+    // current-n marker
+    var mq = Y(Yq(n)), ml = Y(Yl(n));
+    ctx.strokeStyle = faint; ctx.globalAlpha = 0.5; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(X(n), py0); ctx.lineTo(X(n), py1); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    if (showQ) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(n), mq, 4.5, 0, Math.PI * 2); ctx.fill(); }
+    if (showL) { ctx.fillStyle = col2; ctx.beginPath(); ctx.arc(X(n), ml, 4.5, 0, Math.PI * 2); ctx.fill(); }
+    // ratio readout
+    var ratio = Yq(n) / Math.max(1e-6, Yl(n));        // = n/nmax ... actually n^2/n = n -> relative
+    var rel = n;                                        // attention does ~n× the work of linear at length n
+    ctx.fillStyle = ink2; ctx.font = '11px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('at length n = ' + n + ' :  attention ≈ ' + n + '× the work of a linear-time model', px0 + 6, py0 + 12);
+
+    // ---- lineage ribbon ----
+    var ry = H * 0.80, rx0 = 40, rx1 = W - 40, gap = (rx1 - rx0) / (ORDER.length - 1);
+    ctx.strokeStyle = rule; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(rx0, ry); ctx.lineTo(rx1 - (ORDER.length > 4 ? gap : 0), ry); ctx.stroke();
+    for (var i = 0; i < ORDER.length; i++) {
+      var k = ORDER[i], x = rx0 + gap * i, on = sel === k;
+      var isMoe = k === 'moe';
+      ctx.fillStyle = on ? col : K.v('--panel'); ctx.globalAlpha = on ? 0.16 : 1;
+      ctx.beginPath(); ctx.arc(x, ry, on ? 9 : 6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = on ? col : faint; ctx.lineWidth = on ? 2 : 1.3; ctx.beginPath(); ctx.arc(x, ry, on ? 9 : 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = on ? ink : faint; ctx.font = (on ? '600 ' : '') + '10.5px ' + mono; ctx.textAlign = 'center';
+      ctx.fillText(ARCH[k].name, x, ry + 22);
+    }
+    // selected blurb
+    var a = ARCH[sel];
+    ctx.fillStyle = ink; ctx.font = '13px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'center';
+    ctx.fillText(a.idea, W / 2, ry - 26);
+    ctx.fillStyle = col; ctx.font = '11px ' + mono;
+    ctx.fillText(a.cx, W / 2, ry - 8);
+  }
+
+  if (K.reduced) draw(0); else K.loop(draw);
+};
+
+  // ───── entanglement (two-qubit statevector + Bell) ─────
+  EDU["entanglement"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) snap(); });
+  var S2 = 1 / Math.sqrt(2);
+  // statevector over |00>,|01>,|10>,|11>; index = 2*b0 + b1 (qubit0 = leftmost)
+  var st = [K.C(1, 0), K.C(0, 0), K.C(0, 0), K.C(0, 0)];
+  var disp = [1, 0, 0, 0];
+  var measured = -1, measFlash = 0;
+
+  function reset() { st = [K.C(1, 0), K.C(0, 0), K.C(0, 0), K.C(0, 0)]; measured = -1; }
+  function H1q(mask) {                                // Hadamard on the qubit selected by mask (2 = q0, 1 = q1)
+    var o = st.slice();
+    for (var i = 0; i < 4; i++) {
+      if (i & mask) continue;
+      var j = i | mask;
+      o[i] = { re: (st[i].re + st[j].re) * S2, im: (st[i].im + st[j].im) * S2 };
+      o[j] = { re: (st[i].re - st[j].re) * S2, im: (st[i].im - st[j].im) * S2 };
+    }
+    st = o; measured = -1;
+  }
+  function X1q(mask) { var o = st.slice(); for (var i = 0; i < 4; i++) o[i ^ mask] = st[i]; st = o; measured = -1; }
+  function Z1q(mask) { for (var i = 0; i < 4; i++) if (i & mask) st[i] = { re: -st[i].re, im: -st[i].im }; measured = -1; }
+  function CNOT() { var t = st[2]; st[2] = st[3]; st[3] = t; measured = -1; }   // control q0(bit2), flip q1: swap 10<->11
+  function bell() { reset(); H1q(2); CNOT(); }
+  function prob(i) { return st[i].re * st[i].re + st[i].im * st[i].im; }
+  // concurrence for a pure 2-qubit state: C = 2|a00*a11 - a01*a10|
+  function concurrence() {
+    var d = { re: st[0].re * st[3].re - st[0].im * st[3].im - (st[1].re * st[2].re - st[1].im * st[2].im),
+              im: st[0].re * st[3].im + st[0].im * st[3].re - (st[1].re * st[2].im + st[1].im * st[2].re) };
+    return 2 * Math.hypot(d.re, d.im);
+  }
+  function measure() {
+    var rnd = Math.random(), acc = 0, pick = 0;
+    for (var i = 0; i < 4; i++) { acc += prob(i); if (rnd <= acc) { pick = i; break; } }
+    for (var j = 0; j < 4; j++) st[j] = (j === pick) ? K.C(1, 0) : K.C(0, 0);
+    measured = pick; measFlash = 1;
+  }
+
+  function mk(label, fn, primary) { var b = document.createElement('button'); b.type = 'button';
+    b.className = primary ? 'btn primary' : 'btn'; b.textContent = label;
+    b.addEventListener('click', function () { fn(); if (K.reduced) snap(); }); controls.appendChild(b); return b; }
+  mk('H₀', function () { H1q(2); }); mk('H₁', function () { H1q(1); });
+  mk('X₀', function () { X1q(2); }); mk('CNOT 0→1', function () { CNOT(); });
+  mk('Bell pair', function () { bell(); }, true);
+  mk('Measure', function () { measure(); });
+  mk('Reset', function () { reset(); });
+
+  function snap() { for (var i = 0; i < 4; i++) disp[i] = prob(i); render(); }
+  function hue(re, im) { return ((Math.atan2(im, re) * 180 / Math.PI) + 360) % 360; }
+  function phaseCol(re, im, al) { var p = re * re + im * im; if (p < 1e-6) return 'hsla(0,0%,60%,' + (al * 0.3) + ')';
+    return 'hsla(' + hue(re, im).toFixed(0) + ',72%,' + (K.dark() ? 62 : 46) + '%,' + al + ')'; }
+
+  function render() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        col = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+
+    // amplitude bars
+    var labels = ['|00⟩', '|01⟩', '|10⟩', '|11⟩'];
+    var padL = 26, barW = Math.min(54, (W * 0.52) / 4), gap = barW * 0.55;
+    var baseY = H - 60, topY = 40, maxH = baseY - topY;
+    ctx.font = '10.5px ' + mono; ctx.textAlign = 'left'; ctx.fillStyle = faint;
+    ctx.fillText('two qubits → four amplitudes  (height = probability, hue = phase)', padL, topY - 16);
+    for (var i = 0; i < 4; i++) {
+      var bx = padL + gap + i * (barW + gap), h = Math.max(2, disp[i] * maxH);
+      ctx.fillStyle = phaseCol(st[i].re, st[i].im, measured === i ? 1 : 0.9);
+      ctx.fillRect(bx, baseY - h, barW, h);
+      ctx.strokeStyle = (measured === i) ? col : rule; ctx.lineWidth = (measured === i) ? 2 : 1;
+      ctx.strokeRect(bx + 0.5, baseY - h + 0.5, barW - 1, h - 1);
+      ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.font = '12px ' + mono; ctx.fillText(labels[i], bx + barW / 2, baseY + 18);
+      ctx.fillStyle = ink2; ctx.font = '10.5px ' + mono; ctx.fillText((disp[i] * 100).toFixed(0) + '%', bx + barW / 2, baseY - h - 6);
+    }
+    ctx.strokeStyle = faint; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(padL, baseY + 0.5); ctx.lineTo(padL + 4 * (barW + gap), baseY + 0.5); ctx.stroke(); ctx.globalAlpha = 1;
+
+    // right column: entanglement readout + correlation
+    var rx = W * 0.74;
+    var C = concurrence();
+    var ent = C > 0.02;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
+    ctx.fillStyle = faint; ctx.fillText('entanglement', rx, topY + 4);
+    ctx.fillStyle = ent ? pass : ink2; ctx.font = '600 15px ' + mono;
+    ctx.fillText(ent ? 'ENTANGLED' : 'separable', rx, topY + 26);
+    // concurrence bar
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.fillText('concurrence  C = ' + C.toFixed(2), rx, topY + 46);
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.strokeRect(rx, topY + 52, 140, 8);
+    ctx.fillStyle = ent ? pass : faint; ctx.fillRect(rx, topY + 52, Math.max(0, Math.min(1, C)) * 140, 8);
+    // correlation note
+    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    var note = ent ? 'measuring one qubit instantly fixes the other' : 'the two qubits are independent';
+    wrap(note, rx, topY + 84, 150, 15);
+    if (measured >= 0) {
+      var b0 = measured >> 1, b1 = measured & 1;
+      ctx.fillStyle = col; ctx.font = '600 12px ' + mono;
+      ctx.fillText('measured:  q0=' + b0 + '  q1=' + b1, rx, topY + 132);
+    }
+  }
+  function wrap(text, x, y, w, lh) {
+    var words = text.split(' '), line = '', yy = y;
+    for (var i = 0; i < words.length; i++) {
+      var test = line + words[i] + ' ';
+      if (ctx.measureText(test).width > w && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; }
+      else line = test;
+    }
+    ctx.fillText(line, x, yy);
+  }
+  function tick() { for (var i = 0; i < 4; i++) disp[i] += (prob(i) - disp[i]) * 0.2; if (measFlash > 0) measFlash *= 0.92; render(); }
+  if (K.reduced) snap(); else K.loop(tick);
+};
+
+  // ───── quantum-algorithms (Grover interference) ─────
+  EDU["quantum-algorithms"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+
+  var N = 16, marked = 5, amp = [], step = 0, running = false, lastStep = 0;
+  function reset() { amp = []; for (var i = 0; i < N; i++) amp.push(1 / Math.sqrt(N)); step = 0; }
+  function optimal() { return Math.max(1, Math.round(Math.PI / 4 * Math.sqrt(N))); }
+  function grover() {
+    amp[marked] = -amp[marked];                                   // oracle
+    var mean = 0; for (var i = 0; i < N; i++) mean += amp[i]; mean /= N;
+    for (var j = 0; j < N; j++) amp[j] = 2 * mean - amp[j];        // diffusion
+    step++;
+  }
+  reset();
+
+  function mk(label, fn, primary) { var b = document.createElement('button'); b.type = 'button';
+    b.className = primary ? 'btn primary' : 'btn'; b.textContent = label;
+    b.addEventListener('click', function () { fn(); if (K.reduced) draw(); }); controls.appendChild(b); return b; }
+  mk('Grover step', function () { grover(); });
+  var runBtn = mk('Run', function () { running = !running; runBtn.textContent = running ? 'Pause' : 'Run'; }, true);
+  mk('Reset', function () { reset(); running = false; runBtn.textContent = 'Run'; });
+  var nsel = document.createElement('label'); nsel.className = 'chip'; nsel.style.marginLeft = '8px'; nsel.textContent = 'N';
+  var sel = document.createElement('select'); sel.className = 'btn';
+  [8, 16, 32, 64].forEach(function (v) { var o = document.createElement('option'); o.value = String(v); o.textContent = String(v); if (v === N) o.selected = true; sel.appendChild(o); });
+  sel.addEventListener('change', function () { N = parseInt(sel.value, 10); marked = Math.min(marked, N - 1); reset(); }); nsel.appendChild(sel); controls.appendChild(nsel);
+
+  canvas.style.cursor = 'pointer';
+  canvas.addEventListener('pointerdown', function (e) {
+    var r = canvas.getBoundingClientRect(), px = e.clientX - r.left;
+    var x0 = 20, x1 = W - 20, bw = (x1 - x0) / N, idx = Math.floor((px - x0) / bw);
+    if (idx >= 0 && idx < N) { marked = idx; reset(); if (K.reduced) draw(); }
+  });
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        col = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+
+    var x0 = 20, x1 = W - 20, bw = (x1 - x0) / N;
+    var midY = H * 0.60, scale = H * 0.34;                 // amplitude 0 axis at midY
+    // mean
+    var mean = 0; for (var i = 0; i < N; i++) mean += amp[i]; mean /= N;
+    // zero axis + mean line
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, midY); ctx.lineTo(x1, midY); ctx.stroke();
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.4; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x0, midY - mean * scale); ctx.lineTo(x1, midY - mean * scale); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    // bars (height = amplitude, sign matters: above = +, below = −)
+    for (var k = 0; k < N; k++) {
+      var bx = x0 + k * bw, h = amp[k] * scale, isM = k === marked;
+      ctx.fillStyle = isM ? col : (amp[k] < 0 ? reject : ink2);
+      ctx.globalAlpha = isM ? 1 : (amp[k] < 0 ? 0.55 : 0.7);
+      ctx.fillRect(bx + bw * 0.16, midY - Math.max(h, 0), bw * 0.68, Math.abs(h) || 1);
+      if (h < 0) ctx.fillRect(bx + bw * 0.16, midY, bw * 0.68, -h);
+      ctx.globalAlpha = 1;
+    }
+    // marked label
+    ctx.fillStyle = col; ctx.font = '10px ' + mono; ctx.textAlign = 'center';
+    ctx.fillText('marked', x0 + marked * bw + bw / 2, H - 10);
+
+    // readout
+    var pM = amp[marked] * amp[marked], opt = optimal();
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
+    ctx.fillStyle = faint; ctx.fillText('amplitude amplification · wrong answers cancel, the marked one grows', x0, 22);
+    ctx.fillStyle = ink; ctx.fillText('step ' + step + ' / ~' + opt + ' optimal', x0, 40);
+    ctx.fillStyle = pM > 0.5 ? pass : ink2;
+    ctx.fillText('P(marked) = ' + (pM * 100).toFixed(1) + '%', x0 + 160, 40);
+    if (step > opt + 1 && pM < 0.5) { ctx.fillStyle = reject; ctx.fillText('overshot — kept iterating past the optimum', x0 + 320, 40); }
+    ctx.fillStyle = faint; ctx.textAlign = 'right';
+    ctx.fillText('classical: ~N/2 checks   ·   Grover: ~√N', x1, 22);
+  }
+
+  function loop() {
+    if (running && !K.reduced) { lastStep++; if (lastStep % 45 === 0) { if (step < optimal() + 4) grover(); else { running = false; runBtn.textContent = 'Run'; } } }
+    draw();
+  }
+  if (K.reduced) draw(); else K.loop(loop);
+};
+
+// ───── noise-qec (physical vs logical qubits) ─────
+  EDU["noise-qec"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(0); });
+
+  var d = 5;                 // code distance (odd)
+  var p = 0.003;             // physical error rate
+  var P_TH = 0.01;           // surface-code threshold ~1%
+  function physical(dd) { return 2 * dd * dd - 1; }                       // surface-code patch
+  function logicalErr(dd, pp) { return 0.03 * Math.pow(pp / P_TH, (dd + 1) / 2); }  // below threshold: shrinks with d
+
+  // deterministic flicker field, reseeded each draw region
+  var seed = 7; function rng() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+
+  function mkSlider(label, min, max, step, val, fmt, onin) {
+    var l = document.createElement('label'); l.className = 'chip'; l.style.marginRight = '10px';
+    var span = document.createElement('span'); span.textContent = label + ' '; l.appendChild(span);
+    var r = document.createElement('input'); r.type = 'range'; r.min = String(min); r.max = String(max); r.step = String(step); r.value = String(val);
+    r.style.marginLeft = '6px'; r.setAttribute('aria-label', label); l.appendChild(r);
+    var out = document.createElement('b'); out.style.marginLeft = '8px'; out.textContent = fmt(val); l.appendChild(out);
+    r.addEventListener('input', function () { onin(parseFloat(r.value)); out.textContent = fmt(parseFloat(r.value)); if (K.reduced) draw(0); });
+    controls.appendChild(l); return r;
+  }
+  mkSlider('code distance d', 3, 11, 2, d, function (v) { return String(v | 0); }, function (v) { d = v | 0; });
+  mkSlider('physical error', 0.001, 0.03, 0.001, p, function (v) { return (v * 100).toFixed(1) + '%'; }, function (v) { p = v; });
+
+  function draw(t) {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        col = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+
+    // ---- left: the surface-code patch (one logical qubit) ----
+    var gx = 30, gy = 44, gw = Math.min(W * 0.42, H - 80);
+    var lat = 2 * d - 1;                                  // lattice side
+    var cell = gw / lat;
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.7; ctx.lineWidth = 1.6;
+    ctx.strokeRect(gx - 6, gy - 6, gw + 12, gw + 12); ctx.globalAlpha = 1;
+    ctx.fillStyle = col; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('1 logical qubit', gx - 6, gy - 12);
+    seed = (d * 131 + Math.round(p * 1000) * 17 + (K.reduced ? 0 : Math.floor(t / 700))) & 0x7fffffff;
+    for (var iy = 0; iy < lat; iy++) for (var ix = 0; ix < lat; ix++) {
+      var isData = (ix % 2 === 0 && iy % 2 === 0);
+      var cxp = gx + (ix + 0.5) * cell, cyp = gy + (iy + 0.5) * cell;
+      var err = isData && rng() < p * 8;                  // amplify for visibility
+      ctx.beginPath(); ctx.arc(cxp, cyp, isData ? cell * 0.20 : cell * 0.12, 0, Math.PI * 2);
+      if (err) { ctx.fillStyle = reject; ctx.fill(); }
+      else { ctx.fillStyle = isData ? faint : rule; ctx.globalAlpha = isData ? 0.8 : 0.45; ctx.fill(); ctx.globalAlpha = 1; }
+    }
+    ctx.fillStyle = ink2; ctx.font = '11px ' + mono; ctx.textAlign = 'center';
+    ctx.fillText('d = ' + d + '  →  ' + physical(d) + ' physical qubits', gx + gw / 2, gy + gw + 26);
+
+    // ---- right: logical-error vs distance plot ----
+    var pxl = W * 0.56, pxr = W - 24, pyt = 50, pyb = H - 60;
+    var below = p < P_TH;
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath();
+    ctx.moveTo(pxl, pyt); ctx.lineTo(pxl, pyb); ctx.lineTo(pxr, pyb); ctx.stroke();
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'center';
+    ctx.fillText('code distance →', (pxl + pxr) / 2, pyb + 16);
+    ctx.save(); ctx.translate(pxl - 30, (pyt + pyb) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('logical error (log)', 0, 0); ctx.restore();
+    // log-y from 1e0 down to 1e-12
+    function Y(le) { var l = Math.max(-12, Math.min(0, Math.log10(Math.max(1e-13, le)))); return pyt + (-l / 12) * (pyb - pyt); }
+    function Xd(dd) { return pxl + ((dd - 3) / (11 - 3)) * (pxr - pxl); }
+    ctx.strokeStyle = below ? pass : reject; ctx.lineWidth = 2; ctx.beginPath();
+    for (var dd = 3; dd <= 11; dd += 0.25) { var x = Xd(dd), y = Y(logicalErr(dd, p)); if (dd === 3) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+    // current-d dot
+    ctx.fillStyle = below ? pass : reject; ctx.beginPath(); ctx.arc(Xd(d), Y(logicalErr(d, p)), 4.5, 0, Math.PI * 2); ctx.fill();
+
+    // ---- readout ----
+    var le = logicalErr(d, p);
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
+    ctx.fillStyle = faint; ctx.fillText('threshold p_th ≈ 1% · below it, more physical qubits → exponentially fewer logical errors', pxl, pyt - 18);
+    ctx.fillStyle = below ? pass : reject; ctx.font = '600 12px ' + mono;
+    ctx.fillText(below ? 'BELOW threshold — error correction helps' : 'ABOVE threshold — bigger codes make it WORSE', pxl, pyb + 34);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + mono;
+    ctx.fillText('logical error / cycle ≈ ' + le.toExponential(1), pxl, pyb + 50);
+  }
+  if (K.reduced) draw(0); else K.loop(draw);
+};
+
+  // ───── hardware-zoo (quantum hardware modalities) ─────
+  EDU["hardware-zoo"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, w = f.w, h = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; w = r.w; h = r.h; });
+
+  // DATA — modality nodes; x = qubit-count axis (0 few .. 1 many), y = gate-fidelity axis (0 lower .. 1 higher)
+  // (reconciled against the verified 2026 hardware facts)
+  var MOD = [
+    { key: 'sc', label: 'Superconducting', x: 0.82, y: 0.42, ex: 'IBM Heron/Condor · Google Willow',
+      tip: 'fast gates, fixed on a chip; most qubits today, but shorter coherence — runs near absolute zero' },
+    { key: 'ion', label: 'Trapped-ion', x: 0.30, y: 0.88, ex: 'Quantinuum H2 · IonQ',
+      tip: 'highest gate fidelity and all-to-all connectivity, but fewer qubits and slower gates' },
+    { key: 'atom', label: 'Neutral-atom', x: 0.72, y: 0.66, ex: 'Atom Computing · QuEra',
+      tip: 'hundreds–thousands of atoms held by lasers, reconfigurable; fidelity improving fast' },
+    { key: 'phot', label: 'Photonic', x: 0.22, y: 0.50, ex: 'PsiQuantum · Xanadu',
+      tip: 'qubits are photons — room temperature and network-native, but still early' }
+  ];
+  var hover = null, cyc = 0, lastIn = -1e9, t0 = 0;
+  function ts() { return t0; }
+
+  function hit(px, py) {
+    for (var i = 0; i < MOD.length; i++) { var n = MOD[i]; var nx = mx(n.x), ny = my(n.y);
+      if (Math.hypot(px - nx, py - ny) < Math.min(w, h) * 0.12) return n.key; }
+    return null;
+  }
+  function mx(x) { return w * 0.13 + x * (w * 0.74); }
+  function my(y) { return h * 0.84 - y * (h * 0.66); }
+  canvas.addEventListener('pointermove', function (e) { var r = canvas.getBoundingClientRect(); hover = hit(e.clientX - r.left, e.clientY - r.top); lastIn = ts(); canvas.style.cursor = hover ? 'pointer' : 'default'; });
+  canvas.addEventListener('pointerleave', function () { hover = null; });
+
+  function active() { if (hover) return hover; if (ts() - lastIn < 3) return null; return MOD[cyc % MOD.length].key; }
+
+  function draw(tSec) {
+    t0 = tSec || 0;
+    if (!hover && ts() - lastIn >= 3) cyc = Math.floor(ts() / 2.6);
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule'),
+        col = K.v('--accent'), mono = K.v('--mono') || 'monospace', sans = K.v('--sans') || 'sans-serif';
+    ctx.clearRect(0, 0, w, h);
+    // axes
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.moveTo(mx(0) - 20, my(0) + 8); ctx.lineTo(mx(1) + 20, my(0) + 8);
+    ctx.moveTo(mx(0) - 20, my(0) + 8); ctx.lineTo(mx(0) - 20, my(1) - 10); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('FEWER QUBITS', mx(0) - 18, my(0) + 22); ctx.textAlign = 'right'; ctx.fillText('MORE QUBITS', mx(1) + 18, my(0) + 22);
+    ctx.save(); ctx.translate(mx(0) - 34, my(0.5)); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('HIGHER FIDELITY →', 0, 0); ctx.restore();
+    var key = active();
+    for (var i = 0; i < MOD.length; i++) {
+      var n = MOD[i], on = key === n.key, nx = mx(n.x), ny = my(n.y), r = on ? 13 : 9;
+      ctx.fillStyle = col; ctx.globalAlpha = on ? 0.18 : 0.10; ctx.beginPath(); ctx.arc(nx, ny, r + 6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = on ? col : K.v('--panel'); ctx.beginPath(); ctx.arc(nx, ny, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = on ? col : faint; ctx.lineWidth = on ? 2 : 1.4; ctx.stroke();
+      ctx.fillStyle = on ? ink : ink2; ctx.font = (on ? '600 ' : '') + '12px ' + mono; ctx.textAlign = 'center';
+      ctx.fillText(n.label, nx, ny - r - 8);
+      ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.fillText(n.ex, nx, ny + r + 16);
+    }
+    // tip box for active node
+    var act = null; for (var j = 0; j < MOD.length; j++) if (MOD[j].key === key) act = MOD[j];
+    if (act) {
+      ctx.fillStyle = ink2; ctx.font = '12.5px ' + sans; ctx.textAlign = 'center';
+      wrap(act.tip, w / 2, h - 14, w * 0.7, 15);
+    }
+  }
+  function wrap(text, x, y, mw, lh) {
+    var words = text.split(' '), lines = [], line = '';
+    for (var i = 0; i < words.length; i++) { var test = line + words[i] + ' '; if (ctx.measureText(test).width > mw && line) { lines.push(line); line = words[i] + ' '; } else line = test; }
+    lines.push(line);
+    for (var k = 0; k < lines.length; k++) ctx.fillText(lines[k], x, y - (lines.length - 1 - k) * lh);
+  }
+  if (K.reduced) { draw(0); } else K.loop(function (ms) { draw(ms / 1000); });
+};
+
+  // ───── qubit-explorer (theoretical vs real qubit counts — two linked panels) ─────
+  EDU["qubit-explorer"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+
+  // DATA — real machines (physical qubit counts; reconciled with verified 2026 facts)
+  var CHIPS = [
+    { n: 56, name: 'Quantinuum H2', mod: 'ion' },
+    { n: 105, name: 'Google Willow', mod: 'sc' },
+    { n: 156, name: 'IBM Heron r2', mod: 'sc' },
+    { n: 1121, name: 'IBM Condor', mod: 'sc' },
+    { n: 1180, name: 'Atom Computing', mod: 'atom' }
+  ];
+  // milestones on the physical-qubit axis (illustrative resource scales)
+  var MILES = [
+    { n: 100, label: 'today’s chips' },
+    { n: 1e4, label: 'first error-corrected qubits' },
+    { n: 1e5, label: 'chemistry beyond classical' },
+    { n: 2e6, label: 'break RSA-2048' }
+  ];
+  var OVERHEAD = 1000;       // ~physical per logical for a deep fault-tolerant algorithm (illustrative)
+  var SIM_WALL = 50;         // ~ exact-statevector classical frontier (qubits)
+
+  // n from slider, log scale 1 .. 1e7
+  var sliderV = 200;         // -> n ~ 100
+  function nOf(v) { return Math.max(1, Math.round(Math.pow(10, v / 100))); }
+  var n = nOf(sliderV);
+
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px';
+  var span = document.createElement('span'); span.textContent = 'qubits'; lab.appendChild(span);
+  var range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = '700'; range.step = '1'; range.value = String(sliderV);
+  range.style.marginLeft = '6px'; range.style.width = '220px'; range.setAttribute('aria-label', 'number of qubits'); lab.appendChild(range);
+  var out = document.createElement('b'); out.style.marginLeft = '8px'; out.textContent = n.toLocaleString(); lab.appendChild(out);
+  range.addEventListener('input', function () { sliderV = parseInt(range.value, 10); n = nOf(sliderV); out.textContent = n.toLocaleString(); if (K.reduced) draw(); });
+  controls.appendChild(lab);
+
+  function log10(x) { return Math.log(x) / Math.LN10; }
+  function memLog10(nn) { return nn * log10(2) + log10(16); }       // log10(bytes) for 2^n complex128
+  function human(L) {                                               // L = log10(bytes)
+    var units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    if (L > 80) return '10^' + Math.round(L) + ' bytes — more than the atoms in the universe';
+    var idx = Math.max(0, Math.min(units.length - 1, Math.floor(L / 3)));
+    var m = Math.pow(10, L - idx * 3);
+    return (m < 10 ? m.toFixed(1) : Math.round(m).toLocaleString()) + ' ' + units[idx];
+  }
+
+  // x: log10(n) in [0,7]
+  function X(nn, x0, x1) { return x0 + (log10(nn) / 7) * (x1 - x0); }
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        col = K.v('--accent'), col2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var x0 = 54, x1 = W - 20;
+    var aT = 24, aB = H * 0.46;            // panel A (memory wall)
+    var bT = H * 0.56, bB = H - 42;        // panel B (logical yield)
+
+    // ===== shared x ticks (powers of ten) =====
+    ctx.font = '9.5px ' + mono; ctx.textAlign = 'center'; ctx.fillStyle = faint;
+    for (var e = 0; e <= 7; e++) { var x = x0 + (e / 7) * (x1 - x0); ctx.fillText('10' + sup(e), x, bB + 16); }
+
+    // ===== PANEL A: memory wall =====
+    // simulable / not-simulable regions
+    var wallX = X(Math.pow(10, 1) /*dummy*/, x0, x1); // placeholder, set properly below
+    wallX = x0 + (log10(SIM_WALL) / 7) * (x1 - x0);
+    ctx.fillStyle = pass; ctx.globalAlpha = 0.07; ctx.fillRect(x0, aT, wallX - x0, aB - aT);
+    ctx.fillStyle = reject; ctx.globalAlpha = 0.07; ctx.fillRect(wallX, aT, x1 - wallX, aB - aT); ctx.globalAlpha = 1;
+    ctx.strokeStyle = reject; ctx.globalAlpha = 0.5; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(wallX, aT); ctx.lineTo(wallX, aB); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = pass; ctx.font = '9.5px ' + mono; ctx.textAlign = 'left'; ctx.fillText('classically simulable', x0 + 4, aT + 12);
+    ctx.fillStyle = reject; ctx.textAlign = 'right'; ctx.fillText('statevector too big to store — no classical machine can hold it', x1 - 4, aT + 12);
+    // memory curve (y = log10 bytes mapped 0..20)
+    function aY(L) { return aB - Math.max(0, Math.min(20, L)) / 20 * (aB - aT); }
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); var started = false;
+    for (var nn = 1; nn <= 70; nn++) { var L = memLog10(nn); if (L > 20) break; var xx = X(nn, x0, x1), yy = aY(L); if (!started) { ctx.moveTo(xx, yy); started = true; } else ctx.lineTo(xx, yy); }
+    ctx.stroke();
+    ctx.fillStyle = ink2; ctx.font = '10px ' + mono; ctx.textAlign = 'left'; ctx.fillText('memory to simulate (2ⁿ amplitudes)', x0 + 4, aB - 6);
+    ctx.fillStyle = faint; ctx.textAlign = 'left'; ctx.fillText('A', x0 - 44, aT + 10);
+
+    // ===== PANEL B: physical → logical =====
+    // logical line: logical = n / OVERHEAD, plotted log10 on y 0..4
+    function bY(Llog) { return bB - Math.max(0, Math.min(4, Llog)) / 4 * (bB - bT); }
+    ctx.strokeStyle = col2; ctx.lineWidth = 2; ctx.beginPath(); var st2 = false;
+    for (var p2 = 0; p2 <= 7; p2 += 0.1) { var nv = Math.pow(10, p2); var lg = nv / OVERHEAD; if (lg < 1) continue; var xx2 = x0 + (p2 / 7) * (x1 - x0), yy2 = bY(log10(lg)); if (!st2) { ctx.moveTo(xx2, yy2); st2 = true; } else ctx.lineTo(xx2, yy2); }
+    ctx.stroke();
+    ctx.fillStyle = ink2; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('error-corrected (logical) qubits ≈ physical / ' + OVERHEAD, x0 + 4, bT + 12);
+    ctx.fillStyle = faint; ctx.fillText('B', x0 - 44, bT + 10);
+    // milestones
+    for (var m = 0; m < MILES.length; m++) {
+      var mx2 = X(MILES[m].n, x0, x1);
+      ctx.strokeStyle = faint; ctx.globalAlpha = 0.35; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(mx2, bT + 16); ctx.lineTo(mx2, bB); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.save(); ctx.translate(mx2 + 3, bB - 4); ctx.rotate(-Math.PI / 2.2); ctx.textAlign = 'left'; ctx.fillText(MILES[m].label, 0, 0); ctx.restore();
+    }
+
+    // ===== real chips (vertical markers across both panels) =====
+    for (var c = 0; c < CHIPS.length; c++) {
+      var cx = X(CHIPS[c].n, x0, x1);
+      ctx.strokeStyle = ink; ctx.globalAlpha = 0.32; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, aT); ctx.lineTo(cx, bB); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(cx, aB, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.translate(cx, aB + 6); ctx.rotate(-Math.PI / 3); ctx.fillStyle = ink2; ctx.font = '8.5px ' + mono; ctx.textAlign = 'left'; ctx.fillText(CHIPS[c].name + ' · ' + CHIPS[c].n, 0, 0); ctx.restore();
+    }
+
+    // ===== playhead at current n =====
+    var nx = X(n, x0, x1);
+    ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(nx, aT); ctx.lineTo(nx, bB); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(nx, aT - 2); ctx.lineTo(nx - 4, aT - 9); ctx.lineTo(nx + 4, aT - 9); ctx.closePath(); ctx.fill();
+
+    // ===== readout =====
+    var L = memLog10(n), simulable = n <= SIM_WALL, logical = Math.floor(n / OVERHEAD);
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
+    ctx.fillStyle = ink; ctx.fillText(n.toLocaleString() + ' qubits', x0, H - 8);
+    ctx.fillStyle = simulable ? pass : reject; ctx.fillText('sim mem: ' + human(L) + (simulable ? '  (simulable)' : '  (beyond classical)'), x0 + 130, H - 8);
+    ctx.fillStyle = logical >= 1 ? pass : faint; ctx.textAlign = 'right';
+    ctx.fillText(logical >= 1 ? ('≈ ' + logical.toLocaleString() + ' logical qubits') : 'not enough for 1 logical qubit', x1, H - 8);
+  }
+  function sup(d) { var m = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷' }; return m[d] || ''; }
+  if (K.reduced) draw(); else K.loop(draw);
+};
+
+  // ───── history (timeline of inventions) ─────
+  EDU["history"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; });
+
+  // DATA — milestones (reconciled with verified facts). lane 'c' = classical (above), 'q' = quantum (below).
+  var EV = [
+    { y: 1936, lane: 'c', t: 'Turing machine', d: 'a formal model of universal computation' },
+    { y: 1945, lane: 'c', t: 'Stored-program / ENIAC', d: 'the von Neumann architecture: code and data in one memory' },
+    { y: 1947, lane: 'c', t: 'The transistor', d: 'Bell Labs builds a switch with no moving parts — the bit’s physical home' },
+    { y: 1948, lane: 'c', t: 'Shannon’s "bit"', d: 'information theory names the unit of information' },
+    { y: 1958, lane: 'c', t: 'Integrated circuit', d: 'many transistors on one chip' },
+    { y: 1965, lane: 'c', t: 'Moore’s Law', d: 'transistor counts double roughly every two years' },
+    { y: 1971, lane: 'c', t: 'The microprocessor', d: 'a whole CPU on a single chip (Intel 4004)' },
+    { y: 1981, lane: 'q', t: 'Feynman’s proposal', d: 'simulate quantum physics with a quantum computer' },
+    { y: 1985, lane: 'q', t: 'Universal quantum computer', d: 'Deutsch formalises a quantum Turing machine' },
+    { y: 1994, lane: 'q', t: 'Shor’s algorithm', d: 'factor large numbers exponentially faster — a threat to RSA' },
+    { y: 1996, lane: 'q', t: 'Grover’s search', d: 'a provable quadratic speedup for unstructured search' },
+    { y: 1995, lane: 'q', t: 'Quantum error correction', d: 'codes that protect quantum information from noise' },
+    { y: 1999, lane: 'q', t: 'First superconducting qubit', d: 'a qubit on a chip — the lineage behind IBM’s and Google’s machines' },
+    { y: 2016, lane: 'q', t: 'A quantum computer on the cloud', d: 'IBM puts a 5-qubit machine online — the NISQ era of open experiment begins' },
+    { y: 2012, lane: 'c', t: 'Deep learning (AlexNet)', d: 'learned features beat hand-tuned ones at scale' },
+    { y: 2017, lane: 'c', t: 'The transformer', d: '"Attention Is All You Need" — the architecture behind modern LLMs' },
+    { y: 2019, lane: 'q', t: 'Beyond-classical claim', d: 'Google’s Sycamore samples a task no classical computer matched (disputed)' },
+    { y: 2024, lane: 'q', t: 'Below threshold', d: 'a bigger code finally lowers the logical error rate (Google Willow)' }
+  ];
+  EV.sort(function (a, b) { return a.y - b.y; });
+  var minY = 1930, maxY = 2027;
+  var hover = null, lastIn = -1e9, t0 = 0, cyc = 0;
+  function X(y) { return 40 + (y - minY) / (maxY - minY) * (W - 70); }
+
+  function hit(px, py) {
+    var best = null, bd = 22;
+    for (var i = 0; i < EV.length; i++) { var ex = X(EV[i].y), ey = EV[i].lane === 'c' ? H * 0.40 : H * 0.60;
+      var dd = Math.hypot(px - ex, py - ey); if (dd < bd) { bd = dd; best = i; } }
+    return best;
+  }
+  canvas.addEventListener('pointermove', function (e) { var r = canvas.getBoundingClientRect(); hover = hit(e.clientX - r.left, e.clientY - r.top); lastIn = t0; canvas.style.cursor = hover != null ? 'pointer' : 'default'; });
+  canvas.addEventListener('pointerleave', function () { hover = null; });
+
+  function draw(tSec) {
+    t0 = tSec || 0;
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        col = K.v('--accent'), col2 = K.v('--accent-2'), mono = K.v('--mono') || 'monospace', sans = K.v('--sans') || 'sans-serif';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var axisY = H * 0.5;
+    // axis + decade ticks
+    ctx.strokeStyle = rule; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(X(minY), axisY); ctx.lineTo(X(maxY), axisY); ctx.stroke();
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.textAlign = 'center';
+    for (var yr = 1940; yr <= 2020; yr += 20) { var x = X(yr); ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(x, axisY - 4); ctx.lineTo(x, axisY + 4); ctx.stroke(); ctx.globalAlpha = 1; ctx.fillText(String(yr), x, axisY + 18); }
+    ctx.textAlign = 'left'; ctx.fillStyle = faint; ctx.fillText('CLASSICAL', 40, H * 0.14); ctx.fillText('QUANTUM', 40, H * 0.92);
+
+    var act = hover;
+    if (act == null && t0 - lastIn >= 3) { cyc = Math.floor(t0 / 2.2) % EV.length; act = cyc; }
+
+    for (var i = 0; i < EV.length; i++) {
+      var e = EV[i], ex = X(e.y), up = e.lane === 'c', ey = up ? H * 0.40 : H * 0.60, on = act === i;
+      ctx.strokeStyle = on ? (up ? col : col2) : rule; ctx.globalAlpha = on ? 0.8 : 0.5; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ex, axisY); ctx.lineTo(ex, ey); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = on ? (up ? col : col2) : faint; ctx.beginPath(); ctx.arc(ex, ey, on ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
+      if (!on) { ctx.fillStyle = ink2; ctx.font = '8.5px ' + mono; ctx.textAlign = 'center';
+        ctx.fillText(String(e.y), ex, up ? ey - 8 : ey + 14); }
+    }
+    // callout for active event
+    if (act != null) {
+      var e2 = EV[act], ex2 = X(e2.y), up2 = e2.lane === 'c';
+      var bw = Math.min(240, W * 0.5), bh = 54, bx = Math.max(10, Math.min(W - bw - 10, ex2 - bw / 2));
+      var by = up2 ? H * 0.40 - bh - 16 : H * 0.60 + 16;
+      ctx.fillStyle = K.v('--panel'); ctx.strokeStyle = up2 ? col : col2; ctx.lineWidth = 1.4;
+      rr(bx, by, bw, bh, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = up2 ? col : col2; ctx.font = '600 12px ' + mono; ctx.textAlign = 'left';
+      ctx.fillText(e2.y + '  ·  ' + e2.t, bx + 10, by + 18);
+      ctx.fillStyle = ink2; ctx.font = '11px ' + sans; wrap(e2.d, bx + 10, by + 34, bw - 20, 14);
+    }
+  }
+  function rr(x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; for (var i = 0; i < words.length; i++) { var test = line + words[i] + ' '; if (ctx.measureText(test).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = test; } ctx.fillText(line, x, yy); }
+  if (K.reduced) draw(0); else K.loop(function (ms) { draw(ms / 1000); });
+};
+
+
   // ---- lazy mount ------------------------------------------------------------
   function mountAll() {
     var canvases = document.querySelectorAll('canvas[data-edu]');
