@@ -146,6 +146,11 @@ test('homepage advertises the full platform, not just the bench', () => {
   assert.match(html, /href="education\.html"/)              // curriculum is linked from the hero/hub
   assert.match(html, /8\/8 exit 0/)                          // scoreboard prose matches verify.py
   assert.match(html, /38\/38/)                               // judge suite metric is current
-  assert.match(html, /92\/92/)                               // measurement suite metric is current
+  // measurement badge: an all-green N/N from the current era — not a brittle literal that
+  // goes stale every time a test is added (the very drift that produced the old build).
+  const meas = html.match(/<b>(\d+)\/(\d+)<\/b><span>measurement<\/span>/)
+  assert.ok(meas, 'measurement metric badge present')
+  assert.equal(meas[1], meas[2], 'measurement badge shows all checks passing (N/N)')
+  assert.ok(Number(meas[1]) >= 95, 'measurement badge reflects the current-era suite, not an old stale build')
   assert.doesNotMatch(html, /Phase 2 of the platform/)      // old footer tagline is gone
 })
