@@ -309,7 +309,7 @@ function renderScoreboard() {
     `<td class="num">${r.metricName} <b>${r.metricValue}</b><span class="sub">${r.metricSub}</span></td>` +
     `<td class="num">${r.costLabel}</td>` +
     `<td><span class="mtag">${r.model}</span></td>` +
-    `<td><a href="${r.bundleUrl}">bundle ↗</a>${r.hardware ? ` <a class="hwlink" href="${r.hardware.url}" title="hardware overlay · ${r.hardware.backend} · ${r.hardware.metric} ${r.hardware.value}">⚛ hw ↗</a>` : ''}</td>` +
+    `<td><a href="${r.bundleUrl}">bundle ↗</a>${r.hardware ? ` <a class="hwlink" href="${r.hardware.url}" title="hardware overlay · ${r.hardware.backend} · ${r.hardware.metric} ${r.hardware.value}">⚛ hw ↗</a>` : ''}${window.QMRunner && window.QMRunner.RUNS[r.problem_id] ? ` · <a href="#" data-run="${r.problem_id}" title="re-run this circuit in your browser">▸ run</a>` : ''}</td>` +
     '</tr>').join('');
   const why = document.getElementById('sb-why');
   if (why) why.innerHTML = d.rows.map(r => `<li><b>${r.problem_id}</b> — ${r.why}</li>`).join('');

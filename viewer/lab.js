@@ -21,7 +21,7 @@
   var state = { section: 'front', model: 'mythos', filter: 'all', picked: 'ghz3' };
 
   // ─────────────────────────── DATA ───────────────────────────
-  var TABS = [['front', 'Abstract', '01'], ['brief', 'Method', '02'], ['field', 'Protocol', '03'], ['atlas', 'Results', '04'], ['register', 'Logbook', '05'], ['primer', 'Theory', '06']];
+  var TABS = [['front', 'Abstract', '01'], ['brief', 'Method', '02'], ['field', 'Protocol', '03'], ['atlas', 'Results', '04'], ['register', 'Logbook', '05'], ['primer', 'Theory', '06'], ['recipe', 'Recipe', '07']];
   var GATES = [
     { exit: 3, name: 'Structure', body: 'Respects qubit count, depth, native gates, coupling map, 2-qubit cap.' },
     { exit: 4, name: 'Reproduce', body: 'Re-simulates the claim — fabrication caught.' },
@@ -191,11 +191,91 @@
       '<div style="margin-top:24px;border-top:1px dashed var(--rule);padding-top:18px;" class="controls"><span style="font-family:var(--serif);font-style:italic;font-size:17px;color:var(--ink);">Ready to point your own model at a brief?</span><button class="btn primary" data-submit>Start a run →</button></div></div>';
   }
 
-  var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer };
+  // ─────────────────────────── RECIPE BUILDER (§07) ───────────────────────────
+  var recipe = { ings: {}, target: 'tfim3', params: { depth: 2, entangle: 'linear', optimizer: 'qaoa', novelty: 45 } };
+  var INGREDIENTS = [
+    ['ghz3', 'GHZ₃', 'linear entanglement ladder', 'state_prep'],
+    ['isingbell2', 'Ising Bell', 'minimal Bell ansatz', 'vqe'],
+    ['tfim3', 'TFIM₃ QAOA', 'rzz couplers + rx mixers', 'vqe'],
+    ['h2vqe', 'H₂ VQE', 'hardware-efficient Ry–CX', 'vqe'],
+    ['aiaccel4', 'AI-Accel ring', 'ring coupling topology', 'architecture'],
+    ['qml_sign1', 'Sign map', 'low-frequency feature map', 'classify'],
+  ];
+  var TARGETS = [['tfim3', 'TFIM₃ ground state'], ['h2vqe', 'H₂ ground state'], ['isingbell2', 'Ising Bell'], ['ghz3', 'GHZ₃ prep'], ['aiaccel4', 'AI-Accel routing']];
+  var ENTANGLE = [['linear', 'Linear'], ['ring', 'Ring'], ['all', 'All-to-all']];
+  var OPT = [['qaoa', 'QAOA'], ['gradient', 'Gradient'], ['cobyla', 'COBYLA']];
+
+  function ingName(id) { var ing = INGREDIENTS.filter(function (x) { return x[0] === id; })[0]; return ing ? ing[1] : id; }
+  function mixList() { var ids = Object.keys(recipe.ings); var tot = ids.reduce(function (a, k) { return a + recipe.ings[k]; }, 0) || 1; return ids.map(function (k) { return { id: k, name: ingName(k), pct: recipe.ings[k] / tot * 100 }; }); }
+  function recipeHash() { var s = recipe.target + '|' + Object.keys(recipe.ings).sort().map(function (k) { return k + ':' + Math.round(recipe.ings[k]); }).join(',') + '|d' + recipe.params.depth + '|' + recipe.params.entangle + '|' + recipe.params.optimizer + '|n' + recipe.params.novelty; var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36).slice(0, 6); }
+  function recipeRepo() { return 'run-' + recipe.target + '-mix-' + recipeHash(); }
+  function recipeCmd() { var ings = Object.keys(recipe.ings); return 'bin/new-run.sh ' + recipeRepo() + (ings.length ? ' --remix ' + ings.join(',') : ''); }
+  function recipeJSON() { return JSON.stringify({ target: recipe.target, ingredients: mixList().map(function (m) { return { run: m.id, ratio: +(m.pct / 100).toFixed(2) }; }), ansatz: { depth: recipe.params.depth, entanglement: recipe.params.entangle, optimizer: recipe.params.optimizer, novelty: +(recipe.params.novelty / 100).toFixed(2) } }, null, 2); }
+
+  function toggleIngredient(id) { if (id in recipe.ings) delete recipe.ings[id]; else recipe.ings[id] = 50; render(); }
+  function setRParam(spec) { var p = spec.split(':'); if (p[0] === 'target') recipe.target = p[1]; else recipe.params[p[0]] = p[1]; render(); }
+  function recipeOutHTML() {
+    var mix = mixList();
+    var rows = mix.length ? mix.map(function (m) { return '<span class="chip" style="border-color:var(--accent);color:var(--accent)">' + m.name + ' · ' + m.pct.toFixed(0) + '%</span>'; }).join('') : '<span class="mono" style="color:var(--faint)">no ingredients yet — toggle some above</span>';
+    return '<div class="lab-head" style="margin-bottom:14px"><div><p class="eyebrow">Recipe output</p><h2 style="font-size:20px">' + recipeRepo() + '</h2></div><div class="rmeta">' + Object.keys(recipe.ings).length + ' ingredients · target ' + recipe.target + '<br>depth ' + recipe.params.depth + ' · ' + recipe.params.entangle + ' · ' + recipe.params.optimizer + '</div></div>' +
+      '<div class="controls" style="margin-bottom:14px">' + rows + '</div>' +
+      '<div class="qm-cmd"><code>' + esc(recipeCmd()) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
+      '<div class="controls" style="margin-top:12px"><button class="btn primary" data-recipe-mint>Mint recipe → repo →</button><button class="btn" data-submit>Open submission flow</button></div>';
+  }
+  function updateRecipeOutput() { var el = document.getElementById('recipe-out'); if (el) el.innerHTML = recipeOutHTML(); }
+  function secRecipe() {
+    var ings = INGREDIENTS.map(function (ing) { var on = ing[0] in recipe.ings;
+      return '<button class="lab-gcard" data-ing="' + ing[0] + '" style="padding:12px 13px;' + (on ? 'border-color:var(--accent);' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:600">' + ing[1] + '</span><span class="chip" style="font-size:8px">' + ing[3] + '</span></div><div style="font-size:13px;color:var(--ink-2);margin-top:4px">' + ing[2] + '</div>' +
+        (on ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()"><span class="mono" style="font-size:10px;color:var(--accent)">ratio</span><input type="range" min="5" max="100" value="' + recipe.ings[ing[0]] + '" data-ratio="' + ing[0] + '" style="flex:1"></div>' : '<div class="mono" style="font-size:9px;color:var(--faint);margin-top:8px">click to add</div>') + '</button>';
+    }).join('');
+    var targets = TARGETS.map(function (tg) { return '<button class="chip" data-rparam="target:' + tg[0] + '" style="cursor:pointer;' + (recipe.target === tg[0] ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + tg[1] + '</button>'; }).join('');
+    var ent = ENTANGLE.map(function (e) { return '<button data-rparam="entangle:' + e[0] + '" aria-pressed="' + (recipe.params.entangle === e[0]) + '">' + e[1] + '</button>'; }).join('');
+    var opt = OPT.map(function (o) { return '<button data-rparam="optimizer:' + o[0] + '" aria-pressed="' + (recipe.params.optimizer === o[0]) + '">' + o[1] + '</button>'; }).join('');
+    return '<div class="lab-sheet">' + head('§ 07 · Recipe', 'Combine prior runs into a new recipe', 'Ingredients · ratios<br>parameters') +
+      '<p style="max-width:720px">Pick verified runs as <b>ingredients</b>, set their <b>ratios</b>, tune the <b>parameters</b> — then mint a unique new run. The recipe is handed to your model in <span class="mono">RECIPE.json</span>; it molds a fresh circuit from the mix. The compounding flywheel, made graphical.</p>' +
+      '<div class="lab-grid2" style="margin-top:20px"><div><p class="eyebrow" style="margin-bottom:12px">Ingredients · select &amp; weight</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + ings + '</div></div>' +
+      '<div><p class="eyebrow" style="margin-bottom:10px">Target problem</p><div class="controls" style="margin-bottom:16px">' + targets + '</div>' +
+        '<p class="eyebrow" style="margin-bottom:8px">Ansatz depth · ' + recipe.params.depth + '</p><input type="range" min="1" max="5" value="' + recipe.params.depth + '" data-rslider="depth" style="width:100%">' +
+        '<p class="eyebrow" style="margin:14px 0 8px">Entanglement</p><div class="qm-pathtab">' + ent + '</div>' +
+        '<p class="eyebrow" style="margin:10px 0 8px">Optimizer</p><div class="qm-pathtab">' + opt + '</div>' +
+        '<p class="eyebrow" style="margin:14px 0 8px">Novelty · ' + recipe.params.novelty + '%</p><input type="range" min="0" max="100" value="' + recipe.params.novelty + '" data-rslider="novelty" style="width:100%">' +
+        '<div class="panel" style="padding:6px;margin-top:16px">' + stage('recipe', 'recipe', 184) + '</div></div></div>' +
+      '<div id="recipe-out" style="margin-top:28px;border-top:1px solid var(--rule);padding-top:22px">' + recipeOutHTML() + '</div></div>';
+  }
+
+  // GitHub create widget (token → api.github.com/.../generate via window.QMRunner.createRepo)
+  function ghWidget(name) {
+    return '<p class="eyebrow" style="margin:14px 0 6px">Or create it from here (optional)</p>' +
+      '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org (blank = your account; or QuantumMytheme if you have access)">' +
+      '<input class="qm-tok" id="qm-ghtoken" type="password" placeholder="GitHub token · fine-grained · Repository: Administration + Contents (write)">' +
+      '<div class="controls" style="margin-top:6px"><button class="btn primary" data-ghcreate="' + name + '">Create repo via API →</button></div>' +
+      '<div id="qm-ghresult" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>' +
+      '<p class="mono" style="font-size:10px;color:var(--faint);margin-top:6px">The token never leaves your browser — it posts straight to api.github.com.</p>';
+  }
+  function ghCreate(name) {
+    var tok = document.getElementById('qm-ghtoken'), ownerEl = document.getElementById('qm-ghowner'), res = document.getElementById('qm-ghresult');
+    var token = tok && tok.value.trim(), owner = (ownerEl && ownerEl.value.trim()) || '';
+    if (!token) { if (res) res.innerHTML = '<span style="color:var(--reject)">Paste a GitHub token first — or use the “Use this template” link above.</span>'; return; }
+    if (res) res.textContent = 'Creating ' + name + '…';
+    window.QMRunner.createRepo({ token: token, owner: owner || undefined, name: name, 'private': false })
+      .then(function (out) { if (res) res.innerHTML = '✓ created → <a href="' + out.html_url + '" target="_blank" rel="noopener">' + (out.full_name || name) + ' ↗</a>'; })
+      .catch(function (err) { if (res) res.innerHTML = '<span style="color:var(--reject)">' + esc(err.message || String(err)) + '</span> — check the token has repo-create rights for that owner/org.'; });
+  }
+  function mintRecipe() {
+    var repo = recipeRepo();
+    var inner = '<p class="eyebrow">Recipe → repository</p><h2 style="font-family:var(--serif);margin:6px 0 4px">' + repo + '</h2>' +
+      '<p style="font-size:14px;color:var(--ink-2)">A unique run blended from ' + Object.keys(recipe.ings).length + ' verified ingredient(s), targeting <b>' + recipe.target + '</b>. The kickoff hands the model your recipe; it molds a new circuit from the mix.</p>' +
+      '<p class="eyebrow" style="margin-top:14px">RECIPE.json</p><div class="qm-cmd"><code>' + esc(recipeJSON()) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
+      '<p class="eyebrow" style="margin-top:12px">Mint the repo</p>' + cmdBlock('gh repo create QuantumMytheme/' + repo + ' --template QuantumMytheme/quantum-harness --public --clone') + cmdBlock(recipeCmd()) +
+      '<p style="margin-top:6px"><a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate" target="_blank" rel="noopener">Use this template ↗</a></p>' + ghWidget(repo);
+    window.QMRunner.openOverlay('modal', inner);
+  }
+
+  var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer, recipe: secRecipe };
 
   // ─────────────────────────── RENDER ───────────────────────────
   function renderTabs() { tabsEl.innerHTML = TABS.map(function (t) { var on = state.section === t[0]; return '<button class="lab-tab" data-tab="' + t[0] + '" role="tab" aria-selected="' + on + '"><span class="pl">§ ' + t[2] + '</span>' + t[1] + '</button>'; }).join(''); }
-  var VALID = { front: 1, brief: 1, field: 1, atlas: 1, register: 1, primer: 1 };
+  var VALID = { front: 1, brief: 1, field: 1, atlas: 1, register: 1, primer: 1, recipe: 1 };
   function sectionFromHash() { var h = (location.hash || '').replace(/^#/, ''); return VALID[h] ? h : null; }
   function render() { renderTabs(); sheet.innerHTML = (SECTIONS[state.section] || secFront)(); registerCanvases(); drawAllOnce(); }
   function setState(patch) { for (var k in patch) state[k] = patch[k]; if (patch.section) { try { history.replaceState(null, '', '#' + patch.section); } catch (e) { location.hash = patch.section; } window.scrollTo(0, 0); } render(); }
@@ -203,12 +283,13 @@
 
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-run],[data-submit],[data-submit-brief],[data-close],[data-copy],[data-path],[data-subbrief],[data-runsim]');
+    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-ghcreate]');
     if (!el) return;
-    if (el.hasAttribute('data-close')) return closeOverlay();
-    if (el.hasAttribute('data-copy')) return copyText(el);
-    if (el.hasAttribute('data-run')) return openRunner(el.getAttribute('data-run'));
-    if (el.hasAttribute('data-runsim')) { var R = RUNS[el.getAttribute('data-runsim')]; if (R) runSim(R); return; }
+    // data-run / data-runsim / data-close / data-copy / data-realjudge are owned by runner.js
+    if (el.hasAttribute('data-ing')) return toggleIngredient(el.getAttribute('data-ing'));
+    if (el.hasAttribute('data-recipe-mint')) return mintRecipe();
+    if (el.hasAttribute('data-rparam')) return setRParam(el.getAttribute('data-rparam'));
+    if (el.hasAttribute('data-ghcreate')) return ghCreate(el.getAttribute('data-ghcreate'));
     if (el.hasAttribute('data-submit')) return openSubmit(state.picked);
     if (el.hasAttribute('data-submit-brief')) return openSubmit(el.getAttribute('data-submit-brief'));
     if (el.hasAttribute('data-path')) { sub.path = el.getAttribute('data-path'); return renderSubmit(); }
@@ -220,6 +301,12 @@
     if (el.hasAttribute('data-filter')) return setState({ filter: el.getAttribute('data-filter') });
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (!t.matches) return;
+    if (t.matches('[data-ratio]')) { recipe.ings[t.getAttribute('data-ratio')] = +t.value; updateRecipeOutput(); }
+    else if (t.matches('[data-rslider]')) { recipe.params[t.getAttribute('data-rslider')] = +t.value; updateRecipeOutput(); }
+  });
+  document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('[data-rslider]')) { recipe.params[e.target.getAttribute('data-rslider')] = +e.target.value; render(); } });
 
   function copyText(btn) { var code = btn.parentElement.querySelector('code'); var txt = code ? code.textContent : btn.getAttribute('data-copy'); try { navigator.clipboard.writeText(txt); } catch (e) { } var old = btn.textContent; btn.textContent = 'copied'; setTimeout(function () { btn.textContent = old; }, 1100); }
 
@@ -364,7 +451,7 @@
         '<li><span class="mk">▸</span><span><b>Python 3 + numpy</b> to judge locally (the bench is numpy-only, no QPU):</span></li></ul>' +
         cmdBlock('python3 -m pip install numpy') +
         '<p style="font-size:12.5px;">Optional but recommended — the <b>GitHub CLI</b> for one-command repo creation:</p>' + cmdBlock('gh auth login') + '</div></div>' +
-      '<div class="qm-step"><span class="num">1</span><div><h4>Create your run repo</h4><p>Two paths — both fork the template <span class="mono">QuantumMytheme/quantum-harness</span> into a fresh public repo.</p>' + pathTabs + createBody + '</div></div>' +
+      '<div class="qm-step"><span class="num">1</span><div><h4>Create your run repo</h4><p>Two paths — both fork the template <span class="mono">QuantumMytheme/quantum-harness</span> into a fresh public repo.</p>' + pathTabs + createBody + ghWidget(repo) + '</div></div>' +
       '<div class="qm-step"><span class="num">2</span><div><h4>Point your model at the brief</h4><p>Run the kickoff with <b>' + modelName + '</b> (or paste <span class="mono">KICKOFF.md</span> into your model). It self-corrects against the rubric until every gate is green.</p>' + cmdBlock('claude --kickoff KICKOFF.md   # brief: ' + b[0]) + '</div></div>' +
       '<div class="qm-step"><span class="num">3</span><div><h4>Judge it — locally and in the browser</h4><p>The hermetic numpy judge re-simulates the circuit and returns ACCEPT (exit 0) or REJECT. You can also <a href="#" data-run="' + (RUNS[b[0]] ? b[0] : 'ghz3') + '">re-run a reference circuit in the browser ▸</a>.</p>' + cmdBlock('python3 bench/quantum-judge/judge_verify.py quantum-proof-' + b[0] + '.json') + '</div></div>' +
       '<div class="qm-step"><span class="num">4</span><div><h4>Commit &amp; push — the judge is the merge gate</h4><p>Push the proof bundle, scorecard, and a scrubbed transcript; it auto-registers on the public board.</p>' + cmdBlock('git add -A && git commit -m "' + b[0] + ' run" && git push') + '</div></div>';
@@ -486,6 +573,21 @@
       for (var a = 0; a < N; a++) for (var b = 0; b < N; b++) { var av = st.W[a][b] / st.max[a], dim = (a === hi) ? 1 : 0.28; ctx.fillStyle = accA(c, av * dim); ctx.fillRect(ox + b * cs + 1, oy + a * cs + 1, cs - 2, cs - 2); if (a === hi) { ctx.strokeStyle = c.accent; ctx.lineWidth = 0.6; ctx.strokeRect(ox + b * cs + 1, oy + a * cs + 1, cs - 2, cs - 2); } }
       ctx.strokeStyle = c.accent; ctx.lineWidth = 2; ctx.strokeRect(ox, oy + hi * cs, N * cs, cs);
       ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText('illustrative weights · row attends to columns', ox, oy + N * cs + 16);
+    },
+    recipe: function (ctx, w, h, t) {
+      var c = C(); ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
+      var mix = mixList(), cx = w / 2, cy = h / 2;
+      ctx.fillStyle = accA(c, 0.13); ctx.beginPath(); ctx.arc(cx, cy, 26, 0, 7); ctx.fill(); ctx.strokeStyle = c.accent; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.fillStyle = c.ink; ctx.font = MONOF(10); ctx.textAlign = 'center'; ctx.fillText(recipe.target, cx, cy + 3);
+      if (!mix.length) { ctx.fillStyle = c.faint; ctx.font = MONOF(11); ctx.fillText('select ingredients to blend', cx, h - 14); ctx.textAlign = 'left'; return; }
+      var R = Math.min(w, h) * 0.34;
+      mix.forEach(function (m, i) {
+        var a = -Math.PI / 2 + i * 2 * Math.PI / mix.length + t * 0.07, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R, rad = 6 + m.pct / 100 * 15;
+        ctx.strokeStyle = accA(c, 0.2 + m.pct / 220); ctx.lineWidth = 1 + m.pct / 45; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+        ctx.fillStyle = accA(c, 0.28 + m.pct / 240); ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); ctx.strokeStyle = c.accent; ctx.lineWidth = 1.2; ctx.stroke();
+        ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText(m.name + ' ' + m.pct.toFixed(0) + '%', x, y + rad + 12);
+      });
+      ctx.textAlign = 'left';
     },
   };
   function bv(a0, a1) { return [2 * (a0[0] * a1[0] + a0[1] * a1[1]), 2 * (a0[0] * a1[1] - a0[1] * a1[0]), (a0[0] * a0[0] + a0[1] * a0[1]) - (a1[0] * a1[0] + a1[1] * a1[1])]; }

@@ -89,3 +89,20 @@ test('field notebook page exists, is wired, linked, and has all 6 sections', () 
     assert.match(js, new RegExp(`${sec}:\\s*sec`), `lab.js SECTIONS should include ${sec}`)
   }
 })
+
+test('shared in-browser runner + recipe builder wired on both pages', () => {
+  assert.ok(existsSync(v('runner.js')), 'viewer/runner.js should exist')
+  const runner = readFileSync(v('runner.js'), 'utf8')
+  assert.match(runner, /window\.QMRunner\s*=/)
+  assert.match(runner, /function expectation/)                                        // JS judge metric
+  assert.match(runner, /runRealJudge/)                                                // WASM (Pyodide) real judge
+  assert.match(runner, /api\.github\.com\/repos\/QuantumMytheme\/quantum-harness\/generate/) // GitHub repo create
+  assert.match(html, /<script src="runner\.js">/)                                     // overview includes it
+  const lab = readFileSync(v('lab.html'), 'utf8')
+  assert.match(lab, /<script src="runner\.js">/)                                      // notebook includes it
+  const js = readFileSync(v('lab.js'), 'utf8')
+  assert.match(js, /recipe:\s*secRecipe/)                                             // recipe tab/section
+  assert.match(js, /function mintRecipe/)
+  assert.ok(existsSync(v('og-lab.png')), 'viewer/og-lab.png (notebook social card) should exist')
+  assert.match(lab, /og-lab\.png/)
+})
