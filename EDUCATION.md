@@ -1,6 +1,6 @@
 # Education — from a bit and a qubit to your own quantum-harness run
 
-Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Twenty slices in four parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today, then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
+Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Twenty-three slices in five parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs three landmark experiments — Bell's inequality, teleportation, and quantum error correction — each computing its headline number live from the statevector — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
 
 
 ---
@@ -184,7 +184,35 @@ Move the slider and watch two walls at once. To simulate n qubits exactly, a cla
 
 > **Slice (animation):** technique=canvas — Two stacked panels sharing one qubit-count slider (log, 1→10⁷). Panel A: the memory to hold a 2ⁿ-amplitude statevector (2ⁿ×16 bytes), drawn as a curve, with a “classically simulable” region to ~50 qubits and a “too big to store” region beyond, and real machines (Quantinuum H2 56, Google Willow 105, IBM Heron r2 156, IBM Condor 1121, Atom Computing 1180) plotted as vertical markers past the wall. Panel B: error-corrected logical qubits ≈ physical / ~1000 (illustrative deep-fault-tolerant overhead), with milestone markers (today’s chips, first error-corrected qubits, chemistry beyond classical, break RSA-2048 at ~2×10⁶). A playhead tracks the slider across both panels; the readout gives the simulation memory and logical-qubit yield at n. prefers-reduced-motion renders statically. All numbers reconciled against the verified 2026 facts (2ⁿ×16-byte memory, ~50-qubit sim frontier, RSA-2048 ~10⁶ physical by 2025 estimates).
 
-## 19. Your turn: fork and run   
+---
+
+**PART IV · LANDMARK EXPERIMENTS — re-run the proof** Three landmark results reduced to a few qubits — each computes its headline number live from the statevector, the same number the original papers and real machines report.
+
+## 19. Bell's inequality: S beyond 2   
+`LANDMARK · BELL / CHSH`  
+**Takeaway:** One number — the CHSH correlation S — climbs past the classical limit of 2 to 2√2, which no theory of *local* hidden variables can produce.
+
+In 1964 John Bell turned a philosophical worry — could quantum correlations secretly be explained by ordinary "local hidden variables" fixed in advance? — into a number you can measure. The CHSH form (Clauser, Horne, Shimony, Holt, 1969) combines four correlation measurements into a single quantity S; any local-realistic theory must obey |S| ≤ 2. A shared Bell state measured at the right angles reaches S = 2√2 ≈ 2.83 (Tsirelson's quantum maximum), and experiment agrees: Aspect's 1982 test closed the locality loophole, three independent loophole-free experiments settled it in 2015, and the 2022 Nobel Prize recognized the work. Rules out *local* hidden variables, not every hidden-variable theory (nonlocal ones like Bohmian mechanics survive).
+
+> **Slice (animation):** technique=canvas — Compute S live from the |Φ⁺⟩ statevector. Correlator E(α,β)=⟨Φ⁺|(cosα·Z+sinα·X)⊗(cosβ·Z+sinβ·X)|Φ⁺⟩ summed over the 4-amplitude state (= cos(α−β) for Φ⁺, the PLUS sign — singlet is −cos, do not mix conventions). Alice fixed at 0°/90°; a slider sets Bob's angle φ (settings φ, −φ); S = E(0,φ)+E(0,−φ)+E(90,φ)−E(90,−φ), matched sign pattern → S=2√2 at φ=45°. Draw the four correlators as signed bars, the big S, and a number line from −2√2..+2√2 with the classical band [−2,2] shaded vs the quantum-only zones, the bound 2 and Tsirelson 2√2 marked. prefers-reduced-motion renders statically. Verified: physics by direct computation, history vs Nobel/APS primary sources.
+
+## 20. Teleporting a qubit   
+`LANDMARK · TELEPORTATION`  
+**Takeaway:** With one shared entangled pair and two classical bits, an unknown quantum state is rebuilt elsewhere — exactly — and the original is destroyed.
+
+Quantum teleportation (Bennett, Brassard, Crépeau, Jozsa, Peres, Wootters, 1993) moves a quantum state without moving any particle. Alice holds an unknown qubit |ψ⟩ and one half of a Bell pair shared with Bob; she entangles |ψ⟩ with her half, measures both (two random bits that reveal nothing about |ψ⟩), and sends those bits to Bob, who applies one of four Pauli corrections and recovers |ψ⟩. Nothing outruns light (without the bits Bob holds noise), and nothing is cloned (Alice's copy is destroyed) — only information moved. First demonstrated 1997.
+
+> **Slice (animation):** technique=canvas — Run the full 3-qubit protocol on a statevector: set |ψ⟩=cos(θ/2)|0⟩+e^{iφ}sin(θ/2)|1⟩ on q0; Bell pair on q1,q2 (H q1, CNOT q1→q2); Alice's CNOT q0→q1, H q0; measure q0→m0, q1→m1 (collapse + renormalize); Bob applies X^{m1} then Z^{m0} to q2 (matched convention: X from q1's bit, Z from q0's bit). Extract q2 from the definite (m0,m1) block; fidelity to the message = 1.000. Two Bloch spheres (Alice's message, Bob's qubit) with a shared-entanglement channel and the 2 classical bits travelling to Bob; a Run button samples an outcome, a θ slider sets the message. prefers-reduced-motion shows the completed protocol. Verified vs PRL 70,1895 (1993).
+
+## 21. Catching an error without looking   
+`LANDMARK · ERROR CORRECTION`  
+**Takeaway:** Spread one qubit across three, and a parity check finds and undoes a bit-flip — without ever measuring (and destroying) the protected state.
+
+The central puzzle of quantum error correction is that measuring a qubit destroys its superposition — so how can you check for an error? The three-qubit bit-flip code answers it. Encode |ψ⟩=α|0⟩+β|1⟩ as α|000⟩+β|111⟩, then measure two *parities* — whether neighbouring qubits agree — not the qubits themselves; the two-bit syndrome points to which qubit flipped without revealing α or β, so a single X correction restores the state. It catches bit-flips only and is blind to phase-flips — an arbitrary single-qubit error needs Shor's nine-qubit (or the five-qubit) code.
+
+> **Slice (animation):** technique=canvas — Encode on a 3-qubit statevector (CNOT 0→1, 0→2), optionally inject X or Z on a chosen qubit, then extract the syndrome from the stabilizer expectations: s1=⟨Z₀Z₁⟩, s2=⟨Z₁Z₂⟩ (compute Σ|amp|²·(±1) per parity; for code-space + a Pauli error these are exactly ±1). Mapping (s1,s2) bit=1 means eigenvalue −1: (0,0)→none, (1,0)→q0, (1,1)→q1, (0,1)→q2; apply X to the flagged qubit to correct. A Z (phase) error commutes with the Z-checks → syndrome (0,0), undetected (teach the limit). Draw 3 data-qubit nodes (the errored one flashes red), the two stabilizer brackets with their ±1 values, the syndrome, the pointer to the flipped qubit, and the recovered verdict. Buttons pick the error qubit + X/Z. prefers-reduced-motion is the default (static). Verified: stabilizers + syndrome mapping by direct computation.
+
+## 22. Your turn: fork and run   
 `YOUR TURN`  
 **Takeaway:** Fork it, aim your own model at a brief, and a judge anyone can re-run decides whether your result joins the board.
 

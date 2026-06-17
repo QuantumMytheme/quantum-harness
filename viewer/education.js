@@ -3650,6 +3650,256 @@
 };
   // ==========================================================================
 
+  // ===================== EXPANSION: landmark re-runnable experiments =====================
+
+// ───── chsh (Bell / CHSH inequality — S climbs past 2 to 2√2) ─────
+  EDU["chsh"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+  var SQ = 1 / Math.sqrt(2), T2 = 2 * SQ;                 // Tsirelson bound 2√2 ≈ 2.828
+  var psi = [SQ, 0, 0, SQ];                                // |Φ+⟩ amplitudes, index = 2·b0 + b1 (real)
+  function Mmat(th) { var c = Math.cos(th), s = Math.sin(th); return [[c, s], [s, -c]]; }   // cosθ·Z + sinθ·X
+  function corr(a, b) {                                     // ⟨Φ+| M(a)⊗M(b) |Φ+⟩, summed from the statevector
+    var A = Mmat(a), B = Mmat(b), e = 0;
+    for (var i = 0; i < 4; i++) for (var j = 0; j < 4; j++) e += psi[i] * A[i >> 1][j >> 1] * B[i & 1][j & 1] * psi[j];
+    return e;
+  }
+  var a0 = 0, a1 = Math.PI / 2;                            // Alice's two fixed settings: 0°, 90°
+  var phi = Math.PI / 4;                                    // Bob's angle (slider) — optimal at 45°
+  var dispS = 2;
+
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px';
+  lab.textContent = 'Bob angle φ ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = '90'; range.step = '1'; range.value = '45';
+  range.style.marginLeft = '6px'; range.setAttribute('aria-label', 'Bob measurement angle'); lab.appendChild(range);
+  range.addEventListener('input', function () { phi = parseFloat(range.value) * Math.PI / 180; if (K.reduced) draw(); });
+  controls.appendChild(lab);
+  function mkb(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); if (K.reduced) draw(); }); controls.appendChild(b); return b; }
+  mkb('Optimal (45°)', function () { phi = Math.PI / 4; range.value = '45'; });
+  mkb('Aligned (0°)', function () { phi = 0; range.value = '0'; });
+
+  function Svalue() { var b = phi, bp = -phi; return corr(a0, b) + corr(a0, bp) + corr(a1, b) - corr(a1, bp); }
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var S = Svalue();
+    if (K.reduced) dispS = S; else dispS += (S - dispS) * 0.18;
+    var deg = Math.round(phi * 180 / Math.PI);
+
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Bell state |Φ⁺⟩  ·  Alice measures at 0° and 90°  ·  Bob at ' + deg + '° and −' + deg + '°', 14, 22);
+
+    // four correlators E(a,b) as small signed bars
+    var pairs = [['E(0°, b)', a0, phi], ['E(0°, b′)', a0, -phi], ['E(90°, b)', a1, phi], ['E(90°, b′)', a1, -phi]];
+    var bx = 24, by0 = 56, bw = 150, rowH = 26;
+    ctx.font = '10.5px ' + mono;
+    for (var i = 0; i < 4; i++) {
+      var e = corr(pairs[i][1], pairs[i][2]), y = by0 + i * rowH, mid = bx + bw / 2;
+      ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(mid, y - 8); ctx.lineTo(mid, y + 8); ctx.stroke();
+      ctx.fillStyle = e >= 0 ? acc : reject;
+      ctx.fillRect(mid, y - 5, e * (bw / 2), 10);
+      ctx.fillStyle = ink2; ctx.textAlign = 'left'; ctx.fillText(pairs[i][0], bx, y - 12);
+      ctx.fillStyle = ink; ctx.textAlign = 'right'; ctx.fillText((e >= 0 ? '+' : '') + e.toFixed(3), bx + bw + 46, y + 4);
+    }
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('S = E(0,b) + E(0,b′) + E(90,b) − E(90,b′)', bx, by0 + 4 * rowH + 6);
+
+    // big S + verdict
+    var violated = Math.abs(dispS) > 2.0001;
+    ctx.textAlign = 'left'; ctx.fillStyle = violated ? pass : ink2; ctx.font = '600 30px ' + mono;
+    ctx.fillText('S = ' + dispS.toFixed(3), W * 0.52, 70);
+    ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    ctx.fillStyle = violated ? pass : faint;
+    ctx.fillText(violated ? 'beyond 2 — no local-hidden-variable theory can explain this' : 'within ±2 — explainable by local realism', W * 0.52, 90);
+
+    // number line from −2√2 .. +2√2
+    var nlx0 = W * 0.52, nlx1 = W - 24, nly = H - 56, lo = -T2, hi = T2;
+    function X(v) { return nlx0 + (v - lo) / (hi - lo) * (nlx1 - nlx0); }
+    // classical band [−2,2] vs quantum-only zones
+    ctx.fillStyle = faint; ctx.globalAlpha = 0.12; ctx.fillRect(X(-2), nly - 9, X(2) - X(-2), 18); ctx.globalAlpha = 1;
+    ctx.fillStyle = pass; ctx.globalAlpha = 0.12; ctx.fillRect(X(2), nly - 9, X(T2) - X(2), 18); ctx.fillRect(X(-T2), nly - 9, X(-2) - X(-T2), 18); ctx.globalAlpha = 1;
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(nlx0, nly); ctx.lineTo(nlx1, nly); ctx.stroke();
+    [[-2, 'classical −2'], [2, '+2'], [T2, '2√2'], [-T2, '−2√2']].forEach(function (t) {
+      ctx.strokeStyle = ink2; ctx.globalAlpha = 0.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(X(t[0]), nly - 11); ctx.lineTo(X(t[0]), nly + 11); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.textAlign = 'center'; ctx.fillText(t[1], X(t[0]), nly + 22);
+    });
+    ctx.fillStyle = violated ? pass : ink; ctx.beginPath(); ctx.arc(X(dispS), nly, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('classical limit |S| ≤ 2   ·   quantum (Tsirelson) |S| ≤ 2√2', nlx0, nly - 18);
+  }
+  if (K.reduced) draw(); else K.loop(draw);
+};
+
+  // ───── teleport (quantum teleportation — recover |ψ⟩, fidelity 1) ─────
+  EDU["teleport"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) render(); });
+  var N = 3, DIM = 8;
+  function bit(i, q) { return (i >> (N - 1 - q)) & 1; }
+  function H1(st, q) { var o = st.slice(), s = 1 / Math.sqrt(2), m = 1 << (N - 1 - q);
+    for (var i = 0; i < DIM; i++) { if (i & m) continue; var j = i | m;
+      o[i] = { re: (st[i].re + st[j].re) * s, im: (st[i].im + st[j].im) * s };
+      o[j] = { re: (st[i].re - st[j].re) * s, im: (st[i].im - st[j].im) * s }; } return o; }
+  function X1(st, q) { var o = st.slice(), m = 1 << (N - 1 - q); for (var i = 0; i < DIM; i++) o[i ^ m] = st[i]; return o; }
+  function Z1(st, q) { var o = st.slice(), m = 1 << (N - 1 - q); for (var i = 0; i < DIM; i++) o[i] = (i & m) ? { re: -st[i].re, im: -st[i].im } : st[i]; return o; }
+  function CX(st, c, t) { var o = st.slice(), mc = 1 << (N - 1 - c), mt = 1 << (N - 1 - t); for (var i = 0; i < DIM; i++) o[i] = (i & mc) ? st[i ^ mt] : st[i]; return o; }
+  function measure(st, q, rnd) { var m = 1 << (N - 1 - q), p1 = 0;
+    for (var i = 0; i < DIM; i++) if (i & m) p1 += st[i].re * st[i].re + st[i].im * st[i].im;
+    var b = rnd <= p1 ? 1 : 0, norm = Math.sqrt(b ? p1 : 1 - p1) || 1, o = st.slice();
+    for (var k = 0; k < DIM; k++) { var bb = (k & m) ? 1 : 0; o[k] = (bb === b) ? { re: st[k].re / norm, im: st[k].im / norm } : { re: 0, im: 0 }; }
+    return [b, o]; }
+  // message |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩
+  var theta = 1.1, mphi = 0.6, m0 = 0, m1 = 0, stage = 0, anim = 0, fidelity = 1, outBloch = { x: 0, y: 0, z: 1 };
+  function msgAmp() { var c = Math.cos(theta / 2), s = Math.sin(theta / 2); return [{ re: c, im: 0 }, { re: s * Math.cos(mphi), im: s * Math.sin(mphi) }]; }
+  function blochOf(a0, a1) { var p = { re: a0.re * a1.re + a0.im * a1.im, im: a0.re * a1.im - a0.im * a1.re };
+    return { x: 2 * p.re, y: 2 * p.im, z: (a0.re * a0.re + a0.im * a0.im) - (a1.re * a1.re + a1.im * a1.im) }; }
+  function run(rnd0, rnd1) {
+    var msg = msgAmp(), st = []; for (var i = 0; i < DIM; i++) st.push({ re: 0, im: 0 });
+    st[0] = msg[0]; st[4] = msg[1];                        // |ψ⟩ on q0, |00⟩ on q1q2
+    st = H1(st, 1); st = CX(st, 1, 2);                     // Bell pair q1,q2
+    st = CX(st, 0, 1); st = H1(st, 0);                     // Alice's Bell-basis rotation
+    var r0 = measure(st, 0, rnd0); m0 = r0[0]; st = r0[1];
+    var r1 = measure(st, 1, rnd1); m1 = r1[0]; st = r1[1];
+    if (m1) st = X1(st, 2);                                // Bob: X^{m1}
+    if (m0) st = Z1(st, 2);                                // Bob: Z^{m0}
+    // extract Bob's qubit (q2) from the definite (m0,m1) block
+    var base = (m0 << 2) | (m1 << 1), a0 = st[base], a1 = st[base | 1];
+    outBloch = blochOf(a0, a1);
+    var mb = blochOf(msg[0], msg[1]);
+    fidelity = (1 + (outBloch.x * mb.x + outBloch.y * mb.y + outBloch.z * mb.z)) / 2;
+  }
+  function go() { run(Math.random(), Math.random()); stage = 1; anim = 0; }
+  run(0, 0);                                                // initial: outcome 00
+
+  function mk(t, fn, primary) { var b = document.createElement('button'); b.type = 'button'; b.className = primary ? 'btn primary' : 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); if (K.reduced) render(); }); controls.appendChild(b); return b; }
+  mk('Run teleport', function () { go(); }, true);
+  var tl = document.createElement('label'); tl.className = 'chip'; tl.style.margin = '0 8px'; tl.textContent = 'message θ ';
+  var tr = document.createElement('input'); tr.type = 'range'; tr.min = '0'; tr.max = '180'; tr.step = '1'; tr.value = String(Math.round(theta * 180 / Math.PI)); tr.style.marginLeft = '6px';
+  tr.addEventListener('input', function () { theta = parseFloat(tr.value) * Math.PI / 180; run(m0, m0 ? 1 : 0); stage = 0; if (K.reduced) render(); }); tl.appendChild(tr); controls.appendChild(tl);
+
+  function drawBloch(cx, cy, r, b, col, ink, faint, rule, label) {
+    ctx.strokeStyle = rule; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.32); ctx.strokeStyle = faint; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); ctx.globalAlpha = 1;
+    var L = Math.hypot(b.x, b.y, b.z) || 1, u = { x: b.x / L, y: b.y / L, z: b.z / L };
+    var sx = cx + r * u.x, sy = cy - r * u.z + r * 0.32 * u.y;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(sx, sy); ctx.stroke();
+    ctx.beginPath(); ctx.arc(sx, sy, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = ink; ctx.font = '11px ' + (K.v('--mono') || 'monospace'); ctx.textAlign = 'center'; ctx.fillText(label, cx, cy + r + 20);
+  }
+  var dispOut = { x: 0, y: 0, z: 1 };
+  function render() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var msg = msgAmp(), mb = blochOf(msg[0], msg[1]);
+    var shown = (stage >= 1) ? outBloch : { x: 0, y: 0, z: 1 };
+    if (K.reduced) dispOut = shown; else { dispOut.x += (shown.x - dispOut.x) * 0.15; dispOut.y += (shown.y - dispOut.y) * 0.15; dispOut.z += (shown.z - dispOut.z) * 0.15; }
+
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Alice has an unknown qubit |ψ⟩. With a shared Bell pair + 2 classical bits, Bob rebuilds it — exactly.', 14, 22);
+
+    var r = Math.min(W * 0.13, 64), ay = H * 0.46;
+    drawBloch(W * 0.18, ay, r, mb, acc, ink2, faint, rule, "Alice's message |ψ⟩");
+    drawBloch(W * 0.82, ay, r, dispOut, pass, ink2, faint, rule, "Bob's qubit");
+
+    // channel in the middle: entanglement + classical bits
+    var mx0 = W * 0.18 + r + 14, mx1 = W * 0.82 - r - 14, my = ay;
+    ctx.strokeStyle = acc2; ctx.globalAlpha = 0.5; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(mx0, my + 26); ctx.lineTo(mx1, my + 26); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.textAlign = 'center'; ctx.fillText('shared entanglement', (mx0 + mx1) / 2, my + 42);
+    if (stage >= 1) {
+      ctx.fillStyle = ink2; ctx.font = '600 11px ' + mono; ctx.fillText('2 classical bits:  m₀=' + m0 + '  m₁=' + m1 + '  →', (mx0 + mx1) / 2, my - 30);
+      ctx.fillStyle = acc; ctx.font = '10px ' + mono; ctx.fillText('Bob applies  ' + (m0 ? 'Z' : '·') + ' ' + (m1 ? 'X' : '·'), (mx0 + mx1) / 2, my - 14);
+      ctx.fillStyle = pass; ctx.font = '600 12px ' + mono; ctx.fillText('fidelity = ' + fidelity.toFixed(3), (mx0 + mx1) / 2, my + 64);
+    } else {
+      ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.fillText('press “Run teleport”', (mx0 + mx1) / 2, my - 16);
+    }
+  }
+  function tick() { if (stage === 1) { anim++; if (anim > 30) stage = 2; } render(); }
+  if (K.reduced) { stage = 1; run(0, 0); render(); } else K.loop(tick);
+};
+
+  // ───── qec-code (3-qubit bit-flip code — syndrome localizes & corrects) ─────
+  EDU["qec-code"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var N = 3, DIM = 8;
+  function bit(i, q) { return (i >> (N - 1 - q)) & 1; }
+  function CX(st, c, t) { var o = st.slice(), mc = 1 << (N - 1 - c), mt = 1 << (N - 1 - t); for (var i = 0; i < DIM; i++) o[i] = (i & mc) ? st[i ^ mt] : st[i]; return o; }
+  function X1(st, q) { var o = st.slice(), m = 1 << (N - 1 - q); for (var i = 0; i < DIM; i++) o[i ^ m] = st[i]; return o; }
+  function Z1(st, q) { var o = st.slice(), m = 1 << (N - 1 - q); for (var i = 0; i < DIM; i++) o[i] = (i & m) ? { re: -st[i].re, im: -st[i].im } : st[i]; return o; }
+  function expZZ(st, qa, qb) { var e = 0; for (var i = 0; i < DIM; i++) { var p = st[i].re * st[i].re + st[i].im * st[i].im; e += p * ((bit(i, qa) === bit(i, qb)) ? 1 : -1); } return e; }
+  var theta = 1.05, errQ = 0, errType = 'X';               // a representative logical state; error on q0 by default
+
+  function encoded() {                                     // α|000⟩ + β|111⟩
+    var c = Math.cos(theta / 2), s = Math.sin(theta / 2), st = []; for (var i = 0; i < DIM; i++) st.push({ re: 0, im: 0 });
+    st[0] = { re: c, im: 0 }; st[4] = { re: s, im: 0 };     // |ψ⟩ on q0
+    st = CX(st, 0, 1); st = CX(st, 0, 2); return st;
+  }
+  function syndrome(st) { var s1 = expZZ(st, 0, 1) < 0 ? 1 : 0, s2 = expZZ(st, 1, 2) < 0 ? 1 : 0;
+    // (s1,s2): 00→none, 10→q0, 11→q1, 01→q2
+    var q = (s1 && !s2) ? 0 : (s1 && s2) ? 1 : (!s1 && s2) ? 2 : -1;
+    return { s1: s1, s2: s2, q: q }; }
+
+  function mk(t, fn, on) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; if (on) b.setAttribute('aria-pressed', 'true'); b.textContent = t; b.addEventListener('click', function () { fn(); draw(); }); controls.appendChild(b); return b; }
+  var ebtns = {};
+  controls.appendChild(Object.assign(document.createElement('span'), { className: 'chip', textContent: 'flip' }));
+  ['none', '0', '1', '2'].forEach(function (e) { ebtns[e] = mk(e === 'none' ? 'no error' : 'q' + e, function () { errQ = e === 'none' ? -1 : parseInt(e, 10); sync(); }); });
+  var typeBtn = mk('X error', function () { errType = errType === 'X' ? 'Z' : 'X'; typeBtn.textContent = errType + ' error'; sync(); });
+  function sync() { for (var e in ebtns) ebtns[e].setAttribute('aria-pressed', ((e === 'none' && errQ < 0) || e === String(errQ)) ? 'true' : 'false'); }
+  sync();
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var st = encoded();
+    if (errQ >= 0) st = errType === 'X' ? X1(st, errQ) : Z1(st, errQ);
+    var syn = syndrome(st), undetected = errQ >= 0 && syn.q < 0;
+    var corrected = st; if (syn.q >= 0) corrected = X1(st, syn.q);
+
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Encode  |ψ⟩ → α|000⟩ + β|111⟩.  A bit-flip can be found and undone without ever reading the logical state.', 14, 22);
+
+    // three data qubits
+    var cy = H * 0.42, qx = [W * 0.24, W * 0.42, W * 0.60], r = 22;
+    for (var q = 0; q < 3; q++) {
+      var x = qx[q], hit = errQ === q;
+      ctx.fillStyle = hit ? (errType === 'X' ? reject : acc) : K.v('--panel'); ctx.globalAlpha = hit ? 0.18 : 1;
+      ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = hit ? (errType === 'X' ? reject : acc) : faint; ctx.lineWidth = hit ? 2.2 : 1.4; ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = ink; ctx.font = '600 12px ' + mono; ctx.textAlign = 'center'; ctx.fillText('q' + q, x, cy + 4);
+      if (hit) { ctx.fillStyle = errType === 'X' ? reject : acc; ctx.font = '10px ' + mono; ctx.fillText(errType + ' error', x, cy - r - 8); }
+    }
+    // stabilizer brackets Z0Z1 and Z1Z2
+    function stab(xa, xb, val, label, yoff) {
+      var y = cy + r + 16 + yoff;
+      ctx.strokeStyle = val ? reject : faint; ctx.globalAlpha = val ? 1 : 0.5; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(xa, cy + r + 4); ctx.lineTo(xa, y); ctx.lineTo(xb, y); ctx.lineTo(xb, cy + r + 4); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = val ? reject : ink2; ctx.font = '10px ' + mono; ctx.textAlign = 'center';
+      ctx.fillText(label + ' = ' + (val ? '−1' : '+1'), (xa + xb) / 2, y + 14);
+    }
+    stab(qx[0], qx[1], syn.s1, 'Z₀Z₁', 0);
+    stab(qx[1], qx[2], syn.s2, 'Z₁Z₂', 30);
+
+    // syndrome readout + verdict
+    var rx = W * 0.70, ry = H * 0.30;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
+    ctx.fillStyle = faint; ctx.fillText('syndrome', rx, ry);
+    ctx.fillStyle = ink; ctx.font = '600 16px ' + mono; ctx.fillText('(' + syn.s1 + ', ' + syn.s2 + ')', rx, ry + 22);
+    ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    if (errQ < 0) { ctx.fillStyle = ink2; ctx.fillText('no error · syndrome 0,0', rx, ry + 46); }
+    else if (undetected) { ctx.fillStyle = acc; wrap('a Z (phase) error commutes with Z-checks → syndrome 0,0, undetected. The 9-qubit code is needed for phase errors.', rx, ry + 46, W - rx - 16, 15); }
+    else { ctx.fillStyle = pass; ctx.fillText('→ points to q' + syn.q + ' · apply X to correct', rx, ry + 46);
+      ctx.font = '600 12px ' + mono; ctx.fillText('logical |ψ⟩ recovered ✓', rx, ry + 70); }
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var test = line + words[i] + ' '; if (ctx.measureText(test).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = test; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+
   // ===================== EXPANSION: foundations + quantum track =====================
 
 // ───── bit (what is a bit? — logic-gate playground) ─────

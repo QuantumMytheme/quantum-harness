@@ -46,17 +46,20 @@ test('every in-page nav link resolves to a real section id', () => {
 })
 
 // --- education page ---------------------------------------------------------
-// 20-slice, two-track curriculum (Part 0 history; Part I classical bit->silicon;
-// Part II quantum qubit->hardware; Part III explorer + your-run), in page order.
+// 23-slice, two-track curriculum (Part 0 history; Part I classical bit->silicon;
+// Part II quantum qubit->hardware; Part III scale; Part IV landmark re-runnable
+// experiments; close: your-run), in page order.
 const EDU_IDS = [
   'history',
   'bit', 'rules-to-learning', 'machine-learning', 'big-data', 'neural-nets',
   'transformers', 'architectures', 'slm-llm', 'pretrain-posttrain', 'inference-zoo', 'classical-stack',
   'quantum-sim', 'entanglement', 'quantum-algorithms', 'noise-qec', 'hardware-zoo', 'hybrid-quantum',
-  'qubit-explorer', 'your-run',
+  'qubit-explorer',
+  'chsh', 'teleport', 'qec-code',
+  'your-run',
 ]
 
-test('education page exists, is wired, and mounts all 20 module canvases', () => {
+test('education page exists, is wired, and mounts all 23 module canvases', () => {
   assert.ok(existsSync(v('education.html')), 'viewer/education.html should exist')
   assert.ok(existsSync(v('education.js')), 'viewer/education.js should exist')
   const edu = readFileSync(v('education.html'), 'utf8')

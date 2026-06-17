@@ -73,7 +73,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Twenty slices in four parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today, then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Twenty-three slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs three landmark experiments — Bell's inequality, teleportation, and quantum error correction — each computing its headline number live from the statevector — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -98,9 +98,13 @@
       <a href="#m-noise-qec"><b>15</b>Noise, NISQ &amp; error correction</a>
       <a href="#m-hardware-zoo"><b>16</b>The quantum hardware zoo</a>
       <a href="#m-hybrid-quantum"><b>17</b>Hybrid classical–quantum</a>
-      <span class="ph">Part III · scale &amp; your run</span>
+      <span class="ph">Part III · scale</span>
       <a href="#m-qubit-explorer"><b>18</b>Theoretical vs real qubit counts</a>
-      <a href="#m-your-run"><b>19</b>Your turn: prove, then run</a>
+      <span class="ph">Part IV · landmark experiments — re-run the proof</span>
+      <a href="#m-chsh"><b>19</b>Bell's inequality: S beyond 2</a>
+      <a href="#m-teleport"><b>20</b>Teleporting a qubit</a>
+      <a href="#m-qec-code"><b>21</b>Catching an error without looking</a>
+      <a href="#m-your-run"><b>22</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
@@ -449,7 +453,65 @@
   </div>
 </section>
 
+<!-- ===================== PART IV divider ===================== -->
+<div class="partsep"><div class="wrap">
+  <p class="pl">Part IV · Landmark experiments</p>
+  <h3>Re-run the proofs yourself</h3>
+  <p>The whole idea here is a result a third party can re-check. So here are three landmark experiments reduced to a few qubits — each computes its headline number live from the statevector, the same number the original papers and real machines report. Run them, then go run your own.</p>
+</div></div>
+
 <!-- ============================= 19 ============================= -->
+<section id="m-chsh">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · Bell / CHSH</p>
+      <h2>Bell's inequality: S beyond 2</h2>
+      <p class="takeaway"><b>Takeaway.</b> One number — the CHSH correlation S — climbs past the classical limit of 2 to 2√2, which no theory of <em>local</em> hidden variables can produce.</p>
+    </div>
+    <p>In 1964 John Bell turned a philosophical worry — could quantum correlations secretly be explained by ordinary "local hidden variables" fixed in advance? — into a number you can measure. The CHSH form (Clauser, Horne, Shimony, Holt, 1969) combines four correlation measurements into a single quantity S. Any local-realistic theory, however clever, must obey |S| ≤ 2. A shared Bell state measured at the right angles reaches S = 2√2 ≈ 2.83 — Tsirelson's quantum maximum — and experiment agrees: Aspect's 1982 test closed the locality loophole, three independent loophole-free experiments settled it in 2015, and the 2022 Nobel Prize in Physics recognized the work. This figure computes S directly from the |Φ⁺⟩ statevector as you tune the measurement angle, so you watch it cross 2 yourself. One honest caveat: this rules out <em>local</em> hidden variables, not every hidden-variable theory — explicitly nonlocal ones, like Bohmian mechanics, survive.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="chsh" aria-label="The four CHSH correlators and the value S, computed from a Bell state, plotted on a number line against the classical bound 2 and the quantum bound 2√2 as the measurement angle changes"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 19.</b> Drag Bob's measurement angle; the four correlators and S update live, computed from |Φ⁺⟩. The shaded band is what local realism allows (|S| ≤ 2); the optimal 45° reaches 2√2 ≈ 2.828 — the most quantum mechanics permits.</p>
+  </div>
+</section>
+
+<!-- ============================= 20 ============================= -->
+<section id="m-teleport">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · Teleportation</p>
+      <h2>Teleporting a qubit</h2>
+      <p class="takeaway"><b>Takeaway.</b> With one shared entangled pair and two classical bits, an unknown quantum state is rebuilt elsewhere — exactly — and the original is destroyed.</p>
+    </div>
+    <p>Quantum teleportation (Bennett, Brassard, Crépeau, Jozsa, Peres, and Wootters, 1993) moves a quantum state without moving any particle. Alice holds an unknown qubit |ψ⟩ and one half of a Bell pair she shares with Bob. She entangles |ψ⟩ with her half, measures both — getting two random classical bits that reveal nothing about |ψ⟩ — and sends those two bits to Bob, who applies one of four simple Pauli corrections and recovers |ψ⟩ on his own qubit. Nothing outruns light: without the two classical bits, Bob's qubit is just noise, so the protocol can't beat the message there. And nothing is cloned: Alice's measurement destroys her copy, so only one |ψ⟩ ever exists — only the information moved, never any matter. First demonstrated in 1997; this figure runs the full three-qubit protocol and reports the fidelity — 1.000 — between Alice's message and Bob's result.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="teleport" aria-label="Two Bloch spheres — Alice's message and Bob's qubit — with a shared-entanglement channel; running the protocol sends two classical bits to Bob, whose corrected qubit matches the message at fidelity one"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 20.</b> Set the message direction and press Run. Alice's two measurement bits travel to Bob, who applies the matching correction; the two Bloch arrows line up and the fidelity reads 1.000 — every outcome, every time.</p>
+  </div>
+</section>
+
+<!-- ============================= 21 ============================= -->
+<section id="m-qec-code">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · Error correction</p>
+      <h2>Catching an error without looking</h2>
+      <p class="takeaway"><b>Takeaway.</b> Spread one qubit across three, and a parity check finds and undoes a bit-flip — without ever measuring (and destroying) the protected state.</p>
+    </div>
+    <p>The central puzzle of quantum error correction is that measuring a qubit destroys its superposition — so how can you ever check for an error? The three-qubit bit-flip code, the simplest one, answers it. Encode |ψ⟩ = α|0⟩ + β|1⟩ as α|000⟩ + β|111⟩, then measure two <em>parities</em> — whether neighbouring qubits agree — rather than the qubits themselves. Those two parity bits, the syndrome, point to exactly which qubit flipped without revealing α or β, so a single X correction restores the state. This is the move every error-corrected machine makes, and it is why the noise slice earlier mattered. It has a sharp limit: it catches bit-flips only and is completely blind to phase-flips — correcting an arbitrary single-qubit error needs a bigger code (Shor's nine-qubit code, or the five-qubit code). Flip a qubit and watch the syndrome localize it; switch to a phase error and watch it slip straight through.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="qec-code" aria-label="Three encoded data qubits with the two stabilizers Z0Z1 and Z1Z2; injecting a bit-flip produces a syndrome that points to the flipped qubit, while a phase error leaves the syndrome at zero"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 21.</b> Pick a qubit to flip; the two stabilizers Z₀Z₁ and Z₁Z₂ give a syndrome that points to it, and an X correction restores |ψ⟩. Switch to a Z (phase) error to watch the bit-flip code miss it entirely.</p>
+  </div>
+</section>
+
+<!-- ============================= 22 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
@@ -462,7 +524,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 19.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 22.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 
