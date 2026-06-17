@@ -73,7 +73,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Twenty-three slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs three landmark experiments — Bell's inequality, teleportation, and quantum error correction — each computing its headline number live from the statevector — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Twenty-six slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs six landmark experiments — Bell's inequality, teleportation, and quantum error correction, then their classical counterparts (the Hamming code, the 3-SAT phase transition) and the bridge between the tracks (RSA, and the one step Shor's algorithm speeds up) — each computing its headline result live — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -104,7 +104,10 @@
       <a href="#m-chsh"><b>19</b>Bell's inequality: S beyond 2</a>
       <a href="#m-teleport"><b>20</b>Teleporting a qubit</a>
       <a href="#m-qec-code"><b>21</b>Catching an error without looking</a>
-      <a href="#m-your-run"><b>22</b>Your turn: prove, then run</a>
+      <a href="#m-hamming"><b>22</b>The Hamming code (classical twin)</a>
+      <a href="#m-sat3"><b>23</b>The 3-SAT phase transition</a>
+      <a href="#m-rsa-shor"><b>24</b>RSA, and what Shor speeds up</a>
+      <a href="#m-your-run"><b>25</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
@@ -512,6 +515,57 @@
 </section>
 
 <!-- ============================= 22 ============================= -->
+<section id="m-hamming">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · classical error correction</p>
+      <h2>The Hamming code: the syndrome spells the error</h2>
+      <p class="takeaway"><b>Takeaway.</b> Three parity checks over seven bits localize any single-bit error — and read as a binary number, the checks give the error's position outright.</p>
+    </div>
+    <p>The same idea behind the quantum bit-flip code was invented for classical bits first. Frustrated by a relay computer that halted on every error, Richard Hamming published in 1950 a code that doesn't just detect errors but fixes them. It encodes four data bits into seven by adding three parity bits, placed at positions 1, 2 and 4; each parity bit checks a different overlapping set of positions. Flip any one of the seven bits and recompute the three checks: the three result bits, read together as a binary number, are exactly the <em>position</em> of the bit that flipped (and 000 means no error). One correction restores the word. It's the [7,4] code — single-error-correcting — and the mechanism is the classical ancestor of a quantum syndrome measurement: parity checks here, stabilizer measurements there. (The qubit code's literal twin is the three-bit repetition code; Hamming is the same idea made efficient.)</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="hamming" aria-label="Seven Hamming-code bit cells with three parity-check rows; clicking a bit flips it and the syndrome, read as a binary number, points to the flipped position"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 22.</b> Set the four data bits, then click any bit to flip it. The three parity checks light up, and the syndrome read as a binary number (c₄c₂c₁) names the flipped position directly — the classical cousin of the qubit code's syndrome.</p>
+  </div>
+</section>
+
+<!-- ============================= 23 ============================= -->
+<section id="m-sat3">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · complexity</p>
+      <h2>The 3-SAT phase transition</h2>
+      <p class="takeaway"><b>Takeaway.</b> Pile logical constraints onto random variables and satisfiability collapses abruptly near a critical ratio — and the problems get hardest right at the edge.</p>
+    </div>
+    <p>Some problems are easy to <em>check</em> but seem to need brute search to <em>solve</em> — the P-vs-NP question. The Cook–Levin theorem (1971/73) made satisfiability (SAT) the first proven NP-complete problem; because the standard reduction yields three-literal clauses, 3-SAT is NP-complete too, and it sits at the heart of the hardest problems we know. Random 3-SAT shows that hardness as physics: take n boolean variables and m random three-literal clauses, and watch what happens as the ratio α = m/n grows. Below a critical ratio almost every formula is satisfiable; above it almost none are — and the crossover sharpens into a near-vertical cliff as n grows. For 3-SAT that threshold sits empirically around α ≈ 4.27 (a conjectured value from statistical-physics methods; a sharp threshold is proven to exist, with the exact value proven only for large clause sizes). The twist: the formulas that are hardest to solve cluster right at the edge — an "easy–hard–easy" pattern this figure measures by actually generating and solving thousands of random formulas.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="sat3" aria-label="A plot of the probability a random 3-SAT formula is satisfiable versus the clause-to-variable ratio, dropping sharply near 4.27, with a solver-effort curve peaking at the same place"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 23.</b> The curve is computed live — random 3-SAT formulas generated and brute-force solved. Drag the clause/variable ratio: P(satisfiable) falls off a cliff near 4.27, and the faint effort curve peaks there too. Press resample for a fresh batch.</p>
+  </div>
+</section>
+
+<!-- ============================= 24 ============================= -->
+<section id="m-rsa-shor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · the bridge</p>
+      <h2>RSA, and the one step Shor speeds up</h2>
+      <p class="takeaway"><b>Takeaway.</b> RSA's security is the hardness of factoring; Shor's algorithm factors by finding a period — and that single step is the only part a quantum computer accelerates.</p>
+    </div>
+    <p>This is where the two ladders meet. RSA (Rivest, Shamir, Adleman, 1977) encrypts with a public number N = p·q and decrypts with a private key derived from p and q; anyone can multiply p and q, but recovering them by factoring N is, classically, the wall — for a 2048-bit N the best known method would run longer than the universe. Shor's algorithm (1994) walks straight through that wall, and the figure shows exactly how: pick a base a, look at the sequence a, a², a³, … mod N, and find its <em>period</em> r — the point where it returns to 1. If r is even and a<sup>r/2</sup> isn't −1, then the ordinary greatest-common-divisor of a<sup>r/2</sup>±1 with N hands you p and q. Every step here is classical arithmetic you can run by hand — except finding the period r, which is the one place a quantum computer (via the quantum Fourier transform) is exponentially faster. The gcd that turns the period into the factors is plain Euclid. Shor doesn't out-divide a classical computer; it out-finds the period.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="rsa-shor" aria-label="An RSA panel showing encrypt and decrypt on small primes, beside a factoring panel that finds the period of a^x mod N and extracts the factors by gcd"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 24.</b> Left: pick N = p·q, slide the message, watch encrypt and decrypt round-trip. Right: the sequence aˣ mod N, its period r, and the gcd that turns r into the factors — the period-finding is the only step a quantum computer speeds up.</p>
+  </div>
+</section>
+
+<!-- ============================= 25 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
@@ -524,7 +578,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 22.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 25.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 

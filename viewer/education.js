@@ -3650,6 +3650,233 @@
 };
   // ==========================================================================
 
+  // ============ EXPANSION: landmark experiments · classical + bridge ============
+
+// ───── hamming (Hamming(7,4) — the syndrome spells the error position) ─────
+  EDU["hamming"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  // positions 1..7: parity at 1,2,4 · data at 3,5,6,7
+  var d = { 3: 1, 5: 0, 6: 1, 7: 1 }, err = 0;            // err = flipped position (0 = none)
+  function encode() {                                      // 1-indexed codeword [_, b1..b7]
+    var p1 = d[3] ^ d[5] ^ d[7], p2 = d[3] ^ d[6] ^ d[7], p4 = d[5] ^ d[6] ^ d[7];
+    return [0, p1, p2, d[3], p4, d[5], d[6], d[7]];
+  }
+  function received() { var c = encode(); if (err) c[err] ^= 1; return c; }
+  function syndrome(r) { var c1 = r[1] ^ r[3] ^ r[5] ^ r[7], c2 = r[2] ^ r[3] ^ r[6] ^ r[7], c4 = r[4] ^ r[5] ^ r[6] ^ r[7];
+    return { c1: c1, c2: c2, c4: c4, pos: c1 + 2 * c2 + 4 * c4 }; }
+
+  function mkb(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); draw(); }); controls.appendChild(b); return b; }
+  var dlbl = document.createElement('span'); dlbl.className = 'chip'; dlbl.textContent = 'data bits'; controls.appendChild(dlbl);
+  var dbtn = {};
+  [3, 5, 6, 7].forEach(function (p) { dbtn[p] = mkb('d' + p + '=' + d[p], function () { d[p] ^= 1; dbtn[p].textContent = 'd' + p + '=' + d[p]; err = 0; }); });
+  mkb('clear error', function () { err = 0; });
+
+  var cellHit = [];
+  canvas.style.cursor = 'pointer';
+  canvas.addEventListener('pointerdown', function (e) { var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    for (var i = 0; i < cellHit.length; i++) { var c = cellHit[i]; if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.w) { err = (err === c.pos) ? 0 : c.pos; draw(); return; } } });
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), panel = K.v('--panel'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic'; cellHit = [];
+    var r = received(), syn = syndrome(r), isParity = { 1: 1, 2: 1, 4: 1 };
+
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('4 data bits → 7-bit codeword (3 parity).  Click any bit to flip it; the 3 checks find it.', 14, 22);
+
+    // seven bit cells
+    var cw = Math.min(46, (W - 60) / 9), gap = cw * 0.32, x0 = 30, cy = 64;
+    for (var p = 1; p <= 7; p++) {
+      var x = x0 + (p - 1) * (cw + gap), flipped = err === p, par = isParity[p];
+      ctx.fillStyle = flipped ? reject : (par ? acc : panel); ctx.globalAlpha = flipped ? 0.18 : (par ? 0.10 : 1);
+      rr(x, cy, cw, cw, 5); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = flipped ? reject : (par ? acc : faint); ctx.lineWidth = flipped ? 2.2 : 1.3; rr(x, cy, cw, cw, 5); ctx.stroke();
+      ctx.fillStyle = flipped ? reject : ink; ctx.font = '600 16px ' + mono; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(r[p]), x + cw / 2, cy + cw / 2);
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = par ? acc : faint; ctx.font = '9px ' + mono; ctx.fillText((par ? 'p' : 'd') + p, x + cw / 2, cy - 6);
+      cellHit.push({ x: x, y: cy, w: cw, pos: p });
+    }
+
+    // three parity-check rows
+    var checks = [['c₁  {1,3,5,7}', [1, 3, 5, 7], syn.c1], ['c₂  {2,3,6,7}', [2, 3, 6, 7], syn.c2], ['c₄  {4,5,6,7}', [4, 5, 6, 7], syn.c4]];
+    var ry0 = cy + cw + 26;
+    ctx.font = '10px ' + mono;
+    for (var k = 0; k < 3; k++) {
+      var yy = ry0 + k * 26, ch = checks[k];
+      // tick marks under covered positions
+      for (var j = 0; j < ch[1].length; j++) { var pp = ch[1][j], xx = x0 + (pp - 1) * (cw + gap) + cw / 2;
+        ctx.fillStyle = ch[2] ? reject : faint; ctx.globalAlpha = ch[2] ? 1 : 0.5; ctx.beginPath(); ctx.arc(xx, yy, 3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = ch[2] ? reject : ink2; ctx.textAlign = 'left'; ctx.fillText(ch[0], x0 + 7 * (cw + gap) + 8, yy + 3);
+      ctx.fillStyle = ch[2] ? reject : pass; ctx.fillText(ch[2] ? '✗ parity broken' : '✓', x0 + 7 * (cw + gap) + 116, yy + 3);
+    }
+
+    // syndrome + verdict
+    var sx = W * 0.62, sy = 70;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('syndrome  c₄c₂c₁', sx, sy);
+    ctx.fillStyle = ink; ctx.font = '600 17px ' + mono; ctx.fillText(syn.c4 + '' + syn.c2 + '' + syn.c1 + '  =  ' + syn.pos, sx, sy + 24);
+    ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    if (syn.pos === 0) { ctx.fillStyle = ink2; ctx.fillText('0 → no error', sx, sy + 48); }
+    else { ctx.fillStyle = pass; ctx.fillText('→ bit ' + syn.pos + ' flipped — flip it back to correct', sx, sy + 48);
+      ctx.font = '600 12px ' + mono; ctx.fillText('codeword recovered ✓', sx, sy + 70); }
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('The three parity checks, read as a binary number, give the error’s position directly — the classical cousin of the qubit code’s syndrome.', sx, sy + 96, W - sx - 16, 13);
+  }
+  function rr(x, y, w, h, rad) { ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; } ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad); ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath(); }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── sat3 (random 3-SAT — the satisfiability phase transition) ─────
+  EDU["sat3"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var n = 12, K_INST = 10, A_LO = 2, A_HI = 7, seedBase = 9;
+  var curve = [], alpha = 4.27;
+
+  function rng(seed) { var s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function randInstance(m, rnd) { var cl = []; for (var c = 0; c < m; c++) { var lits = [], used = {}; while (lits.length < 3) { var v = (rnd() * n) | 0; if (used[v]) continue; used[v] = 1; lits.push({ v: v, neg: rnd() < 0.5 }); } cl.push(lits); } return cl; }
+  function solve(cl) {                                     // brute force with early-exit; returns {sat, cost}
+    var cost = 0;
+    for (var a = 0; a < (1 << n); a++) { cost++; var ok = true;
+      for (var i = 0; i < cl.length; i++) { var c = cl[i], sat = false;
+        for (var j = 0; j < 3; j++) { var lit = c[j], val = (a >> lit.v) & 1; if (lit.neg ? !val : val) { sat = true; break; } }
+        if (!sat) { ok = false; break; } }
+      if (ok) return { sat: true, cost: cost }; }
+    return { sat: false, cost: cost };
+  }
+  function build() {
+    curve = []; var steps = 16;
+    for (var s = 0; s <= steps; s++) {
+      var al = A_LO + (A_HI - A_LO) * s / steps, m = Math.round(al * n), satN = 0, cost = 0, rnd = rng(seedBase * 131 + s);
+      for (var k = 0; k < K_INST; k++) { var res = solve(randInstance(m, rnd)); if (res.sat) satN++; cost += res.cost; }
+      curve.push({ alpha: al, p: satN / K_INST, cost: cost / K_INST });
+    }
+  }
+  build();
+  var maxCost = curve.reduce(function (a, b) { return Math.max(a, b.cost); }, 1);
+
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'ratio m/n ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = String(A_LO); range.max = String(A_HI); range.step = '0.1'; range.value = String(alpha); range.style.marginLeft = '6px';
+  range.addEventListener('input', function () { alpha = parseFloat(range.value); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+  var rb = document.createElement('button'); rb.type = 'button'; rb.className = 'btn'; rb.textContent = 'resample'; rb.addEventListener('click', function () { seedBase = (seedBase * 7 + 3) % 9973; build(); maxCost = curve.reduce(function (a, b) { return Math.max(a, b.cost); }, 1); draw(); }); controls.appendChild(rb);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), acc2 = K.v('--accent-2'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Random 3-SAT (' + n + ' variables, K=' + K_INST + ' per point), solved by brute force. As clauses pile up, satisfiability collapses.', 14, 20);
+
+    var px0 = 48, px1 = W - 20, py0 = 36, py1 = H - 46;
+    function X(al) { return px0 + (al - A_LO) / (A_HI - A_LO) * (px1 - px0); }
+    function Yp(p) { return py1 - p * (py1 - py0); }           // P(SAT) 0..1
+    // axes
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px0, py1); ctx.lineTo(px1, py1); ctx.stroke();
+    ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.textAlign = 'right'; ctx.fillText('1', px0 - 4, py0 + 4); ctx.fillText('0', px0 - 4, py1 + 3);
+    ctx.textAlign = 'center'; ctx.fillText('clause / variable ratio  α = m/n →', (px0 + px1) / 2, H - 10);
+    // threshold ~4.27
+    var tx = X(4.27); ctx.strokeStyle = ink2; ctx.globalAlpha = 0.4; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(tx, py0); ctx.lineTo(tx, py1); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.textAlign = 'left'; ctx.fillText('phase transition ≈ 4.27', tx + 4, py0 + 10);
+    // effort curve (easy-hard-easy), faint, scaled into lower band
+    ctx.strokeStyle = acc2; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.5; ctx.beginPath();
+    curve.forEach(function (pt, i) { var x = X(pt.alpha), y = py1 - (pt.cost / maxCost) * (py1 - py0) * 0.9; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = acc2; ctx.font = '9px ' + mono; ctx.textAlign = 'left'; ctx.fillText('solve effort (easy → hard → easy)', px0 + 6, py0 + 22);
+    // P(SAT) curve
+    ctx.strokeStyle = acc; ctx.lineWidth = 2.4; ctx.beginPath();
+    curve.forEach(function (pt, i) { var x = X(pt.alpha), y = Yp(pt.p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+    curve.forEach(function (pt) { ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(X(pt.alpha), Yp(pt.p), 2.5, 0, Math.PI * 2); ctx.fill(); });
+    ctx.fillStyle = acc; ctx.font = '9px ' + mono; ctx.fillText('P(satisfiable)', px0 + 6, py0 + 10);
+
+    // current α marker + readout (interpolate P from curve)
+    var pAt = 1; for (var i = 0; i < curve.length - 1; i++) { if (alpha >= curve[i].alpha && alpha <= curve[i + 1].alpha) { var t = (alpha - curve[i].alpha) / (curve[i + 1].alpha - curve[i].alpha); pAt = curve[i].p + t * (curve[i + 1].p - curve[i].p); break; } }
+    var mx = X(alpha);
+    ctx.strokeStyle = ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(mx, py0); ctx.lineTo(mx, py1); ctx.stroke();
+    ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(mx, Yp(pAt), 5, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px ' + mono; ctx.textAlign = mx > W * 0.6 ? 'right' : 'left'; var tox = mx > W * 0.6 ? mx - 8 : mx + 8;
+    ctx.fillStyle = ink; ctx.fillText('α = ' + alpha.toFixed(1) + '  ·  P(SAT) ≈ ' + (pAt * 100).toFixed(0) + '%', tox, py0 + 30);
+  }
+  if (K.reduced) draw(); else draw();
+};
+
+  // ───── rsa-shor (RSA, and the one hard step a quantum computer speeds up) ─────
+  EDU["rsa-shor"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  function gcd(a, b) { while (b) { var t = b; b = a % b; a = t; } return a; }
+  function modpow(b, e, m) { var r = 1; b %= m; while (e > 0) { if (e & 1) r = (r * b) % m; b = (b * b) % m; e >>= 1; } return r; }
+  function egcd(a, b) { if (!b) return [a, 1, 0]; var r = egcd(b, a % b); return [r[0], r[2], r[1] - Math.floor(a / b) * r[2]]; }
+  function modinv(a, m) { var r = egcd((a % m + m) % m, m); return r[0] === 1 ? ((r[1] % m) + m) % m : -1; }
+  function totient(p, q) { return (p - 1) * (q - 1); }
+
+  var SEMIS = [[3, 5], [3, 7], [3, 11], [5, 7]];           // N = 15, 21, 33, 35
+  var ni = 2, p = SEMIS[ni][0], q = SEMIS[ni][1], N = p * q, e = 7, d = 1, msg = 7, base = 2;
+  function setupKeys() { p = SEMIS[ni][0]; q = SEMIS[ni][1]; N = p * q; var phi = totient(p, q);
+    var es = [7, 5, 11, 13, 3]; e = 3; for (var i = 0; i < es.length; i++) if (gcd(es[i], phi) === 1) { e = es[i]; break; }
+    d = modinv(e, phi); if (msg >= N) msg = N - 1;
+    base = 2; for (var a = 2; a < N; a++) { if (gcd(a, N) === 1 && factorVia(a).ok) { base = a; break; } } }   // default to a base that successfully factors; "try base a" surfaces the unlucky ones
+  function period(a) { if (gcd(a, N) !== 1) return 0; var x = a % N, r = 1; while (x !== 1 && r < N * 2) { x = (x * a) % N; r++; } return (x === 1) ? r : 0; }
+  function factorVia(a) { var rr = period(a); if (rr === 0 || rr % 2 !== 0) return { r: rr, ok: false };
+    var t = modpow(a, rr / 2, N); if (t === N - 1) return { r: rr, ok: false, trivial: true };
+    var fp = gcd(t - 1, N), fq = gcd(t + 1, N); return { r: rr, ok: true, half: t, p: fp, q: fq }; }
+  setupKeys();
+
+  function mkbtns(labelTxt, items, getCur, set) { var s = document.createElement('span'); s.className = 'chip'; s.textContent = labelTxt; controls.appendChild(s);
+    items.forEach(function (it) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = it.t; b.setAttribute('data-k', it.v);
+      b.addEventListener('click', function () { set(it.v); draw(); }); controls.appendChild(b); }); }
+  mkbtns('N = p·q', SEMIS.map(function (s, i) { return { t: (s[0] * s[1]) + '', v: i }; }), function () { return ni; }, function (v) { ni = v; setupKeys(); });
+  var ml = document.createElement('label'); ml.className = 'chip'; ml.style.marginLeft = '8px'; ml.textContent = 'message ';
+  var mr = document.createElement('input'); mr.type = 'range'; mr.min = '2'; mr.max = '34'; mr.step = '1'; mr.value = String(msg); mr.style.marginLeft = '6px';
+  mr.addEventListener('input', function () { msg = Math.min(N - 1, parseInt(mr.value, 10)); draw(); }); ml.appendChild(mr); controls.appendChild(ml);
+  var ab = document.createElement('button'); ab.type = 'button'; ab.className = 'btn'; ab.textContent = 'try base a'; ab.addEventListener('click', function () { do { base = 2 + ((base) % (N - 2)); } while (gcd(base, N) !== 1); draw(); }); controls.appendChild(ab);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var splitX = Math.round(W * 0.46);
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(splitX, 30); ctx.lineTo(splitX, H - 40); ctx.stroke();
+
+    // ===== RSA (left) =====
+    ctx.textAlign = 'left'; ctx.font = '600 10.5px ' + mono; ctx.fillStyle = faint; ctx.fillText('RSA · encrypt with a public key', 14, 18);
+    var c = modpow(msg, e, N), back = modpow(c, d, N);
+    ctx.font = '12px ' + mono; ctx.fillStyle = ink2; var ly = 44, lh = 22;
+    function line(s, col) { ctx.fillStyle = col || ink2; ctx.fillText(s, 16, ly); ly += lh; }
+    line('N = ' + p + ' × ' + q + ' = ' + N, ink);
+    line('public  (N, e) = (' + N + ', ' + e + ')');
+    line('private  d = ' + d + '   (e·d ≡ 1 mod φ)');
+    line('encrypt   ' + msg + '^' + e + ' mod ' + N + ' = ' + c, acc);
+    line('decrypt   ' + c + '^' + d + ' mod ' + N + ' = ' + back + (back === msg ? '  ✓' : ''), back === msg ? pass : reject);
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('Security rests on one thing: factoring N back into p·q. Easy here; for a 2048-bit N, the best classical method would outlast the universe.', 16, ly + 6, splitX - 30, 13);
+
+    // ===== factor via period-finding (right) =====
+    var rx = splitX + 16;
+    ctx.textAlign = 'left'; ctx.font = '600 10.5px ' + mono; ctx.fillStyle = faint; ctx.fillText('Break it · factor N by period-finding', rx, 18);
+    var res = factorVia(base), r = res.r;
+    ctx.font = '11px ' + mono; ctx.fillStyle = ink2;
+    ctx.fillText('base a = ' + base + '   ·   look at  a^x mod ' + N, rx, 40);
+    // sequence a^x mod N as a row of cells, one period highlighted
+    var seq = [], x = 1; for (var i = 0; i <= Math.min(r || 8, 11); i++) { seq.push(x); x = (x * base) % N; }
+    var cw = Math.min(30, (W - rx - 20) / Math.max(8, seq.length)), sy = 54;
+    for (var s = 0; s < seq.length; s++) { var cx = rx + s * (cw + 4), inPer = r && s < r;
+      ctx.strokeStyle = inPer ? acc : rule; ctx.lineWidth = inPer ? 1.6 : 1; rr(cx, sy, cw, cw * 0.82, 4); ctx.stroke();
+      ctx.fillStyle = ink; ctx.font = '10px ' + mono; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(seq[s]), cx + cw / 2, sy + cw * 0.41); ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = faint; ctx.font = '8px ' + mono; ctx.fillText('x=' + s, cx + cw / 2, sy + cw * 0.82 + 9); }
+    ctx.textAlign = 'left'; var fy = sy + cw + 30;
+    if (r) { ctx.fillStyle = acc; ctx.font = '11px ' + mono; ctx.fillText('period r = ' + r + '  (a^r ≡ 1 mod ' + N + ')', rx, fy); fy += 20;
+      if (res.ok) { ctx.fillStyle = ink2; ctx.fillText('a^(r/2) = ' + res.half + '   gcd(' + (res.half - 1) + ', ' + N + ') = ' + res.p, rx, fy); fy += 18;
+        ctx.fillText('                gcd(' + (res.half + 1) + ', ' + N + ') = ' + res.q, rx, fy); fy += 20;
+        ctx.fillStyle = pass; ctx.font = '600 13px ' + mono; ctx.fillText('N = ' + res.p + ' × ' + res.q + '  — cracked', rx, fy); }
+      else { ctx.fillStyle = reject; ctx.font = '11px ' + mono; ctx.fillText(res.trivial ? 'a^(r/2) ≡ −1 — unlucky base, press “try base a”' : 'odd period — press “try base a”', rx, fy); } }
+    else { ctx.fillStyle = reject; ctx.fillText('gcd(a,N) ≠ 1 — press “try base a”', rx, fy); }
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('The one hard step is finding the period r. Shor’s quantum algorithm finds it efficiently; turning r into the factors (the gcd) is ordinary classical math.', rx, H - 30, W - rx - 16, 13);
+  }
+  function rr(x, y, w, h, rad) { ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; } ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad); ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath(); }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+
   // ===================== EXPANSION: landmark re-runnable experiments =====================
 
 // ───── chsh (Bell / CHSH inequality — S climbs past 2 to 2√2) ─────
