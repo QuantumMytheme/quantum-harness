@@ -153,7 +153,7 @@
   }
 
   // ─────────────────────────── RECIPE BUILDER (§07) ───────────────────────────
-  var recipe = { ings: {}, target: 'tfim3', params: { depth: 2, entangle: 'linear', optimizer: 'qaoa', novelty: 45 } };
+  var recipe = { ings: { tfim3: 65, h2vqe: 40 }, target: 'tfim3', hi: null, params: { depth: 2, entangle: 'linear', optimizer: 'qaoa', novelty: 45, backend: 'noisy', noise: 0.5, twoq: 6, shots: 2048 } };
   var INGREDIENTS = [
     ['ghz3', 'GHZ₃', 'linear entanglement ladder', 'state_prep'],
     ['isingbell2', 'Ising Bell', 'minimal Bell ansatz', 'vqe'],
@@ -161,6 +161,7 @@
     ['h2vqe', 'H₂ VQE', 'hardware-efficient Ry–CX', 'vqe'],
     ['aiaccel4', 'AI-Accel ring', 'ring coupling topology', 'architecture'],
     ['qml_sign1', 'Sign map', 'low-frequency feature map', 'classify'],
+    ['bellnoisy2', 'Bell (noisy)', 'depolarizing-aware prep', 'state_prep'],
   ];
   var TARGETS = [['tfim3', 'TFIM₃ ground state'], ['h2vqe', 'H₂ ground state'], ['isingbell2', 'Ising Bell'], ['ghz3', 'GHZ₃ prep'], ['aiaccel4', 'AI-Accel routing']];
   var ENTANGLE = [['linear', 'Linear'], ['ring', 'Ring'], ['all', 'All-to-all']];
@@ -168,16 +169,87 @@
 
   function ingName(id) { var ing = INGREDIENTS.filter(function (x) { return x[0] === id; })[0]; return ing ? ing[1] : id; }
   function mixList() { var ids = Object.keys(recipe.ings); var tot = ids.reduce(function (a, k) { return a + recipe.ings[k]; }, 0) || 1; return ids.map(function (k) { return { id: k, name: ingName(k), pct: recipe.ings[k] / tot * 100 }; }); }
-  function recipeHash() { var s = recipe.target + '|' + Object.keys(recipe.ings).sort().map(function (k) { return k + ':' + Math.round(recipe.ings[k]); }).join(',') + '|d' + recipe.params.depth + '|' + recipe.params.entangle + '|' + recipe.params.optimizer + '|n' + recipe.params.novelty; var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36).slice(0, 6); }
+  function recipeHash() { var s = recipe.target + '|' + Object.keys(recipe.ings).sort().map(function (k) { return k + ':' + Math.round(recipe.ings[k]); }).join(',') + '|d' + recipe.params.depth + '|' + recipe.params.entangle + '|' + recipe.params.optimizer + '|n' + recipe.params.novelty + '|' + recipe.params.backend + '|nz' + recipe.params.noise + '|tq' + recipe.params.twoq + '|sh' + recipe.params.shots; var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36).slice(0, 6); }
   function recipeRepo() { return 'run-' + recipe.target + '-mix-' + recipeHash(); }
   function recipeCmd() { var ings = Object.keys(recipe.ings); return 'bin/new-run.sh ' + recipeRepo() + (ings.length ? ' --remix ' + ings.join(',') : ''); }
-  function recipeJSON() { return JSON.stringify({ target: recipe.target, ingredients: mixList().map(function (m) { return { run: m.id, ratio: +(m.pct / 100).toFixed(2) }; }), ansatz: { depth: recipe.params.depth, entanglement: recipe.params.entangle, optimizer: recipe.params.optimizer, novelty: +(recipe.params.novelty / 100).toFixed(2) } }, null, 2); }
+  function recipeJSON() { var p = predict(); return JSON.stringify({ target: recipe.target, ingredients: mixList().map(function (m) { return { run: m.id, ratio: +(m.pct / 100).toFixed(2) }; }), ansatz: { depth: recipe.params.depth, entanglement: recipe.params.entangle, optimizer: recipe.params.optimizer, novelty: +(recipe.params.novelty / 100).toFixed(2) }, device: { backend: recipe.params.backend, noise_pct: recipe.params.noise, two_qubit_budget: recipe.params.twoq, shots: recipe.params.shots }, forecast: p ? { metric: p.g.label, predicted: +p.value.toFixed(4), goal: p.g.goal, accept_pct: p.accPct, note: 'heuristic estimate — the judge is the source of truth' } : null }, null, 2); }
+
+  // ── new design variables + a transparent (heuristic) goal/metric forecaster ──
+  var BACKENDS = [['ideal', 'Ideal'], ['noisy', 'Noisy-sim'], ['qpu', 'Real-QPU']];
+  var TASK_HUE = { state_prep: 210, vqe: 162, populations: 40, architecture: 280, classify: 330 };
+  var GOALS = {
+    tfim3:      { metric: 'gap',  label: 'energy gap to E₀', goal: 0.005, span: 0.06, lo: 0,   hi: 0.06, fmt: function (v) { return v.toFixed(4) + ' Ha'; } },
+    h2vqe:      { metric: 'gap',  label: 'energy gap to E₀', goal: 0.005, span: 0.05, lo: 0,   hi: 0.05, fmt: function (v) { return v.toFixed(4) + ' Ha'; } },
+    isingbell2: { metric: 'gap',  label: 'energy gap to E₀', goal: 0.02,  span: 0.12, lo: 0,   hi: 0.12, fmt: function (v) { return v.toFixed(3) + ' Ha'; } },
+    ghz3:       { metric: 'fid',  label: 'state fidelity',   goal: 0.99,  span: 0.40, lo: 0.5, hi: 1,    fmt: function (v) { return v.toFixed(4); } },
+    aiaccel4:   { metric: 'cost', label: 'routing cost',     goal: 6,     span: 8,    lo: 0,   hi: 16,   fmt: function (v) { return Math.round(v) + ' hops'; } },
+  };
+  function rdark() { return root.getAttribute('data-theme') === 'dark'; }
+  function ingTask(id) { var x = INGREDIENTS.filter(function (g) { return g[0] === id; })[0]; return x ? x[3] : 'vqe'; }
+  function hueOf(id) { var hh = TASK_HUE[ingTask(id)]; return hh == null ? 210 : hh; }
+  function ingColor(id, a) { return 'hsla(' + hueOf(id) + ',' + (rdark() ? 72 : 64) + '%,' + (rdark() ? 62 : 46) + '%,' + (a == null ? 1 : a) + ')'; }
+  function fam(task) { return ({ state_prep: 'state', populations: 'state', vqe: 'energy', architecture: 'arch', classify: 'ml' })[task] || task; }
+  function affinity(id, tgt) { if (id === tgt) return 1; var a = ingTask(id), b = ingTask(tgt); if (a === b) return 0.62; if (fam(a) === fam(b)) return 0.4; return 0.22; }
+  function gates2q() { var n = 3, d = recipe.params.depth, per = recipe.params.entangle === 'all' ? n * (n - 1) / 2 : recipe.params.entangle === 'ring' ? n : (n - 1); return d * per; }
+  function predict() {
+    var g = GOALS[recipe.target]; if (!g) return null;
+    var P = recipe.params, mix = mixList(), aff = 0;
+    if (mix.length) mix.forEach(function (m) { aff += (m.pct / 100) * affinity(m.id, recipe.target); }); else aff = 0.28;
+    var q = 0.12 + 0.5 * aff;
+    var optGood = (P.optimizer === 'qaoa' && (recipe.target === 'tfim3' || recipe.target === 'isingbell2')) || (P.optimizer === 'gradient' && (recipe.target === 'h2vqe' || recipe.target === 'ghz3'));
+    q += optGood ? 0.12 : 0.05;
+    q += 0.12 * (1 - Math.abs(P.depth - 3) / 3);
+    q += P.entangle === 'all' ? 0.08 : P.entangle === 'ring' ? 0.05 : 0.02;
+    q += (P.novelty / 100) * 0.04;
+    q = Math.max(0.02, Math.min(0.99, q));
+    var g2 = gates2q(), over = g2 > P.twoq;
+    var noiseEff = P.backend === 'ideal' ? 0 : (P.noise / 100) * g2 * (P.backend === 'qpu' ? 1.3 : 1);
+    var band = g.span * (0.4 / Math.sqrt(P.shots / 256)) * (1 + P.novelty / 140) + g.span * 0.015;
+    var value, margin;
+    if (g.metric === 'fid') { value = Math.max(0, Math.min(1, 0.6 + q * 0.44 - noiseEff * 1.0)); margin = value - g.goal; }
+    else if (g.metric === 'cost') { value = g.goal + (1 - q) * g.span * 0.7 + noiseEff * 5; margin = g.goal - value; }
+    else { value = Math.max(0.0002, g.span * Math.pow(1 - q, 1.5) + noiseEff * 0.18); margin = g.goal - value; }
+    var z = margin / (band + 1e-6), acc = 1 / (1 + Math.exp(-z * 1.3));
+    if (over) acc *= 0.12;
+    var accPct = Math.round(acc * 100);
+    var holdout = recipe.target === 'aiaccel4';
+    var overfit = holdout ? Math.min(0.95, (P.novelty / 100) * 0.4 + (P.depth >= 4 ? 0.3 : 0)) : 0;
+    var meets = g.metric === 'fid' ? value >= g.goal : value <= g.goal;
+    return { g: g, value: value, band: band, meets: meets, accPct: accPct, g2: g2, over: over, holdout: holdout, overfit: overfit, verdict: over ? 'reject' : accPct >= 60 ? 'accept' : accPct >= 38 ? 'border' : 'reject' };
+  }
+  function vColor(v) { return v === 'accept' ? 'var(--pass)' : v === 'border' ? '#c4880c' : 'var(--reject)'; }
+  function pchip(label, ok, txt) { var col = ok === true ? 'var(--pass)' : ok === false ? 'var(--reject)' : '#c4880c'; return '<span style="display:inline-flex;gap:5px;align-items:center;font-family:var(--mono);font-size:10px;border:1px solid var(--rule-2);border-radius:5px;padding:3px 8px"><span style="width:7px;height:7px;border-radius:50%;background:' + col + '"></span>' + label + ' <span style="color:var(--faint)">' + txt + '</span></span>'; }
+  function predictHTML() {
+    var p = predict(); if (!p) return '<p class="mono" style="color:var(--faint)">pick a target to forecast</p>';
+    var g = p.g, vc = vColor(p.verdict), vlabel = p.verdict === 'accept' ? 'LIKELY ACCEPT' : p.verdict === 'border' ? 'BORDERLINE' : 'LIKELY REJECT';
+    function X(v) { return Math.max(0, Math.min(100, (v - g.lo) / (g.hi - g.lo) * 100)); }
+    var gx = X(g.goal), vx = X(p.value), bl = X(p.value - p.band), bh = X(p.value + p.band);
+    var goalTxt = (g.metric === 'fid' ? 'goal ≥ ' : 'goal ≤ ') + g.fmt(g.goal);
+    var gauge = '<div style="position:relative;height:30px;margin:10px 0 4px;border-radius:6px;background:var(--panel);border:1px solid var(--rule);overflow:hidden">' +
+      '<div style="position:absolute;left:' + Math.min(bl, bh) + '%;width:' + Math.max(1.5, Math.abs(bh - bl)) + '%;top:0;bottom:0;background:' + vc + ';opacity:.18"></div>' +
+      '<div style="position:absolute;left:' + gx + '%;top:-2px;bottom:-2px;width:2px;background:var(--ink)"></div>' +
+      '<div style="position:absolute;left:' + vx + '%;top:50%;width:11px;height:11px;border-radius:50%;background:' + vc + ';transform:translate(-50%,-50%);box-shadow:0 0 0 3px var(--bg)"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--faint)"><span>' + g.fmt(g.lo) + '</span><span style="color:var(--ink)">▲ ' + goalTxt + '</span><span>' + g.fmt(g.hi) + '</span></div>';
+    return '<div style="display:flex;justify-content:space-between;align-items:baseline"><p class="eyebrow" style="margin:0">Forecast · heuristic</p><span class="mono" style="font-size:9px;color:var(--faint)">the judge decides</span></div>' +
+      '<div style="display:flex;align-items:baseline;gap:9px;margin-top:8px;flex-wrap:wrap"><span style="font-family:var(--mono);font-size:23px;color:var(--ink);font-weight:600">' + g.fmt(p.value) + '</span><span class="mono" style="font-size:10.5px;color:var(--faint)">± ' + g.fmt(p.band) + ' · ' + g.label + '</span></div>' +
+      gauge +
+      '<div style="display:flex;align-items:center;gap:12px;margin-top:12px"><div><div style="font-family:var(--mono);font-size:29px;font-weight:600;color:' + vc + ';line-height:1">' + p.accPct + '%</div><div class="mono" style="font-size:9px;color:var(--faint)">predicted ACCEPT</div></div>' +
+      '<div style="font-family:var(--mono);font-size:11px;font-weight:600;color:' + vc + ';border:1px solid ' + vc + ';border-radius:6px;padding:5px 10px">' + vlabel + '</div></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">' +
+        pchip('STRUCTURE', !p.over, p.over ? p.g2 + ' > ' + recipe.params.twoq + ' 2q' : p.g2 + ' ≤ ' + recipe.params.twoq + ' 2q') +
+        pchip('PERFORM', p.meets, p.meets ? 'meets goal' : 'short of goal') +
+        (p.holdout ? pchip('ANTI-OVERFIT', p.overfit < 0.4, (p.overfit * 100).toFixed(0) + '% risk') : '') + '</div>';
+  }
+  function updateForecast() { var el = document.getElementById('recipe-forecast'); if (el) el.innerHTML = predictHTML(); }
+  function setHi(id) { if (recipe.hi === id) return; recipe.hi = id; [].forEach.call(sheet.querySelectorAll('[data-ing]'), function (el) { var on = el.getAttribute('data-ing') === id; el.style.boxShadow = on ? '0 0 0 2px ' + ingColor(el.getAttribute('data-ing'), 0.9) : ''; }); }
+  var recipeHits = [];
 
   function toggleIngredient(id) { if (id in recipe.ings) delete recipe.ings[id]; else recipe.ings[id] = 50; render(); }
   function setRParam(spec) { var p = spec.split(':'); if (p[0] === 'target') recipe.target = p[1]; else recipe.params[p[0]] = p[1]; render(); }
   function recipeOutHTML() {
     var mix = mixList();
-    var rows = mix.length ? mix.map(function (m) { return '<span class="chip" style="border-color:var(--accent);color:var(--accent)">' + m.name + ' · ' + m.pct.toFixed(0) + '%</span>'; }).join('') : '<span class="mono" style="color:var(--faint)">no ingredients yet — toggle some above</span>';
+    var rows = mix.length ? mix.map(function (m) { return '<span class="chip" style="border-color:' + ingColor(m.id, 0.9) + ';color:' + ingColor(m.id, 1) + '">' + m.name + ' · ' + m.pct.toFixed(0) + '%</span>'; }).join('') : '<span class="mono" style="color:var(--faint)">no ingredients yet — toggle some above</span>';
+    var fp = predict(); if (fp) rows += '<span class="chip" style="border-color:' + vColor(fp.verdict) + ';color:' + vColor(fp.verdict) + '">⌁ forecast · ' + fp.accPct + '% ACCEPT</span>';
     return '<div class="lab-head" style="margin-bottom:14px"><div><p class="eyebrow">Recipe output</p><h2 style="font-size:20px">' + recipeRepo() + '</h2></div><div class="rmeta">' + Object.keys(recipe.ings).length + ' ingredients · target ' + recipe.target + '<br>depth ' + recipe.params.depth + ' · ' + recipe.params.entangle + ' · ' + recipe.params.optimizer + '</div></div>' +
       '<div class="controls" style="margin-bottom:14px">' + rows + '</div>' +
       '<div class="qm-cmd"><code>' + esc(recipeCmd()) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
@@ -185,23 +257,32 @@
   }
   function updateRecipeOutput() { var el = document.getElementById('recipe-out'); if (el) el.innerHTML = recipeOutHTML(); }
   function secRecipe() {
-    var ings = INGREDIENTS.map(function (ing) { var on = ing[0] in recipe.ings;
-      return '<button class="lab-gcard" data-ing="' + ing[0] + '" style="padding:12px 13px;' + (on ? 'border-color:var(--accent);' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:600">' + ing[1] + '</span><span class="chip" style="font-size:8px">' + ing[3] + '</span></div><div style="font-size:13px;color:var(--ink-2);margin-top:4px">' + ing[2] + '</div>' +
-        (on ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()"><span class="mono" style="font-size:10px;color:var(--accent)">ratio</span><input type="range" min="5" max="100" value="' + recipe.ings[ing[0]] + '" data-ratio="' + ing[0] + '" style="flex:1"></div>' : '<div class="mono" style="font-size:9px;color:var(--faint);margin-top:8px">click to add</div>') + '</button>';
+    var P = recipe.params;
+    var ings = INGREDIENTS.map(function (ing) { var on = ing[0] in recipe.ings, hc = ingColor(ing[0], 0.9);
+      return '<button class="lab-gcard" data-ing="' + ing[0] + '" style="padding:12px 13px;transition:box-shadow .15s;' + (on ? 'border-color:' + hc + ';' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:600"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + hc + ';margin-right:6px;vertical-align:middle"></span>' + ing[1] + '</span><span class="chip" style="font-size:8px;border-color:' + ingColor(ing[0], 0.5) + ';color:' + hc + '">' + ing[3] + '</span></div><div style="font-size:13px;color:var(--ink-2);margin-top:4px">' + ing[2] + '</div>' +
+        (on ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()"><span class="mono" style="font-size:10px;color:' + hc + '">ratio</span><input type="range" min="5" max="100" value="' + recipe.ings[ing[0]] + '" data-ratio="' + ing[0] + '" style="flex:1"></div>' : '<div class="mono" style="font-size:9px;color:var(--faint);margin-top:8px">click to add</div>') + '</button>';
     }).join('');
     var targets = TARGETS.map(function (tg) { return '<button class="chip" data-rparam="target:' + tg[0] + '" style="cursor:pointer;' + (recipe.target === tg[0] ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + tg[1] + '</button>'; }).join('');
-    var ent = ENTANGLE.map(function (e) { return '<button data-rparam="entangle:' + e[0] + '" aria-pressed="' + (recipe.params.entangle === e[0]) + '">' + e[1] + '</button>'; }).join('');
-    var opt = OPT.map(function (o) { return '<button data-rparam="optimizer:' + o[0] + '" aria-pressed="' + (recipe.params.optimizer === o[0]) + '">' + o[1] + '</button>'; }).join('');
-    return '<div class="lab-sheet">' + head('§ 07 · Recipe', 'Combine prior runs into a new recipe', 'Ingredients · ratios<br>parameters') +
-      '<p style="max-width:720px">Pick verified runs as <b>ingredients</b>, set their <b>ratios</b>, tune the <b>parameters</b> — then mint a unique new run. The recipe is handed to your model in <span class="mono">RECIPE.json</span>; it molds a fresh circuit from the mix. The compounding flywheel, made graphical.</p>' +
+    var ent = ENTANGLE.map(function (e) { return '<button data-rparam="entangle:' + e[0] + '" aria-pressed="' + (P.entangle === e[0]) + '">' + e[1] + '</button>'; }).join('');
+    var opt = OPT.map(function (o) { return '<button data-rparam="optimizer:' + o[0] + '" aria-pressed="' + (P.optimizer === o[0]) + '">' + o[1] + '</button>'; }).join('');
+    var back = BACKENDS.map(function (b) { return '<button data-rparam="backend:' + b[0] + '" aria-pressed="' + (P.backend === b[0]) + '">' + b[1] + '</button>'; }).join('');
+    function slider(name, label, mn, mx, st, val, unit) { return '<p class="eyebrow" style="margin:12px 0 7px">' + label + ' · ' + val + (unit || '') + '</p><input type="range" min="' + mn + '" max="' + mx + '" step="' + st + '" value="' + val + '" data-rslider="' + name + '" style="width:100%">'; }
+    return '<div class="lab-sheet">' + head('§ 07 · Recipe', 'Combine prior runs into a new recipe', 'Ingredients · ratios<br>device · forecast') +
+      '<p style="max-width:760px">Pick verified runs as <b>ingredients</b>, set their <b>ratios</b>, tune the <b>ansatz &amp; device</b> — and watch the <b>forecast</b> predict whether the judge will ACCEPT before you mint. Hover an ingredient to light it up in the 3-D blend. The recipe rides to your model in <span class="mono">RECIPE.json</span>; it molds a fresh circuit from the mix. The compounding flywheel, made graphical.</p>' +
       '<div class="lab-grid2" style="margin-top:20px"><div><p class="eyebrow" style="margin-bottom:12px">Ingredients · select &amp; weight</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + ings + '</div></div>' +
-      '<div><p class="eyebrow" style="margin-bottom:10px">Target problem</p><div class="controls" style="margin-bottom:16px">' + targets + '</div>' +
-        '<p class="eyebrow" style="margin-bottom:8px">Ansatz depth · ' + recipe.params.depth + '</p><input type="range" min="1" max="5" value="' + recipe.params.depth + '" data-rslider="depth" style="width:100%">' +
-        '<p class="eyebrow" style="margin:14px 0 8px">Entanglement</p><div class="qm-pathtab">' + ent + '</div>' +
-        '<p class="eyebrow" style="margin:10px 0 8px">Optimizer</p><div class="qm-pathtab">' + opt + '</div>' +
-        '<p class="eyebrow" style="margin:14px 0 8px">Novelty · ' + recipe.params.novelty + '%</p><input type="range" min="0" max="100" value="' + recipe.params.novelty + '" data-rslider="novelty" style="width:100%">' +
-        '<div class="panel" style="padding:6px;margin-top:16px">' + stage('recipe', 'recipe', 184) + '</div></div></div>' +
-      '<div id="recipe-out" style="margin-top:28px;border-top:1px solid var(--rule);padding-top:22px">' + recipeOutHTML() + '</div></div>';
+      '<div><p class="eyebrow" style="margin-bottom:10px">Target problem</p><div class="controls" style="margin-bottom:8px">' + targets + '</div>' +
+        slider('depth', 'Ansatz depth', 1, 5, 1, P.depth, '') +
+        '<p class="eyebrow" style="margin:12px 0 7px">Entanglement</p><div class="qm-pathtab">' + ent + '</div>' +
+        '<p class="eyebrow" style="margin:11px 0 7px">Optimizer</p><div class="qm-pathtab">' + opt + '</div>' +
+        '<p class="eyebrow" style="margin:11px 0 7px">Backend</p><div class="qm-pathtab">' + back + '</div>' +
+        slider('noise', 'Device noise', 0, 5, 0.25, P.noise, '%') +
+        slider('twoq', '2-qubit budget', 1, 12, 1, P.twoq, ' gates') +
+        slider('shots', 'Shots', 256, 8192, 256, P.shots, '') +
+        slider('novelty', 'Novelty', 0, 100, 1, P.novelty, '%') +
+      '</div></div>' +
+      '<div class="lab-grid2" style="margin-top:22px;align-items:stretch"><div class="panel" style="padding:6px">' + stage('recipe', 'recipe', 248) + '</div>' +
+      '<div class="panel" style="padding:16px 18px"><div id="recipe-forecast">' + predictHTML() + '</div></div></div>' +
+      '<div id="recipe-out" style="margin-top:26px;border-top:1px solid var(--rule);padding-top:22px">' + recipeOutHTML() + '</div></div>';
   }
 
   function mintRecipe() {
@@ -244,10 +325,17 @@
   });
   document.addEventListener('input', function (e) {
     var t = e.target; if (!t.matches) return;
-    if (t.matches('[data-ratio]')) { recipe.ings[t.getAttribute('data-ratio')] = +t.value; updateRecipeOutput(); }
-    else if (t.matches('[data-rslider]')) { recipe.params[t.getAttribute('data-rslider')] = +t.value; updateRecipeOutput(); }
+    if (t.matches('[data-ratio]')) { recipe.ings[t.getAttribute('data-ratio')] = +t.value; updateRecipeOutput(); updateForecast(); }
+    else if (t.matches('[data-rslider]')) { recipe.params[t.getAttribute('data-rslider')] = +t.value; updateRecipeOutput(); updateForecast(); }
   });
   document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('[data-rslider]')) { recipe.params[e.target.getAttribute('data-rslider')] = +e.target.value; render(); } });
+  // highlight: hover an ingredient card OR a 3-D node, light up the matching one (both directions)
+  sheet.addEventListener('mousemove', function (e) {
+    var cv = e.target.closest && e.target.closest('canvas[data-key="recipe"]');
+    if (cv) { var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, hit = null; recipeHits.forEach(function (p) { if (Math.hypot(mx - p.x, my - p.y) <= p.r + 5) hit = p.id; }); setHi(hit); return; }
+    var card = e.target.closest && e.target.closest('[data-ing]'); setHi(card ? card.getAttribute('data-ing') : null);
+  });
+  sheet.addEventListener('mouseleave', function () { setHi(null); });
 
   // ─────────────────────────── SUBMISSION FLOW ───────────────────────────
   var sub = { brief: 'ghz3', path: 'web' };
@@ -401,19 +489,37 @@
       ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText('illustrative weights · row attends to columns', ox, oy + N * cs + 16);
     },
     recipe: function (ctx, w, h, t) {
-      var c = C(); ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
-      var mix = mixList(), cx = w / 2, cy = h / 2;
-      ctx.fillStyle = accA(c, 0.13); ctx.beginPath(); ctx.arc(cx, cy, 26, 0, 7); ctx.fill(); ctx.strokeStyle = c.accent; ctx.lineWidth = 1.6; ctx.stroke();
-      ctx.fillStyle = c.ink; ctx.font = MONOF(10); ctx.textAlign = 'center'; ctx.fillText(recipe.target, cx, cy + 3);
-      if (!mix.length) { ctx.fillStyle = c.faint; ctx.font = MONOF(11); ctx.fillText('select ingredients to blend', cx, h - 14); ctx.textAlign = 'left'; return; }
-      var R = Math.min(w, h) * 0.34;
-      mix.forEach(function (m, i) {
-        var a = -Math.PI / 2 + i * 2 * Math.PI / mix.length + t * 0.07, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R, rad = 6 + m.pct / 100 * 15;
-        ctx.strokeStyle = accA(c, 0.2 + m.pct / 220); ctx.lineWidth = 1 + m.pct / 45; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
-        ctx.fillStyle = accA(c, 0.28 + m.pct / 240); ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); ctx.strokeStyle = c.accent; ctx.lineWidth = 1.2; ctx.stroke();
-        ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText(m.name + ' ' + m.pct.toFixed(0) + '%', x, y + rad + 12);
+      var c = C(), cx = w / 2, cy = h / 2; ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
+      var mix = mixList(); recipeHits = [];
+      var rot = reduce ? 0.7 : t * 0.28, tilt = 0.46, cr = Math.cos(rot), sr = Math.sin(rot), ct2 = Math.cos(tilt), st2 = Math.sin(tilt);
+      var R = Math.min(w, h) * 0.34, persp = R * 3.6;
+      function proj(x, y, z) { var x1 = x * cr + z * sr, z1 = -x * sr + z * cr, y2 = y * ct2 - z1 * st2, z2 = y * st2 + z1 * ct2, s = persp / (persp + z2); return { x: cx + x1 * s, y: cy + y2 * s, z: z2, s: s }; }
+      // faint great-circle for depth cue
+      ctx.strokeStyle = accA(c, 0.10); ctx.lineWidth = 1; ctx.beginPath();
+      for (var a = 0; a <= 64; a++) { var an = a / 64 * Math.PI * 2, p = proj(Math.cos(an) * R, 0, Math.sin(an) * R); a ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); } ctx.stroke();
+      var N = mix.length, pts = [];
+      for (var i = 0; i < N; i++) {
+        var phi = Math.acos(1 - 2 * (i + 0.5) / N), th = Math.PI * (1 + Math.sqrt(5)) * i;
+        var x = R * Math.sin(phi) * Math.cos(th), y = R * Math.cos(phi) * 0.82, z = R * Math.sin(phi) * Math.sin(th);
+        pts.push({ m: mix[i], pr: proj(x, y, z) });
+      }
+      pts.sort(function (A, B) { return A.pr.z - B.pr.z; });
+      var ctr = proj(0, 0, 0);
+      pts.forEach(function (Q) { var hot = recipe.hi === Q.m.id; ctx.strokeStyle = hot ? ingColor(Q.m.id, 0.85) : ingColor(Q.m.id, 0.16 + Q.pr.s * 0.12); ctx.lineWidth = hot ? 2.2 : 0.8 + Q.m.pct / 90; ctx.beginPath(); ctx.moveTo(ctr.x, ctr.y); ctx.lineTo(Q.pr.x, Q.pr.y); ctx.stroke(); });
+      ctx.fillStyle = accA(c, 0.16); ctx.beginPath(); ctx.arc(ctr.x, ctr.y, 21, 0, 7); ctx.fill(); ctx.strokeStyle = c.accent; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.fillStyle = c.ink; ctx.font = '600 ' + MONOF(10); ctx.textAlign = 'center'; ctx.fillText(recipe.target, ctr.x, ctr.y + 3);
+      pts.forEach(function (Q) {
+        var hot = recipe.hi === Q.m.id, dim = (recipe.hi && !hot) ? 0.32 : 1;
+        var rad = (6 + Q.m.pct / 100 * 14) * (0.62 + Q.pr.s * 0.5) * (hot ? 1.35 : 1);
+        ctx.shadowBlur = hot ? 18 : 8 * Q.pr.s; ctx.shadowColor = ingColor(Q.m.id, 0.9);
+        ctx.fillStyle = ingColor(Q.m.id, (0.5 + Q.pr.s * 0.4) * dim); ctx.beginPath(); ctx.arc(Q.pr.x, Q.pr.y, rad, 0, 7); ctx.fill();
+        ctx.shadowBlur = 0; ctx.lineWidth = hot ? 2 : 1.2; ctx.strokeStyle = ingColor(Q.m.id, 0.95 * dim); ctx.stroke();
+        if (hot) { ctx.strokeStyle = rdark() ? '#fff' : c.ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(Q.pr.x, Q.pr.y, rad + 4, 0, 7); ctx.stroke(); }
+        recipeHits.push({ id: Q.m.id, x: Q.pr.x, y: Q.pr.y, r: rad });
+        if (hot || Q.pr.s > 1.0) { ctx.globalAlpha = hot ? 1 : Math.min(1, (Q.pr.s - 0.92) * 3) * dim; ctx.fillStyle = hot ? c.ink : c.faint; ctx.font = MONOF(9.5); ctx.textAlign = 'center'; ctx.fillText(Q.m.name + ' ' + Q.m.pct.toFixed(0) + '%', Q.pr.x, Q.pr.y + rad + 12); ctx.globalAlpha = 1; }
       });
       ctx.textAlign = 'left';
+      if (!N) { ctx.fillStyle = c.faint; ctx.font = MONOF(11); ctx.textAlign = 'center'; ctx.fillText('select ingredients to blend the constellation', cx, h - 12); ctx.textAlign = 'left'; }
     },
   };
   function bv(a0, a1) { return [2 * (a0[0] * a1[0] + a0[1] * a1[1]), 2 * (a0[0] * a1[1] - a0[1] * a1[0]), (a0[0] * a0[0] + a0[1] * a0[1]) - (a1[0] * a1[0] + a1[1] * a1[1])]; }

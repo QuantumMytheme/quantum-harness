@@ -134,6 +134,26 @@ test('every page carries the same top-bar nav (no links drop off across pages)',
   assert.match(readFileSync(v('lab.html'), 'utf8'), /<a href="lab\.html" aria-current="page">Notebook/)
 })
 
+test('recipe builder has the device variables, 3-D blend, hues, highlight + forecaster', () => {
+  const js = readFileSync(v('lab.js'), 'utf8')
+  // new design variables
+  for (const p of ['backend', 'noise', 'twoq', 'shots']) assert.match(js, new RegExp(`${p}:`), `recipe param ${p}`)
+  assert.match(js, /BACKENDS\s*=/)                       // ideal / noisy-sim / real-QPU toggle
+  assert.match(js, /bellnoisy2/)                          // the added 7th ingredient
+  // the heuristic goal/metric forecaster
+  assert.match(js, /function predict\(/)
+  assert.match(js, /function predictHTML\(/)
+  assert.match(js, /GOALS\s*=/)
+  assert.match(js, /predicted ACCEPT/)
+  assert.match(js, /id="recipe-forecast"/)
+  // 3-D constellation + colour + highlight
+  assert.match(js, /function ingColor\(/)               // task-hued nodes
+  assert.match(js, /TASK_HUE/)
+  assert.match(js, /recipeHits/)                         // node hit-testing for highlight
+  assert.match(js, /function setHi\(/)                  // card<->node highlight
+  assert.match(js, /persp\s*\/\s*\(persp/)              // perspective projection (the 3-D math)
+})
+
 test('long pages get the margin-index rail (railnav), wired + theme-aware + mobile-safe', () => {
   assert.ok(existsSync(v('railnav.js')), 'viewer/railnav.js should exist')
   const rail = readFileSync(v('railnav.js'), 'utf8')
