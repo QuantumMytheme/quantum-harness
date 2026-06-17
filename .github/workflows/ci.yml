@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: test · node 22 · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install numpy (the judge's one dependency)
+        run: python -m pip install --upgrade pip numpy
+
+      # Spawns `node mcp/server.mjs` over stdio exactly like Claude Desktop does. This is the
+      # check that catches Windows-only startup regressions (e.g. a POSIX entry-point guard).
+      - name: MCP self-test
+        run: node mcp/selftest.mjs
+
+      - name: Judge unit tests
+        run: python bench/quantum-judge/test_judge.py
+
+      # bash on all three runners (Windows runners ship Git bash) so the glob expands uniformly.
+      - name: Node tests
+        run: node --test test/*.test.mjs
+        shell: bash

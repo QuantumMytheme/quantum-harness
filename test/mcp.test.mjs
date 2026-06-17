@@ -1,4 +1,4 @@
-// MCP connector — protocol surface + the five tools. verify_bundle shells out to the real
+// MCP connector — protocol surface + the six tools. verify_bundle shells out to the real
 // numpy judge; those assertions skip cleanly when python3/numpy isn't on the box.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -12,9 +12,9 @@ const refIds = readdirSync(path.join(ROOT, 'bench/quantum-judge/references'))
   .filter(f => f.endsWith('.json')).map(f => f.replace(/\.json$/, '')).sort()
 const parse = r => JSON.parse(r.content[0].text)
 
-test('exposes exactly the five harness tools, each with an input schema', () => {
+test('exposes exactly the six harness tools, each with an input schema', () => {
   assert.deepEqual(TOOLS.map(t => t.name).sort(),
-    ['get_brief', 'get_kickoff', 'list_problems', 'mint_run', 'verify_bundle'])
+    ['commit_run', 'get_brief', 'get_kickoff', 'list_problems', 'mint_run', 'verify_bundle'])
   for (const t of TOOLS) {
     assert.equal(typeof t.description, 'string')
     assert.equal(t.inputSchema.type, 'object')
@@ -30,7 +30,7 @@ test('JSON-RPC: initialize handshake, notifications, tools/list, unknown method'
   assert.equal(await handleMessage({ jsonrpc: '2.0', method: 'notifications/initialized' }), null)
 
   const list = await handleMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' })
-  assert.equal(list.result.tools.length, 5)
+  assert.equal(list.result.tools.length, 6)
 
   const bad = await handleMessage({ jsonrpc: '2.0', id: 3, method: 'no/such' })
   assert.equal(bad.error.code, -32601)
@@ -61,6 +61,33 @@ test('mint_run refuses without a token instead of failing silently', async () =>
     assert.match(parse(out).error, /no GitHub token/)
   } finally {
     if (saved !== undefined) process.env.GITHUB_TOKEN = saved
+    if (savedGh !== undefined) process.env.GH_TOKEN = savedGh
+  }
+})
+
+test('commit_run refuses without a token instead of failing silently', async () => {
+  const saved = process.env.GITHUB_TOKEN, savedGh = process.env.GH_TOKEN
+  delete process.env.GITHUB_TOKEN; delete process.env.GH_TOKEN
+  try {
+    const out = await callTool('commit_run', { repo: 'owner/name', bundle_path: 'bench/quantum-judge/quantum-proof-h2.json' })
+    assert.equal(out.isError, true)
+    assert.match(parse(out).error, /no GitHub token/)
+  } finally {
+    if (saved !== undefined) process.env.GITHUB_TOKEN = saved
+    if (savedGh !== undefined) process.env.GH_TOKEN = savedGh
+  }
+})
+
+test('commit_run runs the judge first and refuses a REJECT (before any network call)', async t => {
+  const saved = process.env.GITHUB_TOKEN, savedGh = process.env.GH_TOKEN
+  process.env.GITHUB_TOKEN = 'dummy-unused-when-the-judge-rejects-offline'
+  delete process.env.GH_TOKEN
+  try {
+    const out = parse(await callTool('commit_run', { repo: 'owner/name', bundle_path: 'bench/quantum-judge/quantum-proof-FORGED.json' }))
+    if (/judge|python3|numpy/i.test(out.reason || out.error || '')) { t.skip('python3 + numpy not available'); return }
+    assert.match(out.error, /refusing to commit a REJECT/)
+  } finally {
+    if (saved !== undefined) process.env.GITHUB_TOKEN = saved; else delete process.env.GITHUB_TOKEN
     if (savedGh !== undefined) process.env.GH_TOKEN = savedGh
   }
 })

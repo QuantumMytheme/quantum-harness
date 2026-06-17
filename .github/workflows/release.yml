@@ -1,0 +1,37 @@
+name: release
+
+# Build the one-click .mcpb installer and attach it to the GitHub Release, so users can install
+# the connector by downloading + double-clicking — no JSON editing, no path/backslash mistakes.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mcpb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pack the Desktop Extension (.mcpb) from mcp/
+        run: npx --yes @anthropic-ai/mcpb pack mcp quantum-harness.mcpb
+
+      - name: Upload as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantum-harness-mcpb
+          path: quantum-harness.mcpb
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: quantum-harness.mcpb

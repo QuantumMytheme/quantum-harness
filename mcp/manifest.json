@@ -4,7 +4,7 @@
   "display_name": "QuantumMytheme · quantum-harness",
   "version": "0.1.0",
   "description": "Drive the verifiable quantum-design bench from inside Claude: list problems, read a BRIEF, re-verify a proof bundle through the real numpy judge, and mint a public run repo.",
-  "long_description": "A dependency-free MCP connector for QuantumMytheme/quantum-harness. It exposes the harness in the Claude Desktop app so a run never has to leave the chat: pick an open quantum-design problem, read its conceptual BRIEF, design a proof bundle, and re-derive it through the real four-gate numpy judge (structure → reproducibility → performance → anti-overfit) — the exit code is the result, not a claim. mint_run creates a fresh public run repository from the template; pair with the official GitHub MCP to clone, commit, and push.",
+  "long_description": "A dependency-free MCP connector for QuantumMytheme/quantum-harness. It exposes the harness in the Claude Desktop app so a run never has to leave the chat: pick an open quantum-design problem, read its conceptual BRIEF, design a proof bundle, and re-derive it through the real four-gate numpy judge (structure → reproducibility → performance → anti-overfit) — the exit code is the result, not a claim. mint_run creates a fresh public run repository from the template, and commit_run writes the bundle straight to it via the GitHub Contents API — no Docker, no git, no second connector.",
   "author": { "name": "QuantumMytheme", "url": "https://quantummytheme.com" },
   "homepage": "https://quantummytheme.com",
   "documentation": "https://github.com/QuantumMytheme/quantum-harness/blob/main/CLAUDE-DESKTOP.md",
@@ -24,13 +24,14 @@
     { "name": "get_brief", "description": "Read a problem's BRIEF — the target stated conceptually." },
     { "name": "get_kickoff", "description": "Read KICKOFF.md — the one-message run contract." },
     { "name": "verify_bundle", "description": "Re-derive a proof bundle through the real four-gate numpy judge." },
-    { "name": "mint_run", "description": "Create a fresh public run repository from the template." }
+    { "name": "mint_run", "description": "Create a fresh public run repository from the template." },
+    { "name": "commit_run", "description": "Commit a proof bundle to a run repo via the GitHub Contents API (no Docker, no git); refuses a REJECT by default." }
   ],
   "user_config": {
     "github_token": {
       "type": "string",
       "title": "GitHub token",
-      "description": "A token with `public_repo` scope. Used only by mint_run to create your run repositories. Leave blank to skip repo minting (every other tool works without it).",
+      "description": "GitHub token used by mint_run (create your run repo) and commit_run (write the bundle to it). Least privilege: a fine-grained PAT with Administration:write + Contents:write and a short expiry; classic public_repo also works. Leave blank to skip minting/committing — every other tool works without it.",
       "sensitive": true,
       "required": false
     }
