@@ -1,0 +1,11 @@
+{
+  "name": "@quantummytheme/quantum-harness-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependency-free MCP connector for the quantum-harness verifiable bench.",
+  "type": "module",
+  "bin": { "quantum-harness-mcp": "server.mjs" },
+  "main": "server.mjs",
+  "engines": { "node": ">=18.0.0" },
+  "license": "MIT"
+}

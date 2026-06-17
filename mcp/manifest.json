@@ -1,0 +1,43 @@
+{
+  "manifest_version": "0.2",
+  "name": "quantum-harness",
+  "display_name": "QuantumMytheme · quantum-harness",
+  "version": "0.1.0",
+  "description": "Drive the verifiable quantum-design bench from inside Claude: list problems, read a BRIEF, re-verify a proof bundle through the real numpy judge, and mint a public run repo.",
+  "long_description": "A dependency-free MCP connector for QuantumMytheme/quantum-harness. It exposes the harness in the Claude Desktop app so a run never has to leave the chat: pick an open quantum-design problem, read its conceptual BRIEF, design a proof bundle, and re-derive it through the real four-gate numpy judge (structure → reproducibility → performance → anti-overfit) — the exit code is the result, not a claim. mint_run creates a fresh public run repository from the template; pair with the official GitHub MCP to clone, commit, and push.",
+  "author": { "name": "QuantumMytheme", "url": "https://quantummytheme.com" },
+  "homepage": "https://quantummytheme.com",
+  "documentation": "https://github.com/QuantumMytheme/quantum-harness/blob/main/CLAUDE-DESKTOP.md",
+  "license": "MIT",
+  "keywords": ["quantum", "verification", "judge", "citizen-science", "mcp"],
+  "server": {
+    "type": "node",
+    "entry_point": "server.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server.mjs"],
+      "env": { "GITHUB_TOKEN": "${user_config.github_token}" }
+    }
+  },
+  "tools": [
+    { "name": "list_problems", "description": "List the open problems the judge can grade." },
+    { "name": "get_brief", "description": "Read a problem's BRIEF — the target stated conceptually." },
+    { "name": "get_kickoff", "description": "Read KICKOFF.md — the one-message run contract." },
+    { "name": "verify_bundle", "description": "Re-derive a proof bundle through the real four-gate numpy judge." },
+    { "name": "mint_run", "description": "Create a fresh public run repository from the template." }
+  ],
+  "user_config": {
+    "github_token": {
+      "type": "string",
+      "title": "GitHub token",
+      "description": "A token with `public_repo` scope. Used only by mint_run to create your run repositories. Leave blank to skip repo minting (every other tool works without it).",
+      "sensitive": true,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": { "node": ">=18.0.0" }
+  }
+}

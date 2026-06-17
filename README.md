@@ -60,6 +60,11 @@ the current frontier, your model molds it, it auto-registers). Then **[RUN-FLOW.
 the full lifecycle, **[SCOREBOARD.md](./SCOREBOARD.md)** is where runs are ranked, and
 **[ACCESS.md](./ACCESS.md)** shows how to validate on a real (or rented) quantum chip.
 
+**Want to run it inside Claude?** **[CLAUDE-DESKTOP.md](./CLAUDE-DESKTOP.md)** covers both surfaces:
+paste `KICKOFF.md` into **Claude Code** for the full autonomous loop, or install the dependency-free
+**[`mcp/`](./mcp/) connector** in the **Claude Desktop app** to list problems, re-verify a bundle through
+the real judge, and mint a run repo — without leaving the chat.
+
 ## Repo layout
 
 | Path | What it is |
@@ -88,6 +93,8 @@ the full lifecycle, **[SCOREBOARD.md](./SCOREBOARD.md)** is where runs are ranke
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
 | `GETTING-STARTED.md` | Your first run in three commands — remix the frontier, your model molds it, auto-register |
 | `RUN-FLOW.md` · `bin/new-run.sh` | Mint a fresh public run repo from this template (`--remix <problem>` pre-loads the frontier), run, commit back |
+| `mcp/server.mjs` · `mcp/manifest.json` | Dependency-free MCP connector for the **Claude Desktop app** — `list_problems` / `get_brief` / `get_kickoff` / `verify_bundle` (real judge) / `mint_run` |
+| `CLAUDE-DESKTOP.md` | Run the harness inside Claude — Claude Code (autonomous loop) or the Desktop-app connector |
 | `bin/ingredients.mjs` | Assemble prior verified designs for a problem into a remix pack — how runs **compound** |
 | `ACCESS.md` | Get or rent a quantum chip (often free / under $1) and overlay a real-hardware result |
 | `HARDWARE.md` · `bench/quantum-judge/hardware_report.py` | Run a sim-verified design on a **real QPU** and report back — a labeled, partly-re-verifiable hardware overlay (sim score stays canonical) |
