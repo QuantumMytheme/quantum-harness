@@ -10,6 +10,9 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      # `secrets` is not allowed in `if:`, so expose a boolean here and gate on it.
+      HAS_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -28,3 +31,12 @@ jobs:
         run: python3 scoreboard/verify.py
       - name: Scoreboard data is fresh (entries.json -> viewer/scoreboard-data.js)
         run: node scoreboard/build.mjs --check
+      # Auto-deploy on a green push to main — so every push lands a Cloudflare Pages
+      # deployment (tagged with the commit) without a manual wrangler run. Skipped on
+      # PRs and when no Cloudflare token secret is configured.
+      - name: Deploy to Cloudflare Pages
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && env.HAS_CF_TOKEN == 'true' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler pages deploy viewer --project-name quantum-harness --branch main --commit-dirty=true
