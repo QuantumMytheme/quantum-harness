@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 // quantum-harness MCP server — lets the Claude Desktop app drive the harness in-chat:
 // list the open problems, read a BRIEF / the KICKOFF, RE-VERIFY a proof bundle through the
-// real numpy judge (exit-code truth, not a chat claim), and mint a fresh public run repo in
-// the GitHub org. Pair it with the official GitHub MCP for clone/commit/PR.
+// real numpy judge (exit-code truth, not a chat claim), mint a fresh public run repo in the
+// GitHub org, and commit the bundle straight to it via the GitHub API — no Docker, no second
+// connector, no local git required.
 //
 // DEPENDENCY-FREE on purpose: raw JSON-RPC 2.0 over newline-delimited stdio, no SDK, no
 // npm install — `node mcp/server.mjs` is the whole thing, in keeping with the harness's
 // "numpy is the only dependency" ethos. verify_bundle shells out to the project's own
 // bench/quantum-judge/judge_verify.py (numpy only); everything else is pure Node.
 //
-// Tools: list_problems · get_brief · get_kickoff · verify_bundle · mint_run
+// Tools: list_problems · get_brief · get_kickoff · verify_bundle · mint_run · commit_run
 // Setup + the in-chat flow: ../CLAUDE-DESKTOP.md
 
 import { readFile, readdir, writeFile, unlink } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -90,6 +91,24 @@ export const TOOLS = [
         description: { type: 'string', description: 'optional repo description' },
       },
       required: ['name'], additionalProperties: false,
+    },
+  },
+  {
+    name: 'commit_run',
+    description: 'Commit a proof bundle to a run repo via the GitHub Contents API — no Docker, no git, no second connector. By default it re-derives the bundle through the judge first and refuses to commit a REJECT. Needs a GitHub token.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        repo: { type: 'string', description: 'target run repo as "owner/name" (or pass repo_url)' },
+        repo_url: { type: 'string', description: 'alternatively, the run repo clone/html URL' },
+        bundle: { type: 'object', description: 'the full proof-bundle JSON object' },
+        bundle_path: { type: 'string', description: 'alternatively, a path to a bundle .json file on disk' },
+        path: { type: 'string', description: 'file path to write in the repo (default: quantum-proof-<problem_id>.json)' },
+        message: { type: 'string', description: 'commit message (default: "Add ACCEPTed proof bundle for <problem_id>")' },
+        branch: { type: 'string', description: 'target branch (default: the repo default branch)' },
+        verify: { type: 'boolean', description: 'judge the bundle and refuse to commit a REJECT (default: true)' },
+      },
+      additionalProperties: false,
     },
   },
 ]
@@ -194,15 +213,9 @@ async function verifyBundle({ bundle, bundle_path }) {
   }
 }
 
-async function mintRun({ name, owner, remix, description }) {
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
-  if (!token) {
-    return json({
-      error: 'no GitHub token',
-      remediation: 'Set GITHUB_TOKEN (a token with `public_repo` scope) in the connector config / environment, then retry.',
-    }, true)
-  }
-  const gh = (url, init = {}) => fetch(url, {
+// Shared GitHub API client — every request is Bearer-authed to api.github.com and nowhere else.
+function ghFetch(token, url, init = {}) {
+  return fetch(url, {
     ...init,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -212,6 +225,17 @@ async function mintRun({ name, owner, remix, description }) {
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
     },
   })
+}
+
+async function mintRun({ name, owner, remix, description }) {
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  if (!token) {
+    return json({
+      error: 'no GitHub token',
+      remediation: 'Set GITHUB_TOKEN (a token with `public_repo` scope) in the connector config / environment, then retry.',
+    }, true)
+  }
+  const gh = (url, init = {}) => ghFetch(token, url, init)
 
   let targetOwner = owner
   if (!targetOwner) {
@@ -250,12 +274,101 @@ async function mintRun({ name, owner, remix, description }) {
   })
 }
 
+async function commitRun({ repo, repo_url, bundle, bundle_path, path: filePath, message, branch, verify = true }) {
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  if (!token) {
+    return json({
+      error: 'no GitHub token',
+      remediation: 'Set GITHUB_TOKEN (a token that can write repo contents) in the connector config / environment, then retry.',
+    }, true)
+  }
+
+  let slug = repo
+  if (!slug && repo_url) {
+    const m = repo_url.match(/github\.com[:/]+([^/]+)\/([^/]+?)(?:\.git)?\/?$/i)
+    if (m) slug = `${m[1]}/${m[2]}`
+  }
+  if (!slug || !slug.includes('/')) {
+    return json({ error: 'pass `repo` as "owner/name" (or a GitHub `repo_url`)' }, true)
+  }
+  const [owner, name] = slug.split('/')
+
+  let bundleText, bundleObj
+  if (bundle && typeof bundle === 'object') {
+    bundleObj = bundle
+    bundleText = JSON.stringify(bundle, null, 2)
+  } else if (bundle_path) {
+    bundleText = await readFile(bundle_path, 'utf8')
+    try { bundleObj = JSON.parse(bundleText) } catch { return json({ error: 'bundle_path is not valid JSON' }, true) }
+  } else {
+    return json({ error: 'pass either `bundle` (a JSON object) or `bundle_path` (a file path)' }, true)
+  }
+
+  // The exit code is the truth: by default re-derive the bundle and refuse to commit a REJECT.
+  if (verify) {
+    const tmp = path.join(tmpdir(), `qh-commit-${process.pid}.json`)
+    await writeFile(tmp, bundleText)
+    try {
+      const r = await runJudge(tmp)
+      if (!r.ok) return json({ error: 'could not run the judge to verify before commit', reason: r.missing || r.msg || 'unknown' }, true)
+      if (r.result.verdict !== 'ACCEPT') {
+        return json({
+          error: `refusing to commit a REJECT (failed the ${GATE[r.result.code] ?? `exit ${r.result.code}`} gate)`,
+          judge: r.result,
+          hint: 'Fix the design, verify_bundle until ACCEPT, then commit — or pass verify:false to override.',
+        }, true)
+      }
+    } finally { await unlink(tmp).catch(() => {}) }
+  }
+
+  const problemId = bundleObj.problem_id || 'run'
+  const target = filePath || `quantum-proof-${problemId}.json`
+  const enc = target.split('/').map(encodeURIComponent).join('/')
+  const msg = message || `Add ACCEPTed proof bundle for ${problemId}`
+
+  let ref = branch
+  if (!ref) {
+    const repoRes = await ghFetch(token, `https://api.github.com/repos/${owner}/${name}`)
+    if (!repoRes.ok) return json({ error: `repo lookup failed (HTTP ${repoRes.status})`, remediation: 'Confirm the repo exists and the token can read it.' }, true)
+    ref = (await repoRes.json()).default_branch
+  }
+
+  // If the file already exists on the branch, its blob sha is required to update it.
+  let sha
+  const getRes = await ghFetch(token, `https://api.github.com/repos/${owner}/${name}/contents/${enc}?ref=${encodeURIComponent(ref)}`)
+  if (getRes.ok) { const cur = await getRes.json(); if (cur && cur.sha) sha = cur.sha }
+
+  const putRes = await ghFetch(token, `https://api.github.com/repos/${owner}/${name}/contents/${enc}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message: msg,
+      content: Buffer.from(bundleText, 'utf8').toString('base64'),
+      branch: ref,
+      ...(sha ? { sha } : {}),
+    }),
+  })
+  if (!putRes.ok) {
+    const body = await putRes.text()
+    return json({ error: `commit failed (HTTP ${putRes.status})`, detail: body.slice(0, 400) }, true)
+  }
+  const out = await putRes.json()
+  return json({
+    repo: `${owner}/${name}`,
+    path: target,
+    branch: ref,
+    commit: out.commit?.sha,
+    url: out.content?.html_url,
+    note: 'Committed via the GitHub Contents API — no Docker, no git, no second connector.',
+  })
+}
+
 const IMPL = {
   list_problems: listProblems,
   get_brief: getBrief,
   get_kickoff: getKickoff,
   verify_bundle: verifyBundle,
   mint_run: mintRun,
+  commit_run: commitRun,
 }
 
 // ---- MCP content helpers -----------------------------------------------------------------
@@ -333,4 +446,4 @@ function main() {
   process.stdin.on('end', () => { ended = true; drainAndExit() })
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main()
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
