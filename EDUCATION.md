@@ -1,6 +1,6 @@
 # Education — from a bit and a qubit to your own quantum-harness run
 
-Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Twenty-eight slices in five parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs eight landmark experiments — Bell's inequality, teleportation, quantum error correction, the GHZ all-or-nothing refutation of local realism, Bernstein–Vazirani's one-query secret, then the classical counterparts (the Hamming code, the 3-SAT phase transition) and the RSA→Shor bridge — each computing its headline result live — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
+Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Thirty-three slices in five parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs thirteen landmark experiments — Bell's inequality, teleportation + superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (Hamming code, 3-SAT phase transition, Rule 110 universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
 
 
 ---
@@ -252,7 +252,47 @@ Where the two ladders meet. RSA (Rivest, Shamir, Adleman, 1977) encrypts with N 
 
 > **Slice (animation):** technique=canvas — Two panels on small semiprimes (N = 15, 21, 33, 35). LEFT (RSA): N=p·q, public (N,e), private d = e⁻¹ mod φ(N) (NOT mod N), encrypt c = m^e mod N, decrypt c^d mod N = m (round-trips ✓); a message slider. RIGHT (factor by period-finding): a base a, the sequence a^x mod N as cells with one period highlighted, the period r, then — when r is even and a^(r/2) ≢ −1 — gcd(a^(r/2)∓1, N) = p, q (else "odd period / a^(r/2) ≡ −1 — try another base", the real Shor retry). A note localizing the quantum speedup to period-finding only. Verified by direct computation (N=15,a=7 → r=4 → 3×5; e·d≡1 mod φ; both period conditions required; gcd is classical).
 
-## 27. Your turn: fork and run   
+## 27. Two bits on a single qubit   
+`LANDMARK · SUPERDENSE CODING`  
+**Takeaway:** Sharing one entangled pair, Alice sends two classical bits by transmitting just one qubit — teleportation run in reverse.
+
+Superdense coding (Bennett & Wiesner, 1992) is teleportation's mirror: spend one shared Bell pair to send two classical bits down one qubit. Alice applies one of {I, X, Z, ZX} to her half (rotating the pair into one of the four orthogonal Bell states), sends her single qubit; Bob holds both halves, does one Bell measurement, reads the 2 bits. Entanglement is the resource (without it, one qubit carries ≤ 1 bit). First demonstrated by Mattle, Weinfurter, Kwiat, Zeilinger (1996).
+
+> **Slice (animation):** technique=canvas — 2-qubit statevector |Φ+⟩; Alice encodes Z^{b1} X^{b2} on qubit 0 (00→I, 01→X, 10→Z, 11→ZX, ZX = X then Z); Bob decodes with CNOT(0→1) then H(0), measures → argmax = (b1,b2). Convention pinned. Two-bit toggles; shows Alice's gate, the single transmitted qubit, and Bob's recovered bits = sent bits (verified all 4). Dual of teleportation.
+
+## 28. Constant or balanced, in one query   
+`LANDMARK · QUERY SPEEDUP`  
+**Takeaway:** A function is promised to be either all-one-value or split-evenly; one quantum query settles which, where a classical computer might need exponentially many to be sure.
+
+Deutsch–Jozsa (1992, on Deutsch 1985): a black box is either constant or balanced; classically you might check up to 2ⁿ⁻¹+1 inputs to be certain, quantumly one query suffices. Hⁿ → phase oracle (−1)^{f(x)} → Hⁿ → measure: all-zeros iff constant, nonzero iff balanced. The exponential gap is against a DETERMINISTIC/exact classical algorithm (a randomized one guesses with few queries); BV is the sharper cousin.
+
+> **Slice (animation):** technique=canvas — n=3 statevector; pick the oracle (constant 0/1, balanced x₀, balanced parity); run Hⁿ·phase-oracle·Hⁿ, draw the 8 outcome probabilities and P(|000⟩); verdict CONSTANT (P=1) vs BALANCED (P=0). Verified by computation (constant→1, balanced→0). Keep the "deterministic/exact" qualifier on the exponential gap.
+
+## 29. Finding a hidden period, exponentially faster   
+`LANDMARK · THE ROAD TO SHOR`  
+**Takeaway:** A two-to-one function hides a secret period; each quantum query returns a clue, and a handful pin it down — where a classical computer needs exponentially many.
+
+Simon (1994) sparked Shor. A 2-to-1 function hides period s (f(x)=f(x⊕s)); classical collision-hunting takes ~2^{n/2} queries (exponential). Simon's Hⁿ·oracle·Hⁿ run returns a random y with y·s=0; collect ~n−1 independent equations, solve over GF(2) for s. The first PROVEN exponential speedup vs ANY classical algorithm (even randomized) — Shor saw the same interference-then-period-finding structure factors numbers.
+
+> **Slice (animation):** technique=canvas — full 2-register sim (6 qubits, n=3): Hⁿ on input, oracle out⊕=f(in) with f(x)=min(x,x⊕s), measure output (collapse input to {x0,x0⊕s}), Hⁿ on input, measure → y (y·s=0). Accumulate independent y's; candidate s = the unique nonzero vector orthogonal to all collected y; solved at n−1 independent equations. Buttons run/reset/new-secret; shows the equations + recovered s (matches hidden). Verified: recovers every hidden s. Classical bound Θ(2^{n/2}).
+
+## 30. A universal computer from one tiny rule   
+`LANDMARK · CLASSICAL UNIVERSALITY`  
+**Takeaway:** A line of cells, each following the same eight-line rule from its two neighbors, is enough to compute anything a computer can.
+
+An elementary cellular automaton is a row of cells updated by a fixed 8-entry table of the (left, center, right) neighborhood. Rule 110 (binary 01101110) produces Class-4 "gliders" that interact; Wolfram conjectured universality, Matthew Cook PROVED it (published 2004) — universal with data encoded as gliders on its standard periodic "ether" background (NOT arbitrary/blank initial conditions). One of the simplest known universal systems.
+
+> **Slice (animation):** technique=canvas — Compute the CA spacetime: each row from the previous via the rule-N lookup (rule 110 table 111→0,110→1,101→1,100→0,011→1,010→1,001→1,000→0), drawn top-to-bottom, cells filled. Rule selector (110/30/90/184), single vs random seed; rows reveal over time (reduced-motion = full). Verified rule-110 table = 01101110. Caption: attribute the universality conjecture to Wolfram and the proof to Cook 2004; note the glider-on-ether encoding condition.
+
+## 31. The energy price of erasing a bit   
+`LANDMARK · THE COST OF FORGETTING`  
+**Takeaway:** Erasing one bit must dissipate at least kT·ln2 of heat — and that floor, plus moving data, not the switching itself, is the deep limit on efficient computing.
+
+Landauer's principle (1961): erasing one bit (two states → one) releases AT LEAST kT·ln2 of heat (~18 meV at 300 K). The word is *erasing* — Bennett (1973) showed reversible operations (CNOT, Toffoli, any bijection) have no such floor, the deep reason quantum gates are unitary/reversible. Today's chips spend thousands× the limit, dominated by data movement not switching — which points at the real efficiency frontier (and segues to the North Star).
+
+> **Slice (animation):** technique=canvas — Erasure diagram (two states → one, entropy −k·ln2, heat ≥ kT·ln2) vs a reversible-CNOT truth table (bijective, no floor); a temperature slider computes kT·ln2 live in J/eV/meV (k=1.380649e-23, ln2; 300 K → 2.87e-21 J = 17.9 meV). Verified value. Keep the ≥ (minimum, quasi-static); note data-movement dominates. Landauer 1961 · Bennett 1973 · Bérut et al. 2012.
+
+## 32. Your turn: fork and run   
 `YOUR TURN`  
 **Takeaway:** Fork it, aim your own model at a brief, and a judge anyone can re-run decides whether your result joins the board.
 

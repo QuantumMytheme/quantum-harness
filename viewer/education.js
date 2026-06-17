@@ -3650,6 +3650,246 @@
 };
   // ==========================================================================
 
+  // ============ EXPANSION: landmark experiments · queries, thermodynamics, universality ============
+
+// ───── deutsch-jozsa (constant or balanced in one query) ─────
+  EDU["deutsch-jozsa"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h, N = 3, DIM = 8;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var FUNCS = [['constant 0', function () { return 0; }, 'constant'], ['constant 1', function () { return 1; }, 'constant'],
+               ['balanced · x₀', function (x) { return (x >> 2) & 1; }, 'balanced'], ['balanced · parity', function (x) { return ((x >> 2) ^ (x >> 1) ^ x) & 1; }, 'balanced']];
+  var fi = 2;
+  function Had(st, q) { var o = st.slice(), s = 1 / Math.sqrt(2), m = 1 << (N - 1 - q); for (var i = 0; i < DIM; i++) { if (i & m) continue; var j = i | m; o[i] = K.C((st[i].re + st[j].re) * s, (st[i].im + st[j].im) * s); o[j] = K.C((st[i].re - st[j].re) * s, (st[i].im - st[j].im) * s); } return o; }
+  function run() { var st = []; for (var i = 0; i < DIM; i++) st.push(K.C(i === 0 ? 1 : 0, 0)); for (var q = 0; q < N; q++) st = Had(st, q);
+    for (var x = 0; x < DIM; x++) if (FUNCS[fi][1](x) & 1) st[x] = K.C(-st[x].re, -st[x].im); for (var q2 = 0; q2 < N; q2++) st = Had(st, q2); return st; }
+
+  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'oracle f'; controls.appendChild(lab);
+  var fbtn = []; FUNCS.forEach(function (fn, i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = fn[0]; b.addEventListener('click', function () { fi = i; sync(); draw(); }); controls.appendChild(b); fbtn.push(b); });
+  function sync() { fbtn.forEach(function (b, i) { b.setAttribute('aria-pressed', i === fi ? 'true' : 'false'); }); }
+  sync();
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var st = run(), p0 = st[0].re * st[0].re + st[0].im * st[0].im, isConst = p0 > 0.5;
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Is the black-box function constant or balanced?  One quantum query decides — measure the n qubits after Hⁿ·oracle·Hⁿ.', 14, 22);
+    // amplitude bars over the 8 outcomes
+    var x0 = 30, bw = (W * 0.5 - 40) / DIM, baseY = H - 60, maxH = baseY - 70;
+    for (var i = 0; i < DIM; i++) { var pr = st[i].re * st[i].re + st[i].im * st[i].im, bx = x0 + i * bw, h = Math.max(1, pr * maxH);
+      ctx.fillStyle = i === 0 ? acc : ink2; ctx.globalAlpha = i === 0 ? 1 : 0.55; ctx.fillRect(bx, baseY - h, bw * 0.74, h); ctx.globalAlpha = 1;
+      ctx.fillStyle = faint; ctx.font = '8px ' + mono; ctx.textAlign = 'center'; ctx.fillText('|' + i.toString(2).padStart(3, '0') + '⟩', bx + bw * 0.37, baseY + 12); }
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.textAlign = 'left'; ctx.fillText('measurement outcome probabilities', x0, 56);
+    // verdict
+    var rx = W * 0.62, ry = 80;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('outcome after one query:', rx, ry);
+    ctx.fillStyle = ink; ctx.font = '600 14px ' + mono; ctx.fillText('P(measure |000⟩) = ' + (p0 * 100).toFixed(0) + '%', rx, ry + 24);
+    ctx.fillStyle = isConst ? pass : acc; ctx.font = '600 16px ' + mono; ctx.fillText(isConst ? 'all-zeros → CONSTANT' : 'nonzero → BALANCED', rx, ry + 50);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    wrap('Interference makes every balanced function steer away from |000⟩ and every constant one land exactly on it — settled in a single query, where a classical computer might need 2ⁿ⁻¹+1.', rx, ry + 76, W - rx - 16, 14);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── simon (a hidden period found in O(n) queries) ─────
+  EDU["simon"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h, NQ = 6, N = 3, DIM = 64;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var s = 5;                                                // hidden period (n=3), nonzero
+  function fval(x) { var y = x ^ s; return Math.min(x, y); }    // 2-to-1 with period s
+  var ys = [], solved = null, queries = 0;
+  function Had(st, q) { var o = st.slice(), sq = 1 / Math.sqrt(2), m = 1 << (NQ - 1 - q); for (var i = 0; i < DIM; i++) { if (i & m) continue; var j = i | m; o[i] = K.C((st[i].re + st[j].re) * sq, (st[i].im + st[j].im) * sq); o[j] = K.C((st[i].re - st[j].re) * sq, (st[i].im - st[j].im) * sq); } return o; }
+  function dot(a, b) { var c = 0, t = a & b; while (t) { c ^= (t & 1); t >>= 1; } return c; }
+  function query() {
+    var st = []; for (var i = 0; i < DIM; i++) st.push(K.C(i === 0 ? 1 : 0, 0));
+    st = Had(st, 0); st = Had(st, 1); st = Had(st, 2);            // Hⁿ on input (qubits 0,1,2 = high bits)
+    var o = []; for (i = 0; i < DIM; i++) o.push(K.C(0, 0));    // oracle: out ⊕= f(in)
+    for (i = 0; i < DIM; i++) { var x = i >> 3, out = i & 7; o[(x << 3) | (out ^ fval(x))] = st[i]; } st = o;
+    // measure output register → collapse input to {x0, x0⊕s}
+    var pr = new Array(8).fill(0); for (i = 0; i < DIM; i++) pr[i & 7] += st[i].re * st[i].re + st[i].im * st[i].im;
+    var rnd = Math.random(), acc = 0, mo = 0; for (i = 0; i < 8; i++) { acc += pr[i]; if (rnd <= acc) { mo = i; break; } }
+    var nrm = Math.sqrt(pr[mo]) || 1; for (i = 0; i < DIM; i++) st[i] = ((i & 7) === mo) ? K.C(st[i].re / nrm, st[i].im / nrm) : K.C(0, 0);
+    st = Had(st, 0); st = Had(st, 1); st = Had(st, 2);            // Hⁿ on input
+    var pin = new Array(8).fill(0); for (i = 0; i < DIM; i++) pin[i >> 3] += st[i].re * st[i].re + st[i].im * st[i].im;
+    rnd = Math.random(); acc = 0; var y = 0; for (i = 0; i < 8; i++) { acc += pin[i]; if (rnd <= acc) { y = i; break; } }
+    queries++;
+    if (y !== 0 && ys.indexOf(y) < 0) ys.push(y);
+    // candidate s: nonzero, orthogonal to every collected y
+    var cand = []; for (var c = 1; c < 8; c++) { var ok = true; for (var k = 0; k < ys.length; k++) if (dot(ys[k], c)) { ok = false; break; } if (ok) cand.push(c); }
+    solved = (cand.length === 1) ? cand[0] : null;
+  }
+  function mk(t, fn, primary) { var b = document.createElement('button'); b.type = 'button'; b.className = primary ? 'btn primary' : 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); draw(); }); controls.appendChild(b); return b; }
+  mk('Run query', function () { query(); }, true);
+  mk('Reset', function () { ys = []; solved = null; queries = 0; });
+  mk('New secret', function () { s = 1 + ((s + 2) % 7); ys = []; solved = null; queries = 0; });
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('A 2-to-1 function hides a period s (f(x)=f(x⊕s)). Each quantum query returns a y with y·s=0 — a few pin s down.', 14, 22);
+    // constraints
+    var x0 = 24, y0 = 56;
+    ctx.fillStyle = ink2; ctx.font = '11px ' + mono; ctx.fillText('queries: ' + queries + '   ·   classical would need ~' + Math.round(Math.pow(2, N / 2)) + '+', x0, y0);
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.fillText('equations collected (each: y·s = 0):', x0, y0 + 24);
+    for (var i = 0; i < Math.max(1, ys.length); i++) { var yy = y0 + 44 + i * 20;
+      if (i < ys.length) { ctx.fillStyle = ink; ctx.font = '600 13px ' + mono; ctx.fillText('y' + (i + 1) + ' = ' + ys[i].toString(2).padStart(3, '0'), x0 + 6, yy); }
+      else { ctx.fillStyle = faint; ctx.font = '11px ' + mono; ctx.fillText('(press “Run query”)', x0 + 6, yy); } }
+    // result
+    var rx = W * 0.56, ry = 70;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('recovered period', rx, ry);
+    if (solved != null) { ctx.fillStyle = pass; ctx.font = '600 22px ' + mono; ctx.fillText('s = ' + solved.toString(2).padStart(3, '0'), rx, ry + 28);
+      ctx.fillStyle = solved === s ? pass : K.v('--reject'); ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillText(solved === s ? '✓ matches the hidden secret' : '✗', rx, ry + 50); }
+    else { ctx.fillStyle = ink2; ctx.font = '14px ' + mono; ctx.fillText(ys.length + ' / ' + (N - 1) + ' independent equations', rx, ry + 26);
+      ctx.fillStyle = faint; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillText('need ' + (N - 1) + ' to solve for s', rx, ry + 48); }
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('An exponential separation in the query model — and the trick (interference then linear algebra) that directly inspired Shor.', rx, ry + 78, W - rx - 16, 13);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── superdense (two classical bits on one qubit) ─────
+  EDU["superdense"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h, DIM = 4;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var b1 = 1, b2 = 0;                                       // Alice's two bits
+  var S2 = 1 / Math.sqrt(2);
+  function X(st, q) { var o = st.slice(), m = q === 0 ? 2 : 1; for (var i = 0; i < DIM; i++) o[i ^ m] = st[i]; return o; }
+  function Z(st, q) { var o = st.slice(), m = q === 0 ? 2 : 1; for (var i = 0; i < DIM; i++) o[i] = (i & m) ? K.C(-st[i].re, -st[i].im) : st[i]; return o; }
+  function H0(st) { var o = st.slice(); o[0] = K.C((st[0].re + st[2].re) * S2, (st[0].im + st[2].im) * S2); o[2] = K.C((st[0].re - st[2].re) * S2, (st[0].im - st[2].im) * S2);
+    o[1] = K.C((st[1].re + st[3].re) * S2, (st[1].im + st[3].im) * S2); o[3] = K.C((st[1].re - st[3].re) * S2, (st[1].im - st[3].im) * S2); return o; }
+  function CX01(st) { var o = st.slice(); o[2] = st[3]; o[3] = st[2]; return o; }   // control q0, target q1
+  function decode() {
+    var st = [K.C(S2, 0), K.C(0, 0), K.C(0, 0), K.C(S2, 0)];     // |Φ+⟩
+    if (b2) st = X(st, 0); if (b1) st = Z(st, 0);                // Alice encodes on qubit 0: Z^{b1} X^{b2}
+    st = CX01(st); st = H0(st);                                 // Bob's Bell measurement
+    var pr = st.map(function (a) { return a.re * a.re + a.im * a.im; }), best = 0; for (var i = 1; i < 4; i++) if (pr[i] > pr[best]) best = i;
+    return { out: best, gate: (b1 ? 'Z' : '') + (b2 ? 'X' : '') || 'I' };
+  }
+  function tg(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(b); draw(); }); controls.appendChild(b); return b; }
+  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'Alice sends'; controls.appendChild(lab);
+  var bb1 = tg('b₁=' + b1, function () { b1 ^= 1; bb1.textContent = 'b₁=' + b1; });
+  var bb2 = tg('b₂=' + b2, function () { b2 ^= 1; bb2.textContent = 'b₂=' + b2; });
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var res = decode(), recovered = res.out, rb1 = (recovered >> 1) & 1, rb2 = recovered & 1, ok = rb1 === b1 && rb2 === b2;
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Sharing one entangled pair, Alice sends TWO classical bits by transmitting just ONE qubit — teleportation, in reverse.', 14, 22);
+    var midY = H * 0.5, ax = W * 0.16, bx = W * 0.84;
+    // Alice
+    ctx.fillStyle = ink; ctx.font = '600 12px ' + mono; ctx.textAlign = 'center'; ctx.fillText('ALICE', ax, midY - 70);
+    ctx.font = '11px ' + mono; ctx.fillStyle = ink2; ctx.fillText('wants to send', ax, midY - 48);
+    ctx.fillStyle = acc; ctx.font = '600 20px ' + mono; ctx.fillText(b1 + '' + b2, ax, midY - 24);
+    ctx.fillStyle = faint; ctx.font = '11px ' + mono; ctx.fillText('applies  ' + res.gate, ax, midY + 4);
+    ctx.fillText('to her qubit', ax, midY + 20);
+    // channel: one qubit travels
+    ctx.strokeStyle = acc; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(ax + 44, midY); ctx.lineTo(bx - 44, midY); ctx.stroke();
+    ctx.fillStyle = acc; ctx.beginPath(); ctx.moveTo(bx - 44, midY); ctx.lineTo(bx - 54, midY - 5); ctx.lineTo(bx - 54, midY + 5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = ink2; ctx.font = '10px ' + mono; ctx.fillText('1 qubit →', (ax + bx) / 2, midY - 10);
+    ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.fillText('(2nd qubit already shared, entangled)', (ax + bx) / 2, midY + 18);
+    // Bob
+    ctx.fillStyle = ink; ctx.font = '600 12px ' + mono; ctx.fillText('BOB', bx, midY - 70);
+    ctx.font = '11px ' + mono; ctx.fillStyle = ink2; ctx.fillText('Bell-measures, reads', bx, midY - 48);
+    ctx.fillStyle = ok ? pass : K.v('--reject'); ctx.font = '600 20px ' + mono; ctx.fillText(rb1 + '' + rb2 + (ok ? '  ✓' : ''), bx, midY - 22);
+    ctx.fillStyle = faint; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'center';
+    wrap('Alice’s gate rotates the shared Bell state into one of four orthogonal Bell states; Bob tells them apart with a single measurement — 2 bits per qubit.', W / 2, H - 28, W * 0.66, 14);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), lines = [], line = ''; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { lines.push(line); line = words[i] + ' '; } else line = t; } lines.push(line); ctx.textAlign = 'center'; for (var k = 0; k < lines.length; k++) ctx.fillText(lines[k], x, y - (lines.length - 1 - k) * lh); }
+  draw();
+};
+
+  // ───── landauer (the energy cost of forgetting a bit) ─────
+  EDU["landauer"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var kB = 1.380649e-23, LN2 = Math.LN2, T = 300, reversible = false;
+  function energyJ() { return kB * T * LN2; }
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'temperature T ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '1'; range.max = '1000'; range.step = '1'; range.value = String(T); range.style.marginLeft = '6px';
+  range.addEventListener('input', function () { T = parseInt(range.value, 10); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+  var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'btn'; mb.textContent = 'show reversible'; mb.addEventListener('click', function () { reversible = !reversible; mb.textContent = reversible ? 'show erase (irreversible)' : 'show reversible'; draw(); }); controls.appendChild(mb);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Forgetting is physical: erasing one bit must dump at least kT·ln2 of heat. Reversible logic has no such floor.', 14, 22);
+    var cx = W * 0.27, cy = H * 0.5, r = 26;
+    if (!reversible) {
+      // erasure: two possible states (0 or 1) → one state (0); entropy k·ln2 lost
+      ctx.fillStyle = ink2; ctx.font = '11px ' + mono; ctx.textAlign = 'center';
+      ctx.fillText('ERASE: unknown bit → 0', cx, cy - 66);
+      [['0', cx - 40, cy - 30], ['1', cx + 40, cy - 30]].forEach(function (q) { ctx.strokeStyle = faint; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(q[1], q[2], 16, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = ink2; ctx.font = '600 13px ' + mono; ctx.fillText(q[0], q[1], q[2] + 4); });
+      ctx.strokeStyle = faint; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(cx - 40, cy - 12); ctx.lineTo(cx, cy + 26); ctx.moveTo(cx + 40, cy - 12); ctx.lineTo(cx, cy + 26); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = acc; ctx.strokeStyle = acc; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(cx, cy + 42, 18, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = acc; ctx.font = '600 14px ' + mono; ctx.fillText('0', cx, cy + 46);
+      ctx.fillStyle = reject; ctx.font = '10px ' + mono; ctx.fillText('↯ heat ≥ kT·ln2', cx, cy + 80);
+      ctx.fillText('entropy −k·ln2', cx, cy + 94);
+    } else {
+      // reversible: CNOT, bijective, no info lost
+      ctx.fillStyle = ink2; ctx.font = '11px ' + mono; ctx.textAlign = 'center'; ctx.fillText('REVERSIBLE: CNOT (a, b) → (a, a⊕b)', cx, cy - 66);
+      ctx.fillStyle = pass; ctx.font = '12px ' + mono;
+      ctx.fillText('00 → 00', cx, cy - 30); ctx.fillText('01 → 01', cx, cy - 8); ctx.fillText('10 → 11', cx, cy + 14); ctx.fillText('11 → 10', cx, cy + 36);
+      ctx.fillStyle = pass; ctx.font = '10px ' + mono; ctx.fillText('bijective — nothing forgotten', cx, cy + 64);
+      ctx.fillText('no fundamental energy floor', cx, cy + 78);
+    }
+    // energy readout
+    var E = energyJ(), eV = E / 1.602176634e-19, rx = W * 0.56;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('Landauer limit at T = ' + T + ' K', rx, 70);
+    ctx.fillStyle = ink; ctx.font = '600 17px ' + mono; ctx.fillText('kT·ln2 = ' + E.toExponential(2) + ' J', rx, 96);
+    ctx.fillStyle = ink2; ctx.font = '12px ' + mono; ctx.fillText('= ' + (eV * 1000).toFixed(1) + ' meV  =  ' + eV.toExponential(2) + ' eV', rx, 116);
+    ctx.fillStyle = faint; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif');
+    wrap('At room temperature that is ~18 meV per erased bit — and today’s chips still spend thousands of times more. This is why reversible (and quantum, which is unitary and reversible) computing is the deep-efficiency frontier.', rx, 144, W - rx - 16, 14);
+    ctx.fillStyle = ink2; ctx.font = '9.5px ' + mono; ctx.fillText('Landauer 1961 · Bennett 1973 · confirmed Bérut et al. 2012', rx, H - 16);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── rule110 (universal computation from one tiny rule) ─────
+  EDU["rule110"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+  var ruleN = 110, initMode = 'single', cols = 0, rows = 0, grid = null, t0 = 0, shown = 0;
+  function ruleBit(n, lcr) { return (n >> lcr) & 1; }       // lcr = 4·L+2·C+R
+  function seedRng(a) { var s = a >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function build() {
+    var cell = Math.max(3, Math.round(W / 180)); cols = Math.floor((W - 8) / cell); rows = Math.floor((H - 8) / cell);
+    grid = []; var first = new Array(cols).fill(0), rng = seedRng(7);
+    if (initMode === 'single') first[cols - 2] = 1; else for (var i = 0; i < cols; i++) first[i] = rng() < 0.5 ? 1 : 0;
+    grid.push(first);
+    for (var r = 1; r < rows; r++) { var prev = grid[r - 1], row = new Array(cols);
+      for (var c = 0; c < cols; c++) { var L = prev[(c - 1 + cols) % cols], C = prev[c], R = prev[(c + 1) % cols]; row[c] = ruleBit(ruleN, 4 * L + 2 * C + R); }
+      grid.push(row); }
+    return cell;
+  }
+  var cellPx = build();
+
+  function mk(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); cellPx = build(); shown = 0; t0 = 0; if (K.reduced) draw(); }); controls.appendChild(b); return b; }
+  var rlab = document.createElement('span'); rlab.className = 'chip'; rlab.textContent = 'rule'; controls.appendChild(rlab);
+  var rbtn = {}; [110, 30, 90, 184].forEach(function (n) { rbtn[n] = mk(String(n), function () { ruleN = n; sync(); }); });
+  mk('single seed', function () { initMode = 'single'; });
+  mk('random seed', function () { initMode = 'random'; });
+  function sync() { for (var n in rbtn) rbtn[n].setAttribute('aria-pressed', (+n === ruleN) ? 'true' : 'false'); }
+  sync();
+
+  function draw(t) {
+    var ink = K.v('--ink'), faint = K.v('--faint'), acc = K.v('--accent'), bg = K.v('--stage-bg') || K.v('--bg'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    if (K.reduced) shown = rows; else { if (!t0) t0 = t; shown = Math.min(rows, Math.floor((t - t0) / 45) + 1); }
+    var ox = (W - cols * cellPx) / 2, oy = 4;
+    ctx.fillStyle = ruleN === 110 ? acc : ink;
+    for (var r = 0; r < shown; r++) for (var c = 0; c < cols; c++) if (grid[r][c]) ctx.fillRect(ox + c * cellPx, oy + r * cellPx, cellPx - 0.5, cellPx - 0.5);
+    // caption
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Rule ' + ruleN + (ruleN === 110 ? ' — proven Turing-complete (Cook 2004): a universal computer from one 8-bit rule.' : ' — an elementary cellular automaton.'), 10, H - 8);
+  }
+  if (K.reduced) draw(0); else K.loop(draw);
+};
+
+
   // ============ EXPANSION: landmark experiments · nonlocality + one-query ============
 
 // ───── ghz-mermin (all-versus-nothing nonlocality — a single-shot contradiction) ─────

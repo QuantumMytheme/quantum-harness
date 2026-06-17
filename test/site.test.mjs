@@ -56,10 +56,11 @@ const EDU_IDS = [
   'quantum-sim', 'entanglement', 'quantum-algorithms', 'noise-qec', 'hardware-zoo', 'hybrid-quantum',
   'qubit-explorer',
   'chsh', 'teleport', 'qec-code', 'ghz-mermin', 'bv', 'hamming', 'sat3', 'rsa-shor',
+  'superdense', 'deutsch-jozsa', 'simon', 'rule110', 'landauer',
   'your-run',
 ]
 
-test('education page exists, is wired, and mounts all 28 module canvases', () => {
+test('education page exists, is wired, and mounts all 33 module canvases', () => {
   assert.ok(existsSync(v('education.html')), 'viewer/education.html should exist')
   assert.ok(existsSync(v('education.js')), 'viewer/education.js should exist')
   const edu = readFileSync(v('education.html'), 'utf8')

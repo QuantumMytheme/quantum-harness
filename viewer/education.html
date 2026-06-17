@@ -73,7 +73,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Twenty-eight slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs eight landmark experiments — Bell's inequality, teleportation, quantum error correction, the GHZ all-or-nothing refutation of local realism, and Bernstein–Vazirani's one-query secret, then their classical counterparts (the Hamming code, the 3-SAT phase transition) and the bridge between the tracks (RSA, and the one step Shor's algorithm speeds up) — each computing its headline result live — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Thirty-three slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -109,7 +109,12 @@
       <a href="#m-hamming"><b>24</b>The Hamming code (classical twin)</a>
       <a href="#m-sat3"><b>25</b>The 3-SAT phase transition</a>
       <a href="#m-rsa-shor"><b>26</b>RSA, and what Shor speeds up</a>
-      <a href="#m-your-run"><b>27</b>Your turn: prove, then run</a>
+      <a href="#m-superdense"><b>27</b>Two bits on a single qubit</a>
+      <a href="#m-deutsch-jozsa"><b>28</b>Constant or balanced, in one query</a>
+      <a href="#m-simon"><b>29</b>A hidden period, exponentially faster</a>
+      <a href="#m-rule110"><b>30</b>A universal computer from one rule</a>
+      <a href="#m-landauer"><b>31</b>The energy price of erasing a bit</a>
+      <a href="#m-your-run"><b>32</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
@@ -601,7 +606,92 @@
   </div>
 </section>
 
-<!-- ============================= 25 ============================= -->
+<!-- ============================= 27 ============================= -->
+<section id="m-superdense">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · superdense coding</p>
+      <h2>Two bits on a single qubit</h2>
+      <p class="takeaway"><b>Takeaway.</b> Sharing one entangled pair, Alice sends two classical bits by transmitting just one qubit — teleportation run in reverse.</p>
+    </div>
+    <p>Teleportation spent two classical bits and one shared entangled pair to move one qubit. Superdense coding (Bennett and Wiesner, 1992) is its exact mirror: it spends one shared entangled pair to send two classical bits down a single qubit. Alice and Bob start sharing a Bell pair. To send two bits, Alice applies one of four operations to her half — I, X, Z, or ZX — which rotates the shared state into one of the four mutually orthogonal Bell states, and ships her single qubit to Bob. Now holding both halves, Bob does one Bell measurement and reads the two bits straight off. The entanglement was the resource: without it, one qubit carries at most one bit. First demonstrated by Mattle, Weinfurter, Kwiat and Zeilinger in 1996.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="superdense" aria-label="Alice encodes two bits onto her half of a Bell pair with one of four gates, sends one qubit, and Bob's Bell measurement recovers both bits"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 27.</b> Toggle the two bits Alice wants to send; she applies the matching gate (I, X, Z, or ZX), transmits one qubit, and Bob's Bell measurement recovers both bits — every time.</p>
+  </div>
+</section>
+
+<!-- ============================= 28 ============================= -->
+<section id="m-deutsch-jozsa">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · query speedup</p>
+      <h2>Constant or balanced, in one query</h2>
+      <p class="takeaway"><b>Takeaway.</b> A function is promised to be either all-one-value or split-evenly; one quantum query settles which, where a classical computer might need exponentially many to be sure.</p>
+    </div>
+    <p>The Deutsch–Jozsa algorithm (1992), built on Deutsch's 1985 work, was the first to show a clean exponential gap between quantum and classical on a clearly-stated problem. A black box computes a function promised to be either <em>constant</em> (the same output on every input) or <em>balanced</em> (output 0 on exactly half the inputs, 1 on the rest). To be certain classically you might have to check just over half the inputs — up to 2ⁿ⁻¹+1 of them. The quantum circuit needs one: Hadamards put every input into superposition, the oracle stamps each with the phase (−1)<sup>f(x)</sup>, and a final layer of Hadamards makes the phases interfere — landing exactly on the all-zeros outcome if the function was constant, and away from it if balanced. (The exponential gap is against a classical computer that must be <em>certain</em>; a randomized classical algorithm guesses right with few queries. Bernstein–Vazirani is the sharper cousin.)</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="deutsch-jozsa" aria-label="Pick a constant or balanced oracle; after one query the measurement probability lands on the all-zeros outcome for constant and away from it for balanced"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 28.</b> Choose a constant or balanced oracle; after a single query the measurement lands on |000⟩ (constant) or misses it entirely (balanced) — interference does the deciding.</p>
+  </div>
+</section>
+
+<!-- ============================= 29 ============================= -->
+<section id="m-simon">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · the road to Shor</p>
+      <h2>Finding a hidden period, exponentially faster</h2>
+      <p class="takeaway"><b>Takeaway.</b> A two-to-one function hides a secret period; each quantum query returns a clue, and a handful pin it down — where a classical computer needs exponentially many.</p>
+    </div>
+    <p>Simon's algorithm (1994) was the spark for Shor's. A black box computes a two-to-one function with a hidden period s: f(x) and f(x⊕s) always collide. Classically, finding s means hunting for such a collision, which takes about 2<sup>n/2</sup> queries — exponential. Simon's quantum routine runs Hadamards, the oracle, then Hadamards again, and each run returns a random bitstring y guaranteed to satisfy y·s = 0. Collect about n−1 independent equations of that form and ordinary linear algebra over the bits solves for s. It was the first problem with a <em>proven</em> exponential quantum speedup over <em>any</em> classical algorithm, even a randomized one — and Shor recognized that the same interference-then-period-finding structure could factor numbers and break RSA.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="simon" aria-label="Each query returns a bitstring y satisfying y·s=0; once enough independent equations accumulate, the hidden period s is solved by linear algebra"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 29.</b> Each "Run query" returns a y with y·s=0; once n−1 independent equations accumulate, s is solved — orders of magnitude fewer queries than the classical ~2<sup>n/2</sup>.</p>
+  </div>
+</section>
+
+<!-- ============================= 30 ============================= -->
+<section id="m-rule110">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · classical universality</p>
+      <h2>A universal computer from one tiny rule</h2>
+      <p class="takeaway"><b>Takeaway.</b> A line of cells, each following the same eight-line rule from its two neighbors, is enough to compute anything a computer can.</p>
+    </div>
+    <p>Computation needs no transistors and not even arithmetic — it can emerge from a rule almost too simple to believe. An elementary cellular automaton is a row of black-and-white cells; at each step every cell looks at itself and its two neighbors and updates by a fixed eight-entry lookup table. Rule 110 — named for the binary 01101110 of its eight outputs — produces neither order nor noise but a shifting traffic of "gliders" that collide and interact. Stephen Wolfram conjectured it was computationally universal; Matthew Cook proved it (published 2004), making Rule 110, with data encoded as gliders on its standard repeating background, one of the simplest known systems that can simulate any computer at all. Universality, it turns out, is cheap.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="rule110" aria-label="The Rule 110 cellular automaton evolving downward from a seed, producing complex glider structures; other rules show order, chaos, or simple structure"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 30.</b> Watch Rule 110 evolve from a single seed — the Class-4 gliders are the moving parts of a universal computer. Switch rules to see chaos (30), nested order (90), or simple structure (184) instead.</p>
+  </div>
+</section>
+
+<!-- ============================= 31 ============================= -->
+<section id="m-landauer">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · the cost of forgetting</p>
+      <h2>The energy price of erasing a bit</h2>
+      <p class="takeaway"><b>Takeaway.</b> Erasing one bit must dissipate at least kT·ln2 of heat — and that floor, plus moving data, not the switching itself, is the deep limit on efficient computing.</p>
+    </div>
+    <p>Information is physical, and forgetting it costs energy. Landauer's principle (1961) says erasing one bit — collapsing two possible states into one known state — must release at least kT·ln2 of heat, about 18 meV at room temperature. The crucial word is <em>erasing</em>: Charles Bennett showed in 1973 that logically reversible operations — a CNOT, a Toffoli, any one-to-one map that throws nothing away — carry no such floor and could in principle run at almost no energy cost. That is the deep reason quantum gates are unitary, hence reversible. Today's chips spend thousands of times the Landauer limit per operation, and most of that energy goes not into computing but into shuttling data across the chip. Which points straight at the real frontier of efficient machine intelligence: not faster switches, but architectures and hardware that forget less and move data less — the question the close of this page takes up.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="landauer" aria-label="A bit-erasure diagram with the Landauer energy kT ln2 computed live at the chosen temperature, beside a reversible CNOT that loses no information"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 31.</b> Drag the temperature to read the Landauer limit kT·ln2 live (≈18 meV at 300 K); toggle to a reversible CNOT, which loses no information and carries no fundamental energy cost.</p>
+  </div>
+</section>
+
+<!-- ============================= 32 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
@@ -614,7 +704,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 27.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 32.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 
