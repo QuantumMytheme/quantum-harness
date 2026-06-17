@@ -107,6 +107,33 @@ test('shared in-browser runner + recipe builder wired on both pages', () => {
   assert.match(lab, /og-lab\.png/)
 })
 
+test('every page carries the same top-bar nav (no links drop off across pages)', () => {
+  // The canonical link set + order, shared by index / education / lab. Guards against
+  // the brandbar diverging per page (the "some links drop off" regression).
+  const CANON = ['Why', 'Platform', 'Bench', 'Learn', 'Scoreboard', 'Run yours', 'Notebook']
+  const indexIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]))
+
+  for (const page of ['index.html', 'education.html', 'lab.html']) {
+    const src = readFileSync(v(page), 'utf8')
+    const bar = src.slice(src.indexOf('class="brandbar"'))
+    const nav = bar.slice(bar.indexOf('<nav'), bar.indexOf('</nav>')) // the brandbar's own nav, not page sub-navs
+    const links = [...nav.matchAll(/<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/g)]
+      .map(m => ({ href: m[1], label: m[2].replace(/[↗\s]+$/, '').trim() }))
+
+    assert.deepEqual(links.map(l => l.label), CANON, `${page} top-bar labels/order`)
+
+    // every cross-page anchor must resolve to a real section id on the homepage
+    for (const { href } of links) {
+      const anchor = href.match(/(?:index\.html)?#([\w-]+)$/)
+      if (anchor) assert.ok(indexIds.has(anchor[1]), `${page} link #${anchor[1]} resolves on the homepage`)
+      else if (/\.html$/.test(href)) assert.ok(existsSync(v(href)), `${page} link ${href} exists`)
+    }
+  }
+  // the current page is marked active on its own nav
+  assert.match(readFileSync(v('education.html'), 'utf8'), /<a href="education\.html" aria-current="page">Learn<\/a>/)
+  assert.match(readFileSync(v('lab.html'), 'utf8'), /<a href="lab\.html" aria-current="page">Notebook/)
+})
+
 test('homepage advertises the full platform, not just the bench', () => {
   // Guards against the front page drifting back to a stale "just a repo" pitch:
   // the overview must surface the notebook, the in-browser/WASM judge, the recipe builder,
