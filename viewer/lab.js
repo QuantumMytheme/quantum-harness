@@ -70,45 +70,6 @@
 
   // committed circuits + reference data — the runner re-simulates these and
   // recomputes the judge's exact metric. (public worked examples / references)
-  var RUNS = {
-    ghz3: { task: 'state_prep', n: 3, label: 'GHZ₃ · state prep', ops: [{ gate: 'h', q: [0] }, { gate: 'cx', q: [0, 1] }, { gate: 'cx', q: [1, 2] }], target: [[0.7071067811865476, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0.7071067811865476, 0]], threshold: 0.99, claim: 1.0 },
-    isingbell2: { task: 'vqe', n: 2, label: 'Ising Bell · vqe', ops: [{ gate: 'h', q: [0] }, { gate: 'cx', q: [0, 1] }], terms: [{ coeff: -1, pauli: 'XX' }, { coeff: -1, pauli: 'ZZ' }], E0: -2.0, gapBudget: 0.05, claim: -2.0 },
-    tfim3: { task: 'vqe', n: 3, label: 'TFIM₃ · QAOA p=2', ops: [{ gate: 'h', q: [0] }, { gate: 'h', q: [1] }, { gate: 'h', q: [2] }, { gate: 'rzz', q: [0, 1], params: [0.534059] }, { gate: 'rzz', q: [1, 2], params: [0.534059] }, { gate: 'rx', q: [0], params: [1.285052] }, { gate: 'rx', q: [1], params: [1.285052] }, { gate: 'rx', q: [2], params: [1.285052] }, { gate: 'rzz', q: [0, 1], params: [0.927035] }, { gate: 'rzz', q: [1, 2], params: [0.927035] }, { gate: 'rx', q: [0], params: [0.609611] }, { gate: 'rx', q: [1], params: [0.609611] }, { gate: 'rx', q: [2], params: [0.609611] }], terms: [{ coeff: -1, pauli: 'ZZI' }, { coeff: -1, pauli: 'IZZ' }, { coeff: -0.8, pauli: 'XII' }, { coeff: -0.8, pauli: 'IXI' }, { coeff: -0.8, pauli: 'IIX' }], E0: -3.0090221197813234, gapBudget: 0.05, claim: -3.0089189812867385 },
-    h2vqe: { task: 'vqe', n: 2, label: 'H₂ · molecular vqe', ops: [{ gate: 'ry', q: [0], params: [-0.20943951023931984] }, { gate: 'ry', q: [1], params: [3.0368728984701328] }, { gate: 'cx', q: [0, 1] }, { gate: 'ry', q: [0], params: [-3.141592653589793] }, { gate: 'ry', q: [1], params: [-3.036872898470133] }], terms: [{ coeff: -0.4804, pauli: 'II' }, { coeff: 0.3435, pauli: 'ZI' }, { coeff: -0.4347, pauli: 'IZ' }, { coeff: 0.5716, pauli: 'ZZ' }, { coeff: 0.091, pauli: 'YY' }, { coeff: 0.091, pauli: 'XX' }], E0: -1.851199124123644, gapBudget: 0.005, claim: -1.8507944127891642 },
-    bell_pops2: { task: 'populations', n: 2, label: 'Bell |Φ⁺⟩ · populations', ops: [{ gate: 'h', q: [0] }, { gate: 'cx', q: [0, 1] }], popTarget: [0.5, 0, 0, 0.5], holdout: { pauli: 'XX', expected: 1.0 }, claim: [0.5, 0, 0, 0.5] },
-    aiaccel4: { task: 'architecture', n: 4, label: 'AI-Accel · topology', edges: [[0, 1], [1, 2], [2, 3], [3, 0]], workload: [[0, 1], [2, 3]], holdout: [[0, 3], [1, 2]], budget: 2, claim: 2 },
-    qml_sign1: { task: 'classify', n: 1, label: 'Sign classifier · feature map', fmap: { n_qubits: 1, ops: [{ gate: 'ry', q: [0], feature: 0, scale: 1.0 }] }, readout: { pauli: 'X', bias: 0 }, train: [{ x: [-2], y: 0 }, { x: [-1], y: 0 }, { x: [1], y: 1 }, { x: [2], y: 1 }], test: [{ x: [-0.5], y: 0 }, { x: [0.5], y: 1 }], trainMin: 1.0, testMin: 0.99, claim: 1.0 },
-  };
-
-  // ─────────────────────────── SIMULATOR (statevector) ───────────────────────────
-  function cmul(a, b) { return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]]; }
-  function cadd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
-  var S2 = Math.SQRT1_2;
-  function gate1(name, p) {
-    switch (name) {
-      case 'h': return [[[S2, 0], [S2, 0]], [[S2, 0], [-S2, 0]]];
-      case 'x': return [[[0, 0], [1, 0]], [[1, 0], [0, 0]]];
-      case 'y': return [[[0, 0], [0, -1]], [[0, 1], [0, 0]]];
-      case 'z': return [[[1, 0], [0, 0]], [[0, 0], [-1, 0]]];
-      case 's': return [[[1, 0], [0, 0]], [[0, 0], [0, 1]]];
-      case 't': return [[[1, 0], [0, 0]], [[0, 0], [Math.cos(Math.PI / 4), Math.sin(Math.PI / 4)]]];
-      case 'rx': { var cx = Math.cos(p / 2), sx = Math.sin(p / 2); return [[[cx, 0], [0, -sx]], [[0, -sx], [cx, 0]]]; }
-      case 'ry': { var cy = Math.cos(p / 2), sy = Math.sin(p / 2); return [[[cy, 0], [-sy, 0]], [[sy, 0], [cy, 0]]]; }
-      case 'rz': { var cz = Math.cos(p / 2), sz = Math.sin(p / 2); return [[[cz, -sz], [0, 0]], [[0, 0], [cz, sz]]]; }
-    }
-    return [[[1, 0], [0, 0]], [[0, 0], [1, 0]]];
-  }
-  function apply1(state, n, U, q) { var sh = n - 1 - q; for (var i = 0; i < state.length; i++) { if (i & (1 << sh)) continue; var j = i | (1 << sh), a = state[i], b = state[j]; state[i] = cadd(cmul(U[0][0], a), cmul(U[0][1], b)); state[j] = cadd(cmul(U[1][0], a), cmul(U[1][1], b)); } }
-  function applyCX(state, n, c, t) { var sc = n - 1 - c, st = n - 1 - t; for (var i = 0; i < state.length; i++) { if ((i & (1 << sc)) && !(i & (1 << st))) { var j = i | (1 << st), tmp = state[i]; state[i] = state[j]; state[j] = tmp; } } }
-  function applyRzz(state, n, a, b, th) { var sa = n - 1 - a, sb = n - 1 - b; for (var i = 0; i < state.length; i++) { var za = (i & (1 << sa)) ? -1 : 1, zb = (i & (1 << sb)) ? -1 : 1, ang = -th / 2 * za * zb; state[i] = cmul(state[i], [Math.cos(ang), Math.sin(ang)]); } }
-  function applyCZ(state, n, a, b) { var sa = n - 1 - a, sb = n - 1 - b; for (var i = 0; i < state.length; i++) { if ((i & (1 << sa)) && (i & (1 << sb))) state[i] = [-state[i][0], -state[i][1]]; } }
-  function applyOp(state, n, op) { var nm = op.gate.toLowerCase(), q = op.q, p = (op.params && op.params[0]) || 0; if (nm === 'cx' || nm === 'cnot') applyCX(state, n, q[0], q[1]); else if (nm === 'cz') applyCZ(state, n, q[0], q[1]); else if (nm === 'rzz') applyRzz(state, n, q[0], q[1], p); else apply1(state, n, gate1(nm, p), q[0]); }
-  function zeroState(n) { var v = []; for (var i = 0; i < (1 << n); i++) v.push([0, 0]); v[0] = [1, 0]; return v; }
-  function fidelity(state, target) { var re = 0, im = 0; for (var i = 0; i < state.length; i++) { re += target[i][0] * state[i][0] + target[i][1] * state[i][1]; im += target[i][0] * state[i][1] - target[i][1] * state[i][0]; } return re * re + im * im; }
-  function expectation(state, n, terms) { var total = 0; terms.forEach(function (t) { var ps = t.pauli.toLowerCase(), cp = state.map(function (c) { return [c[0], c[1]]; }); for (var q = 0; q < ps.length; q++) { if (ps[q] !== 'i') apply1(cp, n, gate1(ps[q], 0), q); } var re = 0; for (var i = 0; i < state.length; i++) re += state[i][0] * cp[i][0] + state[i][1] * cp[i][1]; total += t.coeff * re; }); return total; }
-  function routingCost(n, edges, workload) { var adj = {}; for (var i = 0; i < n; i++) adj[i] = []; edges.forEach(function (e) { adj[e[0]].push(e[1]); adj[e[1]].push(e[0]); }); function dist(a, b) { var seen = {}, q = [[a, 0]]; seen[a] = 1; while (q.length) { var cur = q.shift(); if (cur[0] === b) return cur[1]; adj[cur[0]].forEach(function (nb) { if (!seen[nb]) { seen[nb] = 1; q.push([nb, cur[1] + 1]); } }); } return Infinity; } var tot = 0; workload.forEach(function (p) { tot += dist(p[0], p[1]); }); return tot; }
-  function classifyAcc(R, points) { var n = R.fmap.n_qubits, correct = 0; points.forEach(function (d) { var stv = zeroState(n); R.fmap.ops.forEach(function (op) { var th = ('feature' in op) ? (op.scale || 1) * d.x[op.feature] : (op.params && op.params[0]) || 0; applyOp(stv, n, { gate: op.gate, q: op.q, params: [th] }); }); var exX = expectation(stv, n, [{ coeff: 1, pauli: R.readout.pauli }]); if ((exX > R.readout.bias ? 1 : 0) === d.y) correct++; }); return correct / points.length; }
-
   // ─────────────────────────── TEMPLATES ───────────────────────────
   function head(secLabel, title, meta) { return '<div class="lab-head"><div><p class="eyebrow">' + secLabel + '</p><h2>' + title + '</h2></div><div class="rmeta">' + meta + '</div></div>'; }
   function stage(anim, key, height, seed) { return '<canvas class="lab-stage" data-anim="' + anim + '" data-key="' + key + '"' + (seed != null ? ' data-seed="' + seed + '"' : '') + ' style="height:' + height + 'px;"></canvas>'; }
@@ -160,7 +121,7 @@
   function secAtlas() {
     var filters = FILT.map(function (f) { var on = state.filter === f[0]; return '<button class="chip" data-filter="' + f[0] + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + f[1] + '</button>'; }).join('');
     var cards = GAL.filter(function (g) { return state.filter === 'all' || g[5] === state.filter; }).map(function (g, i) {
-      var runnable = !!RUNS[g[0]], badge = g[7] === 'ok' ? 'badge-ok' : 'badge-err', verdict = g[7] === 'ok' ? 'ACCEPT' : 'REJECT';
+      var runnable = !!window.QMRunner.RUNS[g[0]], badge = g[7] === 'ok' ? 'badge-ok' : 'badge-err', verdict = g[7] === 'ok' ? 'ACCEPT' : 'REJECT';
       return '<button class="lab-gcard" ' + (runnable ? 'data-run="' + g[0] + '"' : 'disabled') + '><canvas data-anim="' + g[6] + '" data-key="gal-' + g[0] + '" data-seed="' + i + '" style="height:120px;"></canvas>' +
         '<div style="padding:12px 13px 13px;flex:1;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:500;">' + g[0] + '</span><span class="mono" style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);">' + g[1] + '</span></div>' +
         '<div style="font-size:14px;color:var(--ink-2);margin:4px 0 9px;">' + g[2] + '</div>' +
@@ -243,31 +204,13 @@
       '<div id="recipe-out" style="margin-top:28px;border-top:1px solid var(--rule);padding-top:22px">' + recipeOutHTML() + '</div></div>';
   }
 
-  // GitHub create widget (token → api.github.com/.../generate via window.QMRunner.createRepo)
-  function ghWidget(name) {
-    return '<p class="eyebrow" style="margin:14px 0 6px">Or create it from here (optional)</p>' +
-      '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org (blank = your account; or QuantumMytheme if you have access)">' +
-      '<input class="qm-tok" id="qm-ghtoken" type="password" placeholder="GitHub token · fine-grained · Repository: Administration + Contents (write)">' +
-      '<div class="controls" style="margin-top:6px"><button class="btn primary" data-ghcreate="' + name + '">Create repo via API →</button></div>' +
-      '<div id="qm-ghresult" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>' +
-      '<p class="mono" style="font-size:10px;color:var(--faint);margin-top:6px">The token never leaves your browser — it posts straight to api.github.com.</p>';
-  }
-  function ghCreate(name) {
-    var tok = document.getElementById('qm-ghtoken'), ownerEl = document.getElementById('qm-ghowner'), res = document.getElementById('qm-ghresult');
-    var token = tok && tok.value.trim(), owner = (ownerEl && ownerEl.value.trim()) || '';
-    if (!token) { if (res) res.innerHTML = '<span style="color:var(--reject)">Paste a GitHub token first — or use the “Use this template” link above.</span>'; return; }
-    if (res) res.textContent = 'Creating ' + name + '…';
-    window.QMRunner.createRepo({ token: token, owner: owner || undefined, name: name, 'private': false })
-      .then(function (out) { if (res) res.innerHTML = '✓ created → <a href="' + out.html_url + '" target="_blank" rel="noopener">' + (out.full_name || name) + ' ↗</a>'; })
-      .catch(function (err) { if (res) res.innerHTML = '<span style="color:var(--reject)">' + esc(err.message || String(err)) + '</span> — check the token has repo-create rights for that owner/org.'; });
-  }
   function mintRecipe() {
     var repo = recipeRepo();
     var inner = '<p class="eyebrow">Recipe → repository</p><h2 style="font-family:var(--serif);margin:6px 0 4px">' + repo + '</h2>' +
       '<p style="font-size:14px;color:var(--ink-2)">A unique run blended from ' + Object.keys(recipe.ings).length + ' verified ingredient(s), targeting <b>' + recipe.target + '</b>. The kickoff hands the model your recipe; it molds a new circuit from the mix.</p>' +
       '<p class="eyebrow" style="margin-top:14px">RECIPE.json</p><div class="qm-cmd"><code>' + esc(recipeJSON()) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
       '<p class="eyebrow" style="margin-top:12px">Mint the repo</p>' + cmdBlock('gh repo create QuantumMytheme/' + repo + ' --template QuantumMytheme/quantum-harness --public --clone') + cmdBlock(recipeCmd()) +
-      '<p style="margin-top:6px"><a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate" target="_blank" rel="noopener">Use this template ↗</a></p>' + ghWidget(repo);
+      '<p style="margin-top:6px"><a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate" target="_blank" rel="noopener">Use this template ↗</a></p>' + window.QMRunner.ghWidget(repo);
     window.QMRunner.openOverlay('modal', inner);
   }
 
@@ -283,13 +226,12 @@
 
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-ghcreate]');
+    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam]');
     if (!el) return;
-    // data-run / data-runsim / data-close / data-copy / data-realjudge are owned by runner.js
+    // runner / overlay / copy / github actions are owned by runner.js (window.QMRunner)
     if (el.hasAttribute('data-ing')) return toggleIngredient(el.getAttribute('data-ing'));
     if (el.hasAttribute('data-recipe-mint')) return mintRecipe();
     if (el.hasAttribute('data-rparam')) return setRParam(el.getAttribute('data-rparam'));
-    if (el.hasAttribute('data-ghcreate')) return ghCreate(el.getAttribute('data-ghcreate'));
     if (el.hasAttribute('data-submit')) return openSubmit(state.picked);
     if (el.hasAttribute('data-submit-brief')) return openSubmit(el.getAttribute('data-submit-brief'));
     if (el.hasAttribute('data-path')) { sub.path = el.getAttribute('data-path'); return renderSubmit(); }
@@ -300,7 +242,6 @@
     if (el.hasAttribute('data-brief')) return setState({ picked: el.getAttribute('data-brief') });
     if (el.hasAttribute('data-filter')) return setState({ filter: el.getAttribute('data-filter') });
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
   document.addEventListener('input', function (e) {
     var t = e.target; if (!t.matches) return;
     if (t.matches('[data-ratio]')) { recipe.ings[t.getAttribute('data-ratio')] = +t.value; updateRecipeOutput(); }
@@ -308,125 +249,10 @@
   });
   document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('[data-rslider]')) { recipe.params[e.target.getAttribute('data-rslider')] = +e.target.value; render(); } });
 
-  function copyText(btn) { var code = btn.parentElement.querySelector('code'); var txt = code ? code.textContent : btn.getAttribute('data-copy'); try { navigator.clipboard.writeText(txt); } catch (e) { } var old = btn.textContent; btn.textContent = 'copied'; setTimeout(function () { btn.textContent = old; }, 1100); }
-
-  // ─────────────────────────── OVERLAY ───────────────────────────
-  function openOverlay(kind, inner) {
-    var old = overlay.querySelector('.qm-panel'); if (old) old.remove();
-    var p = document.createElement('div'); p.className = 'qm-panel ' + (kind === 'modal' ? 'qm-modalpanel' : 'qm-drawer');
-    p.innerHTML = '<button class="qm-close" data-close>esc ✕</button>' + inner;
-    overlay.appendChild(p); overlay.classList.toggle('center', kind === 'modal'); overlay.classList.add('open');
-    document.body.style.overflow = 'hidden'; return p;
-  }
-  function closeOverlay() { overlay.classList.remove('open'); document.body.style.overflow = ''; var p = overlay.querySelector('.qm-panel'); if (p) p.remove(); runnerRun = null; }
-
-  // ─────────────────────────── RUNNER ───────────────────────────
-  function gv(label, ok) { return '<span class="qm-gv ' + (ok ? 'pass' : 'fail') + '">' + (ok ? '✓' : '✕') + ' ' + label + '</span>'; }
-  function fit(cv) { var dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth || 480, h = cv.clientHeight || 200; cv.width = w * dpr; cv.height = h * dpr; var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx: ctx, w: w, h: h }; }
-
-  function openRunner(pid) {
-    var R = RUNS[pid]; if (!R) return;
-    var design;
-    if (R.task === 'architecture') design = '<div class="mono" style="font-size:12px;color:var(--ink-2);margin:4px 0 10px;">coupling map ' + JSON.stringify(R.edges) + ' · workload ' + JSON.stringify(R.workload) + '</div>';
-    else if (R.task === 'classify') design = '<div class="mono" style="font-size:12px;color:var(--ink-2);margin:4px 0 10px;">feature map Ry(' + (R.fmap.ops[0].scale || 1) + '·x) → ⟨' + R.readout.pauli + '⟩ · ' + (R.train.length + R.test.length) + ' labelled points</div>';
-    else design = '<div class="qm-oplist" style="margin:4px 0 12px;">' + R.ops.map(function (op, i) { return '<div class="qm-oprow" data-op="' + i + '"><span class="gn">' + op.gate.toUpperCase() + '</span><span>q' + op.q.join(',q') + (op.params ? ' (' + op.params.map(function (x) { return (+x).toFixed(3); }).join(',') + ')' : '') + '</span></div>'; }).join('') + '</div>';
-    var inner = '<p class="eyebrow">In-browser runner · ' + R.task + '</p>' +
-      '<h2 style="font-family:var(--serif);margin:6px 0 3px;">' + R.label + '</h2>' +
-      '<p style="font-size:13.5px;color:var(--ink-2);margin:0 0 14px;">Re-running the exact circuit the judge ran — a JS statevector simulator recomputes the metric from scratch. Nothing is trusted; the number is recomputed here.</p>' +
-      design +
-      '<div class="panel" style="padding:6px;"><canvas id="qm-run-cv" class="lab-stage" style="height:180px;"></canvas></div>' +
-      '<div class="controls" style="margin:14px 0 6px;"><button class="btn primary" data-runsim="' + pid + '">▸ Run simulation</button>' +
-      '<a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/judge_verify.py" target="_blank" rel="noopener">judge_verify.py</a></div>' +
-      '<div id="qm-run-out" style="margin-top:8px;"></div>';
-    openOverlay('drawer', inner);
-    var cv = document.getElementById('qm-run-cv');
-    if (cv) { if (R.task === 'architecture') drawTopo(cv, R, -1); else if (R.task === 'classify') drawPoints(cv, R, false); else { var stv = zeroState(R.n); drawSV(cv, stv, R.n, 0, R.ops.length); } }
-  }
-
-  var runnerRun = null;
-  function runSim(R) {
-    var cv = document.getElementById('qm-run-cv'), out = document.getElementById('qm-run-out');
-    if (!cv || !out) return;
-    if (R.task === 'architecture') { drawTopo(cv, R, 1); finishArch(R, out); return; }
-    if (R.task === 'classify') { drawPoints(cv, R, true); finishClassify(R, out); return; }
-    out.innerHTML = '';
-    var stv = zeroState(R.n), i = 0;
-    runnerRun = { live: true };
-    var token = runnerRun;
-    function step() {
-      if (!token.live) return;
-      [].forEach.call(document.querySelectorAll('.qm-oprow'), function (r, idx) { r.classList.toggle('on', idx === i); });
-      drawSV(cv, stv, R.n, i, R.ops.length);
-      if (i < R.ops.length) { applyOp(stv, R.n, R.ops[i]); i++; setTimeout(step, reduce ? 0 : 320); }
-      else { [].forEach.call(document.querySelectorAll('.qm-oprow'), function (r) { r.classList.remove('on'); }); drawSV(cv, stv, R.n, R.ops.length, R.ops.length); finishStatevec(R, stv, out); }
-    }
-    step();
-  }
-
-  function row(k, v) { return '<div style="display:flex;justify-content:space-between;gap:14px;padding:6px 0;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:12.5px;"><span style="color:var(--faint);">' + k + '</span><span style="color:var(--ink);font-weight:600;">' + v + '</span></div>'; }
-  function verdictBox(gates, accept) { return '<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">' + gates.join('') + '</div><div style="margin-top:12px;font-family:var(--mono);font-weight:700;font-size:14px;color:' + (accept ? 'var(--pass)' : 'var(--reject)') + ';">' + (accept ? '✓ ACCEPT · exit 0 · reproduced locally' : '✕ REJECT') + '</div>'; }
-
-  function finishStatevec(R, stv, out) {
-    var gates = [gv('structure', true)], accept = true, html = '';
-    if (R.task === 'state_prep') {
-      var fid = fidelity(stv, R.target), repro = Math.abs(fid - R.claim) < 1e-6, perf = fid + 1e-12 >= R.threshold;
-      html += row('recomputed fidelity', fid.toFixed(6)) + row('claimed', R.claim.toFixed(6)) + row('threshold', '≥ ' + R.threshold);
-      gates.push(gv('reproduce', repro), gv('performance', perf)); accept = repro && perf;
-    } else if (R.task === 'vqe') {
-      var E = expectation(stv, R.n, R.terms), gap = E - R.E0, repro2 = Math.abs(E - R.claim) < 1e-6, perf2 = gap <= R.gapBudget + 1e-12;
-      html += row('recomputed energy', E.toFixed(6)) + row('claimed', R.claim.toFixed(6)) + row('E₀ (exact)', R.E0.toFixed(6)) + row('gap', gap.toExponential(2) + '  (≤ ' + R.gapBudget + ')');
-      gates.push(gv('reproduce', repro2), gv('performance', perf2)); accept = repro2 && perf2;
-    } else { // populations
-      var probs = stv.map(function (c) { return c[0] * c[0] + c[1] * c[1]; });
-      var reproP = probs.every(function (p, i) { return Math.abs(p - R.claim[i]) < 1e-6; });
-      var perfP = probs.every(function (p, i) { return Math.abs(p - R.popTarget[i]) < 1e-3; });
-      var xx = expectation(stv, R.n, [{ coeff: 1, pauli: R.holdout.pauli }]), anti = Math.abs(xx - R.holdout.expected) < 0.02;
-      html += row('populations', '[' + probs.map(function (p) { return p.toFixed(2); }).join(', ') + ']') + row('held-out ⟨' + R.holdout.pauli + '⟩', xx.toFixed(4) + '  (= ' + R.holdout.expected + ')');
-      gates.push(gv('reproduce', reproP), gv('performance', perfP), gv('anti-overfit', anti)); accept = reproP && perfP && anti;
-    }
-    out.innerHTML = html + verdictBox(gates, accept);
-  }
-  function finishArch(R, out) {
-    var cost = routingCost(R.n, R.edges, R.workload), hcost = routingCost(R.n, R.edges, R.holdout);
-    var perf = cost <= R.budget, anti = hcost <= R.budget;
-    out.innerHTML = row('routing cost (visible)', cost + '  (≤ ' + R.budget + ')') + row('held-out workload', hcost + '  (≤ ' + R.budget + ')') + verdictBox([gv('structure', true), gv('reproduce', cost === R.claim), gv('performance', perf), gv('anti-overfit', anti)], perf && anti && cost === R.claim);
-  }
-  function finishClassify(R, out) {
-    var tr = classifyAcc(R, R.train), te = classifyAcc(R, R.test), perf = tr >= R.trainMin, anti = te >= R.testMin;
-    out.innerHTML = row('train accuracy', (tr * 100).toFixed(0) + '%  (≥ ' + (R.trainMin * 100) + '%)') + row('held-out test accuracy', (te * 100).toFixed(0) + '%  (≥ ' + (R.testMin * 100) + '%)') + verdictBox([gv('structure', true), gv('reproduce', Math.abs(tr - R.claim) < 1e-9), gv('performance', perf), gv('anti-overfit', anti)], perf && anti);
-  }
-
-  // runner canvases
-  function drawSV(cv, state, n, opIdx, total) {
-    var c = C(), f = fit(cv), ctx = f.ctx, w = f.w, h = f.h, N = state.length;
-    ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
-    var bw = (w - 36) / N, bbot = h - 24, bh = h - 52;
-    for (var i = 0; i < N; i++) { var p = state[i][0] * state[i][0] + state[i][1] * state[i][1], hh = p * bh; ctx.fillStyle = accA(c, 0.25 + p * 0.6); ctx.fillRect(18 + i * bw, bbot - hh, bw - 4, hh); ctx.strokeStyle = c.rule; ctx.lineWidth = 1; ctx.strokeRect(18 + i * bw + 0.5, bbot - bh + 0.5, bw - 4, bh); ctx.fillStyle = c.faint; ctx.font = MONOF(N > 4 ? 8 : 9); ctx.textAlign = 'center'; ctx.fillText('|' + i.toString(2).padStart(n, '0') + '⟩', 18 + i * bw + (bw - 4) / 2, bbot + 13); ctx.textAlign = 'left'; }
-    ctx.fillStyle = c.ink; ctx.font = MONOF(10); ctx.fillText(opIdx >= total ? 'final statevector · probabilities' : 'applying gate ' + (opIdx + 1) + ' / ' + total, 18, 15);
-  }
-  function drawTopo(cv, R, phase) {
-    var c = C(), f = fit(cv), ctx = f.ctx, w = f.w, h = f.h, cx = w / 2, cy = h / 2, Rd = Math.min(w, h) * 0.32, pts = [];
-    ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
-    for (var i = 0; i < R.n; i++) { var a = -Math.PI / 2 + i * 2 * Math.PI / R.n; pts.push({ x: cx + Math.cos(a) * Rd, y: cy + Math.sin(a) * Rd }); }
-    ctx.strokeStyle = c.rule2; ctx.lineWidth = 1.4; R.edges.forEach(function (e) { ctx.beginPath(); ctx.moveTo(pts[e[0]].x, pts[e[0]].y); ctx.lineTo(pts[e[1]].x, pts[e[1]].y); ctx.stroke(); });
-    if (phase > 0) { ctx.strokeStyle = c.accent; ctx.lineWidth = 2.4; R.workload.forEach(function (e) { ctx.beginPath(); ctx.moveTo(pts[e[0]].x, pts[e[0]].y); ctx.lineTo(pts[e[1]].x, pts[e[1]].y); ctx.stroke(); }); }
-    pts.forEach(function (n, i) { ctx.fillStyle = c.bg; ctx.strokeStyle = c.accent; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(n.x, n.y, 11, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = c.ink; ctx.font = MONOF(11); ctx.textAlign = 'center'; ctx.fillText('q' + i, n.x, n.y + 4); ctx.textAlign = 'left'; });
-    ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText(phase > 0 ? 'workload routed on the ring' : 'ring topology', 12, 15);
-  }
-  function drawPoints(cv, R, run) {
-    var c = C(), f = fit(cv), ctx = f.ctx, w = f.w, h = f.h, y = h * 0.54, all = R.train.concat(R.test);
-    ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = c.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(20, y); ctx.lineTo(w - 20, y); ctx.stroke();
-    ctx.strokeStyle = c.rule2; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(w / 2, 18); ctx.lineTo(w / 2, h - 18); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText('x < 0 → class 0', 22, h - 10); ctx.textAlign = 'right'; ctx.fillText('class 1 ← x > 0', w - 22, h - 10); ctx.textAlign = 'left';
-    all.forEach(function (d) { var px = w / 2 + d.x[0] * (w * 0.18), isTest = R.test.indexOf(d) >= 0; var pred = d.y; if (run) { var stv = zeroState(1); applyOp(stv, 1, { gate: 'ry', q: [0], params: [d.x[0]] }); pred = expectation(stv, 1, [{ coeff: 1, pauli: 'X' }]) > 0 ? 1 : 0; } ctx.fillStyle = pred === 1 ? c.accent : c.accent2; ctx.globalAlpha = isTest ? 0.55 : 1; ctx.beginPath(); ctx.arc(px, y, isTest ? 6 : 7, 0, 7); ctx.fill(); if (isTest) { ctx.globalAlpha = 1; ctx.strokeStyle = c.ink; ctx.lineWidth = 1; ctx.stroke(); } ctx.globalAlpha = 1; });
-    ctx.fillStyle = c.ink; ctx.font = MONOF(10); ctx.fillText(run ? 'predicted labels · ⟨X⟩ = sin(x)' : 'data · hollow = held-out test', 18, 15);
-  }
-
   // ─────────────────────────── SUBMISSION FLOW ───────────────────────────
   var sub = { brief: 'ghz3', path: 'web' };
   function cmdBlock(cmd) { return '<div class="qm-cmd"><code>' + esc(cmd) + '</code><button class="qm-copy" data-copy>copy</button></div>'; }
-  function openSubmit(brief) { sub.brief = brief || 'ghz3'; sub.path = 'web'; openOverlay('modal', '<div id="qm-sub"></div>'); renderSubmit(); }
+  function openSubmit(brief) { sub.brief = brief || 'ghz3'; sub.path = 'web'; window.QMRunner.openOverlay('modal', '<div id="qm-sub"></div>'); renderSubmit(); }
   function renderSubmit() {
     var c = document.getElementById('qm-sub'); if (!c) return;
     var b = BRIEFS.filter(function (x) { return x[0] === sub.brief; })[0] || BRIEFS[0];
@@ -451,9 +277,9 @@
         '<li><span class="mk">▸</span><span><b>Python 3 + numpy</b> to judge locally (the bench is numpy-only, no QPU):</span></li></ul>' +
         cmdBlock('python3 -m pip install numpy') +
         '<p style="font-size:12.5px;">Optional but recommended — the <b>GitHub CLI</b> for one-command repo creation:</p>' + cmdBlock('gh auth login') + '</div></div>' +
-      '<div class="qm-step"><span class="num">1</span><div><h4>Create your run repo</h4><p>Two paths — both fork the template <span class="mono">QuantumMytheme/quantum-harness</span> into a fresh public repo.</p>' + pathTabs + createBody + ghWidget(repo) + '</div></div>' +
+      '<div class="qm-step"><span class="num">1</span><div><h4>Create your run repo</h4><p>Two paths — both fork the template <span class="mono">QuantumMytheme/quantum-harness</span> into a fresh public repo.</p>' + pathTabs + createBody + window.QMRunner.ghWidget(repo) + '</div></div>' +
       '<div class="qm-step"><span class="num">2</span><div><h4>Point your model at the brief</h4><p>Run the kickoff with <b>' + modelName + '</b> (or paste <span class="mono">KICKOFF.md</span> into your model). It self-corrects against the rubric until every gate is green.</p>' + cmdBlock('claude --kickoff KICKOFF.md   # brief: ' + b[0]) + '</div></div>' +
-      '<div class="qm-step"><span class="num">3</span><div><h4>Judge it — locally and in the browser</h4><p>The hermetic numpy judge re-simulates the circuit and returns ACCEPT (exit 0) or REJECT. You can also <a href="#" data-run="' + (RUNS[b[0]] ? b[0] : 'ghz3') + '">re-run a reference circuit in the browser ▸</a>.</p>' + cmdBlock('python3 bench/quantum-judge/judge_verify.py quantum-proof-' + b[0] + '.json') + '</div></div>' +
+      '<div class="qm-step"><span class="num">3</span><div><h4>Judge it — locally and in the browser</h4><p>The hermetic numpy judge re-simulates the circuit and returns ACCEPT (exit 0) or REJECT. You can also <a href="#" data-run="' + (window.QMRunner.RUNS[b[0]] ? b[0] : 'ghz3') + '">re-run a reference circuit in the browser ▸</a>.</p>' + cmdBlock('python3 bench/quantum-judge/judge_verify.py quantum-proof-' + b[0] + '.json') + '</div></div>' +
       '<div class="qm-step"><span class="num">4</span><div><h4>Commit &amp; push — the judge is the merge gate</h4><p>Push the proof bundle, scorecard, and a scrubbed transcript; it auto-registers on the public board.</p>' + cmdBlock('git add -A && git commit -m "' + b[0] + ' run" && git push') + '</div></div>';
   }
 
@@ -607,7 +433,7 @@
   render();
   if (!reduce) raf = requestAnimationFrame(loop); else { setTimeout(drawAllOnce, 60); setTimeout(drawAllOnce, 240); }
   try { var qs = new URLSearchParams(location.search);
-    if (qs.get('run') && RUNS[qs.get('run')]) setTimeout(function () { openRunner(qs.get('run')); }, 120);
+    if (qs.get('run') && window.QMRunner.RUNS[qs.get('run')]) setTimeout(function () { window.QMRunner.open(qs.get('run')); }, 120);
     else if (qs.has('submit')) setTimeout(function () { openSubmit(qs.get('submit') || state.picked); }, 120);
   } catch (e) { }
 })();

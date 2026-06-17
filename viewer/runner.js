@@ -200,16 +200,65 @@
     return body; // {html_url, full_name, ...}
   }
 
+  // ---------- GitHub OAuth (via the Cloudflare Pages worker) ----------
+  var ghAuth = { signedIn: false, login: null };
+  function ghBoxHTML(name) {
+    if (ghAuth.signedIn) {
+      return '<p class="eyebrow" style="margin:14px 0 6px">Create it from here · signed in as ' + esc(ghAuth.login || '?') + '</p>' +
+        '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org (blank = ' + esc(ghAuth.login || 'you') + '; or QuantumMytheme if you have access)">' +
+        '<div class="controls" style="margin-top:6px"><button class="btn primary" data-ghcreate="' + esc(name) + '">Create repo →</button> <button class="btn" data-ghlogout>sign out</button></div>' +
+        '<div id="qm-ghresult" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>';
+    }
+    return '<p class="eyebrow" style="margin:14px 0 6px">Create it from here (optional)</p>' +
+      '<div class="controls"><button class="btn primary" data-ghlogin>Sign in with GitHub</button></div>' +
+      '<p class="mono" style="font-size:10px;color:var(--faint);margin-top:6px">OAuth — nothing to paste. (Falls back to a token if OAuth is not configured on this deployment.)</p>' +
+      '<details style="margin-top:8px"><summary class="mono" style="font-size:11px;color:var(--ink-2);cursor:pointer">…or use a personal access token</summary>' +
+      '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org"><input class="qm-tok" id="qm-ghtoken" type="password" placeholder="GitHub token · public_repo scope">' +
+      '<div class="controls" style="margin-top:6px"><button class="btn" data-ghcreate="' + esc(name) + '">Create via token →</button></div></details>' +
+      '<div id="qm-ghresult" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>';
+  }
+  function ghWidget(name) { setTimeout(refreshGhAuth, 30); return '<div id="qm-ghbox" data-repo="' + esc(name) + '">' + ghBoxHTML(name) + '</div>'; }
+  function rerenderGhBox() { var box = document.getElementById('qm-ghbox'); if (box) box.innerHTML = ghBoxHTML(box.getAttribute('data-repo')); }
+  function refreshGhAuth() {
+    return fetch('/api/github/status', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (s) {
+      var was = ghAuth.signedIn; ghAuth = { signedIn: !!s.signedIn, login: s.login || null }; if (ghAuth.signedIn !== was) rerenderGhBox();
+    }).catch(function () { });
+  }
+  function githubLogin() {
+    var pop = window.open('/api/github/login', 'qm-gh', 'width=680,height=760');
+    function onMsg(e) { if (e.origin !== location.origin) return; if (e.data && typeof e.data.qmGitHub !== 'undefined') { window.removeEventListener('message', onMsg); refreshGhAuth(); } }
+    window.addEventListener('message', onMsg);
+    var n = 0, iv = setInterval(function () { n++; refreshGhAuth(); if (ghAuth.signedIn || n > 40 || (pop && pop.closed)) clearInterval(iv); }, 1500);
+  }
+  function ghLogout() { fetch('/api/github/logout', { method: 'POST', credentials: 'same-origin' }).then(function () { ghAuth = { signedIn: false, login: null }; rerenderGhBox(); }); }
+  function ghCreate(name) {
+    var res = document.getElementById('qm-ghresult'), ownerEl = document.getElementById('qm-ghowner'), tokEl = document.getElementById('qm-ghtoken');
+    var owner = (ownerEl && ownerEl.value.trim()) || undefined, token = tokEl && tokEl.value.trim();
+    if (res) res.textContent = 'Creating ' + name + '…';
+    var p;
+    if (ghAuth.signedIn && !token) {
+      p = fetch('/api/github/create-repo', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, owner: owner }) })
+        .then(function (r) { return r.json().then(function (b) { if (!r.ok) throw new Error(b.error || ('HTTP ' + r.status)); return b; }); });
+    } else if (token) {
+      p = createRepo({ token: token, owner: owner, name: name, 'private': false });
+    } else { if (res) res.innerHTML = '<span style="color:var(--reject)">Sign in with GitHub above, or paste a token.</span>'; return; }
+    p.then(function (out) { if (res) res.innerHTML = '✓ created → <a href="' + out.html_url + '" target="_blank" rel="noopener">' + esc(out.full_name || name) + ' ↗</a>'; })
+      .catch(function (err) { if (res) res.innerHTML = '<span style="color:var(--reject)">' + esc(err.message || String(err)) + '</span> — check repo-create rights for that owner.'; });
+  }
+
   // ---------- global handlers (work on any page) ----------
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-close],[data-copy]'); if (!el) return;
+    var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-close],[data-copy],[data-ghlogin],[data-ghcreate],[data-ghlogout]'); if (!el) return;
     if (el.hasAttribute('data-close')) { e.preventDefault(); return closeOverlay(); }
     if (el.hasAttribute('data-copy')) { e.preventDefault(); return copyText(el); }
     if (el.hasAttribute('data-run')) { e.preventDefault(); return openRunner(el.getAttribute('data-run')); }
     if (el.hasAttribute('data-runsim')) { var R = RUNS[el.getAttribute('data-runsim')]; if (R) runSim(R); return; }
     if (el.hasAttribute('data-realjudge')) { e.preventDefault(); return runRealJudge(el.getAttribute('data-realjudge')); }
+    if (el.hasAttribute('data-ghlogin')) { e.preventDefault(); return githubLogin(); }
+    if (el.hasAttribute('data-ghcreate')) { e.preventDefault(); return ghCreate(el.getAttribute('data-ghcreate')); }
+    if (el.hasAttribute('data-ghlogout')) { e.preventDefault(); return ghLogout(); }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
 
-  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, createRepo: createRepo, runRealJudge: runRealJudge };
+  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, createRepo: createRepo, runRealJudge: runRealJudge, ghWidget: ghWidget };
 })();
