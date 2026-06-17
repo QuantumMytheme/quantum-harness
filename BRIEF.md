@@ -16,12 +16,16 @@ a fixed qubit count, a depth budget, a native gate set, a coupling map (which qu
 physically interact), and a cap on two-qubit gates. A circuit that ignores those constraints
 is not runnable on hardware and is rejected before its result is even scored.
 
-This is the first rung of a longer ladder: constraint-respecting quantum primitives are the
-building blocks for **native quantum-processing architectures for AI models and inference** —
-beyond today's hybrid intermediate-representation / classical stack. We start with circuits
-that prepare states and minimize Hamiltonian energy because those are the verifiable atoms, then
-extend to designing the hardware **topology** those circuits run on (`architecture`) and the
-quantum **feature map** that classifies data (`classify`) — five task types, each judged the same way.
+This is the first rung of a longer ladder. Constraint-respecting quantum primitives are the
+verifiable atoms of quantum design, and the bench that grades them is the wedge for a broader
+aim: a **verifiable-efficiency referee** for machine intelligence — where every efficiency claim
+is held to a number a third party can re-derive. (To be honest about where quantum fits: it is
+**not** an accelerator for today's LLMs; its genuine, further-off role is simulating
+strongly-correlated materials for better *classical* chips. The full map is the curriculum's
+North Star.) We start with circuits that prepare states and minimize Hamiltonian energy because
+those are the verifiable atoms, then extend to designing the hardware **topology** those circuits
+run on (`architecture`) and the quantum **feature map** that classifies data (`classify`) — five
+task types, each judged the same way.
 
 The chain the harness maintains is: target (stated conceptually in this brief) → submitted
 circuit → re-simulated result → constraint check + reproducibility check + threshold check
@@ -207,8 +211,8 @@ pass. Concretely, for this session:
   `judge_verify.py quantum-proof-arch.json`, and `judge_verify.py quantum-proof-qml.json`;
 - the anti-overfit impostors are REJECTED at exit 6: `judge_verify.py quantum-proof-OVERFIT.json`,
   `judge_verify.py quantum-proof-arch-OVERFIT.json`, and `judge_verify.py quantum-proof-qml-OVERFIT.json`;
-- the bench self-test is green: `python3 bench/quantum-judge/test_judge.py` → `29/29 checks passed`;
-- the measurement suite is green: `node --test test/*.test.mjs` → 82 tests pass, 0 fail;
+- the bench self-test is green: `python3 bench/quantum-judge/test_judge.py` → `38/38 checks passed`;
+- the measurement suite is green: `node --test test/*.test.mjs` → 107 tests pass, 0 fail;
 - the same bundles still ACCEPT when the references are relocated via `QH_REFERENCES_DIR` to a
   directory outside your tree (anti-overfit, proven not assumed).
 

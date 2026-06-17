@@ -55,8 +55,8 @@ artifacts — no hand-copying, no drift.
      at exit 6. For problems with NO holdout block (e.g. `ghz3`, `isingbell2`)
      anti-overfit ALSO holds by construction, so exit 6 is simply not triggered for them. (Other
      exit: 2 schema/parse.)
-   - `node --test test/*.test.mjs` → **82 tests green** (autonomy scorecard + transcript scrub +
-     planner roster/walkthrough).
+   - `node --test test/*.test.mjs` → **107 tests green** (autonomy scorecard + transcript scrub +
+     planner roster/walkthrough + site/education wiring + MCP connector).
    Then generate the autonomy scorecard from the SCRUBBED transcript
    (`bin/autonomy-scorecard.mjs`). Keep ≥1 self-caught failure visible.
 
@@ -92,7 +92,7 @@ Use these as the templates for the BRIEF+RUBRIC of any new run:
 `bench/quantum-judge/quantum-proof-FORGED.json` omits the 2nd CX and claims fidelity `1.0` while
 the circuit truly yields `0.25`; `judge_verify.py` MUST reject it at the **REPRODUCIBILITY**
 gate (exit 4). `quantum-proof-OVERFIT.json` passes structure/reproducibility/performance but MUST
-be rejected at the held-out **ANTI-OVERFIT** gate (exit 6). `test_judge.py` is the 29/29
+be rejected at the held-out **ANTI-OVERFIT** gate (exit 6). `test_judge.py` is the 38/38
 regression: accept the worked examples, reject every class of forgery (including the overfit
 impostor). Never weaken these to make a run pass.
 

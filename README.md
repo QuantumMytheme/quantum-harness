@@ -6,9 +6,24 @@ quantum-processing architecture design**: you point a highly-capable autonomous 
 quantum design problem, and it produces a **proof bundle** that a hermetic, deterministic
 judge either **ACCEPTs or REJECTs** — no human in the scoring loop, no model grading its own
 homework. The model's autonomy is measured separately from the raw session transcript. The
-long game is native quantum-processing architectures for AI models and inference, beyond
-today's hybrid intermediate-representation / classical stack; the near-term deliverable is a
-machine-checkable verdict you can reproduce on a laptop.
+near-term deliverable is a machine-checkable verdict you can reproduce on a laptop.
+
+**Why it exists — the longer game.** The verdict is the wedge; the mission is to be a
+**verifiable-efficiency referee** — one third-party-recheckable yardstick for the question
+this project is really about: *how do we make machine intelligence useful, and far more
+efficient than the classical computers running today's LLMs?* We pick quantum design first
+because it is the **hardest verifiability case** — the field most prone to unfalsifiable
+speedup claims — not because quantum will accelerate AI. To be honest about that: a quantum
+computer will **not** make today's LLMs faster, cheaper, or greener (the data-loading wall,
+dequantization, and barren plateaus all close that door); quantum's genuine role is narrower
+and further off — simulating strongly-correlated **materials** to build better *classical*
+chips, a decade-plus out on fault-tolerant hardware. The near-term efficiency gains come from
+classical architectures shipping now (quantization, sparse MoE, speculative decoding,
+distillation, state-space hybrids) and real-but-narrow post-CMOS substrates, all bounded by
+the memory wall and the Landauer floor. The same discipline that lets us re-check a quantum
+claim is how we propose to hold *every* efficiency claim to a number a stranger can reproduce.
+The full, source-backed map is the [curriculum](https://quantummytheme.com/education) (Part V,
+"the North Star").
 
 ## The pattern: one orchestration shape, two levels
 
@@ -73,7 +88,7 @@ the real judge, and mint a run repo — without leaving the chat.
 | `bench/quantum-judge/graph.py` | Hermetic graph helpers (degrees / connectivity / routing cost) for the architecture task |
 | `bench/quantum-judge/judge_verify.py` | The judge — feed it a proof bundle, get ACCEPT (exit 0) or REJECT (non-zero) |
 | `bench/quantum-judge/capture.py` | Builds a well-formed proof bundle from a circuit using the *same* simulator |
-| `bench/quantum-judge/test_judge.py` | 29/29 regression checks (accept the worked examples, reject every class of forgery) |
+| `bench/quantum-judge/test_judge.py` | 38/38 regression checks (accept the worked examples, reject every class of forgery) |
 | `bench/quantum-judge/references/<id>.json` | **Hidden ground truth** — target/Hamiltonian + thresholds (incl. the held-out `holdout` block, e.g. `references/bell_pops2.json`, `references/aiaccel4.json`, `references/qml_sign1.json`); the answer key the author never sees |
 | `bench/quantum-judge/quantum-proof-poc.json` | Worked **ghz3** proof bundle (state_prep) |
 | `bench/quantum-judge/quantum-proof-vqe.json` | Worked **isingbell2** proof bundle (vqe) |
@@ -89,7 +104,7 @@ the real judge, and mint a run repo — without leaving the chat.
 | `lib/scorecard.mjs` | Scorecard engine (intervention classification, autonomy scoring) |
 | `lib/prepare-transcript.mjs` | Scrub engine behind the transcript pipeline |
 | `lib/planner-*.mjs` | Planner roster / walkthrough used by the run orchestration |
-| `test/*.test.mjs` | Measurement test suite — 82 tests (scorecard + transcript scrub + planner roster/walkthrough) |
+| `test/*.test.mjs` | Node test suite — 107 tests (scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector) |
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
 | `GETTING-STARTED.md` | Your first run in three commands — remix the frontier, your model molds it, auto-register |
 | `RUN-FLOW.md` · `bin/new-run.sh` | Mint a fresh public run repo from this template (`--remix <problem>` pre-loads the frontier), run, commit back |
@@ -105,13 +120,13 @@ the real judge, and mint a run repo — without leaving the chat.
 No build step. Node 22+ for the measurement layer; Python 3 with **numpy only** for the judge.
 
 ```sh
-# 1. Measurement layer — 82 tests green
+# 1. Node test suite — 107 tests green
 node --test test/*.test.mjs
 
 # 2. Verify a proof bundle — ACCEPT (exit 0) / REJECT (non-zero)
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-poc.json
 
-# 3. Judge regression suite — 29/29 checks (accept the worked examples, reject every forgery)
+# 3. Judge regression suite — 38/38 checks (accept the worked examples, reject every forgery)
 python3 bench/quantum-judge/test_judge.py
 
 # 4. Build a bundle from your own circuit, using the same simulator the judge uses
@@ -212,7 +227,7 @@ The adversarial fixture `quantum-proof-FORGED.json` omits the second `CX`, so it
 fidelity is **0.25** — but it *claims* **1.0**. The reproducibility gate recomputes the number
 and rejects it (exit 4). The `quantum-proof-OVERFIT.json` fixture matches the visible
 populations but fails the held-out ⟨X₀X₁⟩, and is rejected at exit 6. Both rejections are
-anti-cheat regressions, locked into the 29/29 judge suite.
+anti-cheat regressions, locked into the 38/38 judge suite.
 
 ## Honest boundary: a simulator-only bench
 
@@ -244,8 +259,10 @@ inherited through commits.
 ## Platform vision
 
 The worked problems are a seed, not the ceiling. The longer arc — a growing problem set,
-held-out contest references, and a path toward native quantum-processing architectures for AI
-inference — is laid out in **[PLATFORM-VISION.md](./PLATFORM-VISION.md)**.
+held-out contest references, and the path from "verify a quantum claim" to a general
+**verifiable-efficiency referee** for machine intelligence — is laid out in
+**[PLATFORM-VISION.md](./PLATFORM-VISION.md)**, and the honest, source-backed map of where
+efficiency actually comes from is Part V of the [curriculum](https://quantummytheme.com/education).
 
 ## License
 

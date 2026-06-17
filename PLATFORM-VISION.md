@@ -106,13 +106,19 @@ the visible workload that blows the held-out routing budget; and `quantum-proof-
 a high-frequency feature map that memorizes the training set but fails the held-out test) show why
 a held-out check is needed. The platform wraps these in a guided first-submission flow.
 
-But the education layer is bigger than the bench: it is a full, highly-animated arc from the
-origins of machine learning → big data → transformers and the modern inference zoo →
-pretraining/post-training → the classical machines underneath (the IR/classical stack) →
-quantum simulation → hybrid classical/quantum → and finally *running this harness yourself*
-against your own model. The whole curriculum — and how a learner ends up pointing their own
-Claude subscription or API credits at a BRIEF and injecting their own parameters — is designed
-in [EDUCATION.md](./EDUCATION.md).
+But the education layer is bigger than the bench: it is a full, highly-animated arc — now
+**39 slices in six parts** ([live](https://quantummytheme.com/education)). It climbs two ladders
+in parallel — classical, from a single bit up to LLMs, state-space models, and the silicon that
+runs them; and quantum, from a single qubit up to error correction and real hardware — lets you
+experiment with qubit counts against the chips that exist today, **re-runs thirteen landmark
+experiments** (Bell, teleportation, error correction, Deutsch–Jozsa / Bernstein–Vazirani / Simon,
+Landauer, the RSA→Shor bridge, and more, each computing its headline number live), and ends at
+**Part V, "the North Star"**: an honest, source-backed map of where machine intelligence actually
+gets more efficient — and where quantum does and doesn't fit — built around the efficiency-frontier
+explorer and five verify-it-yourself lessons, before the page hands the learner the loop: prove a
+design in simulation with a classical model, then run it on real silicon. The whole curriculum —
+and how a learner ends up pointing their own Claude subscription or API credits at a BRIEF — is
+designed in [EDUCATION.md](./EDUCATION.md).
 
 ### The subscription model
 
@@ -167,7 +173,7 @@ its own and strictly additive — nothing earlier is thrown away.
 ### Phase 0 — the harness (today, done)
 
 This repo. The deterministic judge, the hermetic numpy simulator, the proof-bundle schema, the
-worked problems (`ghz3`, `isingbell2`, `bell_pops2`, `aiaccel4`, `qml_sign1`), the 29/29
+worked problems (`ghz3`, `isingbell2`, `bell_pops2`, `aiaccel4`, `qml_sign1`), the 38/38
 regression suite, the autonomy scorecard, and the forkable template.
 **The engine works on a laptop, in CI, or on a Raspberry Pi.** Everything below consumes its
 output; nothing below changes its trust model.
@@ -210,11 +216,25 @@ quantum circuits out, all scored without human taste.
 
 The near-term deliverable is a machine-checkable verdict you can reproduce on a laptop. The
 platform is how that verdict becomes a public good — a growing, searchable, re-runnable corpus of
-verified quantum designs, contributed openly and gated mechanically. The far horizon is the same
-one the harness was built for: **native quantum-processing architectures for AI models and
-inference**, beyond today's hybrid intermediate-representation / classical stack. A platform that
-can pose hard architecture briefs and score honest answers at scale is the instrument for getting
-there.
+verified quantum designs, contributed openly and gated mechanically. The far horizon is to
+generalize the *discipline*, not the substrate: a **verifiable-efficiency referee** for machine
+intelligence — one third-party-recheckable yardstick for the question the project exists to
+answer, *how do we make machine intelligence useful and far more efficient than the classical
+computers running today's LLMs?* Quantum design is the wedge because it is the **hardest
+verifiability case**, the field most prone to unfalsifiable speedup claims; the same gate that
+re-derives a quantum number is how we would hold every efficiency claim — quantization, sparse
+MoE, analog in-memory, neuromorphic, photonic — to a number a stranger can reproduce.
+
+> **An honest correction to an earlier framing.** Prior drafts named the far horizon as "native
+> quantum-processing architectures for AI inference." The project's own [curriculum](https://quantummytheme.com/education)
+> (Part V, "the North Star") now states the verified position plainly, and this document follows
+> it: a quantum computer will **not** make today's LLMs faster, cheaper, or greener — the
+> data-loading wall, dequantization, and barren plateaus all close that door. Quantum's genuine
+> role is narrower and further off (simulating strongly-correlated **materials** to build better
+> *classical* chips, a decade-plus out on fault-tolerant hardware). Near-term efficiency comes
+> from classical architectures and real-but-narrow post-CMOS substrates, bounded by the memory
+> wall and the Landauer floor. The platform's value is the *referee*, not a bet that quantum
+> accelerates AI.
 
 > Reminder: this is a forward-looking roadmap. The harness in this repo is real and runs today;
 > `quantummytheme.com` is the destination it is designed to feed.

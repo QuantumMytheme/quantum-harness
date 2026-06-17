@@ -227,7 +227,7 @@ async function runAndJudge(ev) {
 // populations but flipping the held-out <X0X1>), quantum-proof-arch-OVERFIT.json (a topology that
 // routes the visible workload but blows the held-out workload budget), and
 // quantum-proof-qml-OVERFIT.json (an Ry(7x) feature map that fits the train set but fails the
-// held-out test set). The bench self-test `python3 bench/quantum-judge/test_judge.py` is 29/29 —
+// held-out test set). The bench self-test `python3 bench/quantum-judge/test_judge.py` is 38/38 —
 // accept the five worked examples (ghz3 state_prep, isingbell2 vqe, bell_pops2 populations,
 // aiaccel4 architecture, qml_sign1 classify), reject every class of forgery AND each
 // held-out-overfit impostor. Run it before trusting a run's verdicts.

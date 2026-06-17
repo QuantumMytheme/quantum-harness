@@ -232,11 +232,17 @@ test('homepage advertises the full platform, not just the bench', () => {
   assert.match(html, /href="education\.html"/)              // curriculum is linked from the hero/hub
   assert.match(html, /8\/8 exit 0/)                          // scoreboard prose matches verify.py
   assert.match(html, /38\/38/)                               // judge suite metric is current
-  // measurement badge: an all-green N/N from the current era — not a brittle literal that
+  // node-suite badge: an all-green N/N from the current era — not a brittle literal that
   // goes stale every time a test is added (the very drift that produced the old build).
-  const meas = html.match(/<b>(\d+)\/(\d+)<\/b><span>measurement<\/span>/)
-  assert.ok(meas, 'measurement metric badge present')
-  assert.equal(meas[1], meas[2], 'measurement badge shows all checks passing (N/N)')
-  assert.ok(Number(meas[1]) >= 95, 'measurement badge reflects the current-era suite, not an old stale build')
+  const meas = html.match(/<b>(\d+)\/(\d+)<\/b><span>node suite<\/span>/)
+  assert.ok(meas, 'node-suite metric badge present')
+  assert.equal(meas[1], meas[2], 'node-suite badge shows all checks passing (N/N)')
+  assert.ok(Number(meas[1]) >= 95, 'node-suite badge reflects the current-era suite, not an old stale build')
   assert.doesNotMatch(html, /Phase 2 of the platform/)      // old footer tagline is gone
+  // the North-Star intention must be present (the bench is the wedge, the mission is the referee) —
+  // and the retired overclaim must not creep back in.
+  assert.match(html, /verifiable-efficiency referee/i)      // the project's stated intention is on the homepage
+  assert.match(html, /North Star/i)                          // and points into the curriculum's North Star
+  assert.match(html, /thirty-nine-slice|39[- ]slice/i)      // curriculum card reflects the current arc, not "twenty"
+  assert.doesNotMatch(html, /quantum-processing architectures for AI|quantum-native inference/i) // honest: quantum is not an AI accelerator
 })

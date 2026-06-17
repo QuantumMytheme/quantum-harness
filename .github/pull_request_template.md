@@ -4,8 +4,8 @@
 
 ## Checklist (CI re-runs all of this as the merge gate)
 
-- [ ] `node --test test/*.test.mjs` — 82/82
-- [ ] `python3 bench/quantum-judge/test_judge.py` — 29/29
+- [ ] `node --test test/*.test.mjs` — 107/107
+- [ ] `python3 bench/quantum-judge/test_judge.py` — 38/38
 - [ ] `python3 scoreboard/verify.py` — every entry ACCEPTs and its metric matches the judge
 - [ ] `node scoreboard/build.mjs` — regenerated `viewer/scoreboard-data.js` and committed it
 

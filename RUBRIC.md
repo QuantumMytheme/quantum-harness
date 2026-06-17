@@ -148,7 +148,7 @@ check — anti-overfit.
       degree-over-budget → exit 3).
 - [ ] **R8 — Verifiability of artifacts (bench self-test green, capture round-trips).** The
       whole bench re-derives soundly: `python3 bench/quantum-judge/test_judge.py` reports
-      `29/29 checks passed` (exit 0). Within it, the `capture.py` check proves it builds a
+      `38/38 checks passed` (exit 0). Within it, the `capture.py` check proves it builds a
       well-formed bundle from a raw circuit using the SAME simulator and that bundle ACCEPTs
       under the judge — so artifacts are reproducible by tool, not hand-authored. Every R
       above is mirrored by a named regression check, so a fresh verifier reproduces every
@@ -176,8 +176,8 @@ check — anti-overfit.
       the measurement tooling (`bin/` + `lib/` + `test/`), this RUBRIC.md, VERIFIER-MAP.md, and
       the scrubbed session log. Provenance-from-fieldops is stated in prose (no shared git
       history).
-- [ ] **S2 The full measurement suite is green:** `node --test test/*.test.mjs` reports **82
-      tests pass, 0 fail** (scorecard + transcript scrub + planner roster/walkthrough).
+- [ ] **S2 The full measurement suite is green:** `node --test test/*.test.mjs` reports **107
+      tests pass, 0 fail** (scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector).
 - [ ] **S3 The committed session log and the entire repo pass a secret scan** (no live keys,
       bearer/deploy tokens); the scorecard was generated from the COMMITTED (scrubbed) log via
       `bin/prepare-transcript.mjs`; no transcript file is oversized (`prepare-transcript`
@@ -200,8 +200,8 @@ check — anti-overfit.
 ## Done is a two-stage gate
 
 - **Bench-done** = all H + R1–R8 + A1–A3 + S1 + S2 pass in ONE fresh-verifier run:
-  `node --test test/*.test.mjs` is 82/82, `python3 bench/quantum-judge/test_judge.py` is
-  29/29, and every submitted bundle exits 0 under `judge_verify.py` (including under a
+  `node --test test/*.test.mjs` is 107/107, `python3 bench/quantum-judge/test_judge.py` is
+  38/38, and every submitted bundle exits 0 under `judge_verify.py` (including under a
   relocated `QH_REFERENCES_DIR`).
 - **Submission-done** = S3 + S4 pass, plus an S1 re-check, in a second short verifier run.
 

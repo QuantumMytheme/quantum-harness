@@ -150,7 +150,7 @@ merge gate; no maintainer scores anything by taste. The flow mirrors
    - `judge_verify.py <proof_bundle>` exits `0` (re-run against the held-out references —
      no self-reported numbers survive this), **and**
    - the regression suite stays green: `python3 bench/quantum-judge/test_judge.py` is
-     `29/29` **and** `node --test test/*.test.mjs` is `82/82`.
+     `38/38` **and** `node --test test/*.test.mjs` is `107/107`.
 4. **Re-verification, not negotiation.** No human reviewer overrides a REJECT into a
    merge. If the judge accepts and the suite is green, the row earns its place; the
    ranking follows mechanically from (b).
@@ -252,7 +252,7 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 every entry — **including entries whose bundle lives in an external run repo, which it
 fetches and re-runs against the canonical hidden references** — and **checks the reported
 metric matches the judge's own recompute** (no rank overclaim); it runs the suites
-(29/29 + 82/82) and **fails any PR whose generated board is stale**
+(38/38 + 107/107) and **fails any PR whose generated board is stale**
 (`node scoreboard/build.mjs --check`). **Discovery is automated too:** a run repo opts in
 with the GitHub topic `quantum-harness-run` + a `scoreboard-entry.json` at its root;
 `scoreboard/discover.mjs` (scheduled via `.github/workflows/discover.yml`) crawls the org for

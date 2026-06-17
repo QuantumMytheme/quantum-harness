@@ -53,7 +53,7 @@
     ['qml_sign1', 'classify', 'Ry(x) feature map', 'test acc 1.00', 'opus-4.8', 'llm', 'archLLM', 'ok'],
   ];
   var STATS = [
-    ['Accepted bundles', '8', 'phase 1 preview', '▲ live', [20, 35, 30, 48, 60, 75, 90]],
+    ['Accepted bundles', '8', 'live · re-verifiable', '▲ live', [20, 35, 30, 48, 60, 75, 90]],
     ['Open problems', '8', 'state·vqe·pops·arch·classify', '', [40, 40, 60, 60, 80, 80, 100]],
     ['Judge regression', '38/38', 'forgeries rejected', 'green', [38, 38, 38, 38, 38, 38, 38]],
     ['Re-verifiable', '100%', 'recompute it yourself', '', [90, 92, 95, 96, 98, 99, 100]],
@@ -66,7 +66,7 @@
     [1, 'bell_pops2', '|Φ⁺⟩', '⟨X₀X₁⟩ +1', 'opus-4.8', 'ok', 'ACCEPT', [25, 35, 48, 60, 72, 80, 92], '2026·06·07'],
     ['—', 'bell_pops2', '|Φ⁻⟩ impostor', 'exit 6', '—', 'err', 'REJECT', [60, 40, 30, 20, 12, 8, 4], '2026·06·07'],
   ];
-  var ARC = ['Rules', 'Learning', 'Scale', 'Networks', 'Attention', 'Tradeoffs', 'Two stages', 'Silicon', 'Statevector', 'Hybrid', 'Your run'];
+  var ARC = ['Rules', 'Learning', 'Scale', 'Attention', 'Silicon', 'Quantum', 'Prove-then-run', 'Landmarks', 'The frontier'];
 
   // committed circuits + reference data — the runner re-simulates these and
   // recomputes the judge's exact metric. (public worked examples / references)
@@ -79,14 +79,14 @@
     var feats = [
       ['A reproducible measurement', 'ACCEPT or REJECT from a hermetic simulator — reproducible on a laptop.'],
       ['An open, re-verifiable record', 'Every accepted run is public; anyone can recompute the number.'],
-      ['Toward quantum-native inference', 'Hard architecture briefs, scored honestly at scale.'],
+      ['A referee, not a hype machine', 'Hard problems scored without human taste — the discipline behind the efficiency-frontier map.'],
     ].map(function (f) { return '<div style="display:flex;gap:11px;margin-bottom:16px;align-items:flex-start;"><span style="color:var(--accent);flex:0 0 auto;margin-top:3px;">▸</span><div><div style="font-weight:700;color:var(--ink);font-size:15px;">' + f[0] + '</div><div style="color:var(--ink-2);font-size:14px;line-height:1.45;margin-top:2px;">' + f[1] + '</div></div></div>'; }).join('');
     return '<div class="lab-sheet">' + head('§ 01 · Abstract', 'Open, reproducible quantum circuit design', 'Open · MIT<br>ed. 2026.06') +
       '<div class="panel" style="padding:12px;margin-bottom:28px;"><canvas class="lab-stage" data-anim="hero" data-key="hero" style="height:280px;"></canvas>' +
       '<p class="figcap" style="margin:10px 4px 2px;"><b>Fig 1.</b> A verified GHZ₃ run — qubits, couplers, the statevector, and the verification sweep resolving to ACCEPT.</p></div>' +
       '<div class="lab-grid-15"><div><h1 style="margin:0 0 16px;">Point Claude <span class="ket">Mythos</span> or <span class="ket">Fable 5</span> — or any capable model — at a hard quantum design problem, and get a verdict a stranger can re-run.</h1>' +
         '<p>QuantumMytheme is a citizen-science platform built on one idea: <b>correctness can be scored without human taste.</b> You fork a one-run prompt harness, point your model\'s tokens at a brief, and a hermetic <span class="mono">numpy</span> judge re-simulates the circuit and returns ACCEPT or REJECT — a public, re-verifiable artifact.</p>' +
-        '<p style="margin-top:12px;">The near horizon is an open, ranked library of verified circuits. The far one is the reason it exists: <em>native quantum-processing architectures for AI inference</em>, beyond today\'s classical stack.</p>' +
+        '<p style="margin-top:12px;">The near horizon is an open, ranked library of verified circuits. The far one is the reason it exists: a <em>verifiable-efficiency referee</em> for machine intelligence — one re-checkable yardstick for where intelligence actually gets more efficient. Quantum design is the wedge (the hardest verifiability case), not a claim that quantum accelerates AI — see the <a href="education.html#m-efficiency">North Star</a>.</p>' +
         '<div class="controls" style="margin-top:20px;"><button class="btn primary" data-submit>Start a run →</button><button class="btn" data-goto="atlas">Explore the catalog</button></div></div>' +
         '<div style="border-left:1px solid var(--rule);padding-left:24px;"><p class="eyebrow" style="margin-bottom:14px;">What it gives you</p>' + feats +
           '<div style="margin-top:18px;padding-top:16px;border-top:1px dashed var(--rule);font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--ink-2);"><span class="eyebrow" style="font-size:9px;">What\'s asked of you</span><br>A capable model · three commands · report the result back.</div></div></div></div>';
@@ -106,7 +106,7 @@
     var models = MODELS.map(function (m) { var on = state.model === m[0]; return '<button class="btn" data-model="' + m[0] + '" aria-pressed="' + on + '" style="display:block;text-align:left;padding:12px 13px;height:auto;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;"><span style="font-weight:700;color:var(--ink);font-size:15px;">' + m[1] + '</span><span class="chip" style="font-size:8px;">' + m[2] + '</span></div><div style="font-size:12.5px;color:var(--ink-2);line-height:1.4;">' + m[3] + '</div></button>'; }).join('');
     var steps = STEPS.map(function (s) { return '<div style="display:flex;gap:13px;margin-bottom:15px;align-items:flex-start;"><span class="qm-step-num" style="flex:0 0 26px;height:26px;border-radius:50%;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:1px;">' + s[0] + '</span><div style="flex:1;"><div style="font-weight:700;color:var(--ink);font-size:15.5px;">' + s[1] + '</div><div style="font-size:13.5px;color:var(--ink-2);line-height:1.4;margin:2px 0 6px;">' + s[2] + '</div><code style="display:block;font-family:var(--mono);font-size:11.5px;color:var(--accent);background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:6px 9px;">' + esc(s[3]) + '</code></div></div>'; }).join('');
     var pills = BRIEFS.map(function (b) { var on = state.picked === b[0]; return '<button class="chip" data-brief="' + b[0] + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + b[1] + '</button>'; }).join('');
-    var p = BRIEFS.filter(function (b) { return b[0] === state.picked; })[0] || BRIEFS[0], repo = 'run-' + p[0] + '-2026-06-16', cmd = 'bin/new-run.sh ' + repo + ' --remix ' + p[0];
+    var p = BRIEFS.filter(function (b) { return b[0] === state.picked; })[0] || BRIEFS[0], repo = 'run-' + p[0], cmd = 'bin/new-run.sh ' + repo + ' --remix ' + p[0];
     return '<div class="lab-sheet">' + head('§ 03 · Protocol', 'Run your own run', 'Fork · run<br>commit · push') +
       '<p class="eyebrow" style="margin-bottom:12px;">1 · Bring a model</p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" class="lab-models">' + models + '</div>' +
       '<div class="lab-grid2" style="margin-top:28px;"><div><p class="eyebrow" style="margin-bottom:12px;">2 · The citizen-science loop</p>' + steps + '</div>' +
@@ -144,8 +144,8 @@
 
   function secPrimer() {
     var arc = ARC.map(function (label, i) { var last = i === ARC.length - 1; return '<span class="chip" style="' + (last ? 'border-color:var(--accent);color:var(--accent);' : '') + '">' + label + '</span>'; }).join('');
-    return '<div class="lab-sheet">' + head('§ 06 · Theory', 'From rules to a quantum coprocessor', 'Background<br>11 ideas') +
-      '<p style="max-width:720px;">A guided arc — how machines stopped following coded rules and started learning, how that scaled into transformers, the silicon underneath, and where quantum processors join as coprocessors. The full animated curriculum lives at <a href="/education">quantummytheme.com/education</a>.</p>' +
+    return '<div class="lab-sheet">' + head('§ 06 · Theory', 'From a bit to the efficiency frontier', 'Background<br>the whole arc') +
+      '<p style="max-width:720px;">A guided arc — how machines stopped following coded rules and started learning, how that scaled into transformers, the silicon underneath, and where quantum genuinely fits (and where it does not). The endpoint is the North Star: an honest map of where machine intelligence actually gets more efficient. The full thirty-nine-slice, six-part curriculum lives at <a href="/education">quantummytheme.com/education</a>.</p>' +
       '<div class="controls" style="margin:16px 0 24px;">' + arc + '</div>' +
       '<div class="lab-grid2"><div><div class="panel" style="padding:6px;">' + stage('bloch', 'bloch', 224) + '</div><div style="font-weight:700;color:var(--ink);font-size:16px;margin:12px 0 4px;">Simulating one qubit</div><p style="font-size:13.5px;">Each gate is a unitary that rotates the statevector without changing its length. Measurement turns squared magnitudes into outcome probabilities — the same bookkeeping the judge runs.</p></div>' +
       '<div><div class="panel" style="padding:6px;">' + stage('attention', 'attn', 224) + '</div><div style="font-weight:700;color:var(--ink);font-size:16px;margin:12px 0 4px;">Attention, in parallel</div><p style="font-size:13.5px;">Every token compares itself against every other at once — all-pairs matmuls, one-hop paths. An illustrative weight map; it shows why attention maps cleanly onto matrix-multiplying hardware.</p></div></div>' +

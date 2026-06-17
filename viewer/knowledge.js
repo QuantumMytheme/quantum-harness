@@ -1,8 +1,12 @@
-/* QuantumMytheme · knowledge.js — the platform's single source of truth for what
-   each problem IS, what a GOOD result looks like, what the judge gates mean, what
-   the quality axes mean, and how a recipe's circuit maps onto a chip topology.
-   Dependency-free browser global (window.QMKnowledge). Shared by the scoreboard
-   (app.js), the recipe builder (lab.js), and the glossary. CSP-safe. */
+/* QuantumMytheme · knowledge.js — the bench's source of truth for what each problem
+   IS, what a GOOD result looks like, what the judge gates mean, what the quality axes
+   mean, and how a recipe's circuit maps onto a chip topology. The bench is the
+   verifiable-quantum-design wedge of a broader verifiable-efficiency referee; the
+   efficiency-frontier map (and where quantum does and doesn't fit) lives in /education
+   (Part V, the North Star). Note: the "efficiency" quality axis here is circuit economy
+   (gates/depth), NOT the platform-wide efficiency thesis. Dependency-free browser global
+   (window.QMKnowledge). Shared by the scoreboard (app.js), the recipe builder (lab.js),
+   and the glossary. CSP-safe. */
 (function () {
   'use strict';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

@@ -105,7 +105,7 @@ orient (read BRIEF/RUBRIC/bench) → plan → design circuit (TDD against the ju
 
 | Scoring lens | What they see |
 |---|---|
-| Impact | A real category gap: constraint-respecting quantum primitives as the building blocks for native quantum-processing architectures for AI inference, beyond today's hybrid IR / classical stack |
+| Impact | A real category gap: constraint-respecting quantum primitives, machine-verified — the wedge for a verifiable-efficiency referee for machine intelligence (honest that quantum is not an LLM accelerator; its genuine role is materials simulation for better classical chips) |
 | Verifiable result | The proof bundle that ACCEPTs (exit 0) under a fresh re-simulating judge — a machine-checkable verdict, not prose; the committed forgery (`quantum-proof-FORGED.json`) that MUST be rejected at exit 4, and the wrong-phase impostor (`quantum-proof-OVERFIT.json`) that MUST be rejected at the held-out anti-overfit gate (exit 6) |
 | Autonomy | Session log: one kickoff, long model-only stretches; interventions classified, approval-gates separated; self-caught judge REJECTs cited with timestamps |
 | Orchestration | `BRIEF.md` + `RUBRIC.md` + `VERIFIER-MAP.md` + the bench + saved workflows — the harness IS the artifact, rerunnable on a new problem tomorrow (`RERUN.md`) |
@@ -145,7 +145,7 @@ bounded only by the problem's difficulty.
 - **Anti-cheat is regression-pinned.** `quantum-proof-FORGED.json` (omits the 2nd CX, claims
   fidelity 1.0 but is truly 0.25) MUST be rejected at exit 4, and the wrong-phase
   `quantum-proof-OVERFIT.json` impostor MUST be rejected at the held-out anti-overfit gate
-  (exit 6); `test_judge.py` holds the line at 29/29 checks. Faking a number — or overfitting
+  (exit 6); `test_judge.py` holds the line at 38/38 checks. Faking a number — or overfitting
   the visible spec — is caught by the judge, not by trust.
 
 ---
@@ -180,7 +180,7 @@ THE ENVIRONMENT (already in place — consult, don't rebuild)
   problems with no holdout block (ghz3, isingbell2) anti-overfit additionally holds by
   construction (ground truth lives only in the hidden reference), so exit 6 is simply not
   triggered for them. capture.py builds a well-formed bundle from a raw circuit using the SAME
-  simulator. test_judge.py is the 29/29 regression line.
+  simulator. test_judge.py is the 38/38 regression line.
 - Five worked problems ship with committed reference solutions and committed passing
   bundles: ghz3 (state_prep, linear [0-1-2] coupling, fidelity ≥ 0.99), isingbell2 (vqe,
   H = −X₀X₁ − Z₀Z₁, energy within 0.05 of −2), bell_pops2 (populations — the anti-overfit
@@ -218,7 +218,7 @@ HOW TO WORK
 
 DONE
 - Bench-done = all H + R1–R8 + A1–A3 + S1 + S2 in ONE fresh-verifier run: node --test
-  test/*.test.mjs is 82/82, python3 bench/quantum-judge/test_judge.py is 29/29, and every
+  test/*.test.mjs is 107/107, python3 bench/quantum-judge/test_judge.py is 38/38, and every
   submitted bundle exits 0 under judge_verify.py (including under a relocated
   QH_REFERENCES_DIR). Submission-done = S3 + S4 + an S1 re-check in a second short run.
 - If time runs short, the designated cuts are stretch problems — record the cut in "Honest

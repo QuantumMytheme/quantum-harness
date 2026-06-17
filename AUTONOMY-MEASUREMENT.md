@@ -37,8 +37,8 @@ linked as the deep-dive appendix.
 
 ## The engine (what backs these numbers)
 
-- `node --test test/*.test.mjs` → **82 tests green** (scorecard classification + transcript
-  scrub + planner roster/walkthrough). This is the regression spine for the measurement
+- `node --test test/*.test.mjs` → **107 tests green** (scorecard classification + transcript
+  scrub + planner roster/walkthrough + site/education wiring + MCP connector). This is the regression spine for the measurement
   layer; if the scorecard logic drifts, these go red.
 - `bin/autonomy-scorecard.mjs` parses a session transcript → intervention classification,
   longest unattended stretch, self-caught failures, timeline.
