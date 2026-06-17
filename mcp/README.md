@@ -33,5 +33,5 @@ printf '%s\n%s\n%s\n' \
 # -> ACCEPT, exit 0
 ```
 
-Pair with the official [GitHub MCP](https://github.com/modelcontextprotocol/servers/tree/main/src/github)
-for clone / commit / push.
+Pair with GitHub's official [github-mcp-server](https://github.com/github/github-mcp-server)
+(local Docker) for clone / commit / push.

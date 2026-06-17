@@ -97,8 +97,8 @@ Edit `claude_desktop_config.json` and restart Claude Desktop. Find it at:
       "env": { "GITHUB_TOKEN": "ghp_your_public_repo_scoped_token" }
     },
     "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
       "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_your_public_repo_scoped_token" }
     }
   }
@@ -106,7 +106,10 @@ Edit `claude_desktop_config.json` and restart Claude Desktop. Find it at:
 ```
 
 Use an **absolute** path to `server.mjs`. The `github` entry is optional but recommended —
-it's what lets Claude clone the minted repo and push the bundle from chat.
+it's what lets Claude clone the minted repo and push the bundle from chat. It uses GitHub's
+**official** MCP server ([`github/github-mcp-server`](https://github.com/github/github-mcp-server)),
+which runs locally via **Docker** (install Docker Desktop first); the same token works for both
+servers. *(The older npm `@modelcontextprotocol/server-github` is deprecated.)*
 
 ### The in-chat flow
 
