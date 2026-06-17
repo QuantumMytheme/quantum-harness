@@ -243,7 +243,17 @@
       p = createRepo({ token: token, owner: owner, name: name, 'private': false });
     } else { if (res) res.innerHTML = '<span style="color:var(--reject)">Sign in with GitHub above, or paste a token.</span>'; return; }
     p.then(function (out) { if (res) res.innerHTML = '✓ created → <a href="' + out.html_url + '" target="_blank" rel="noopener">' + esc(out.full_name || name) + ' ↗</a>'; })
-      .catch(function (err) { if (res) res.innerHTML = '<span style="color:var(--reject)">' + esc(err.message || String(err)) + '</span> — check repo-create rights for that owner.'; });
+      .catch(function (err) {
+        if (!res) return;
+        var m = err.message || String(err), tip = ' — check repo-create rights for that owner.';
+        if (/OAuth App access restrictions|access to your organization/i.test(m)) {
+          var o = owner || 'the org';
+          tip = '<br><span class="note" style="display:inline-block;margin-top:7px">This org restricts OAuth Apps. As an owner, approve this app at ' +
+            '<span class="mono">github.com/organizations/' + esc(o) + '/settings/oauth_application_policy</span> — ' +
+            'or clear the owner field to create it under your own account (it still registers on the board).</span>';
+        }
+        res.innerHTML = '<span style="color:var(--reject)">' + esc(m) + '</span>' + tip;
+      });
   }
 
   // ---------- global handlers (work on any page) ----------
