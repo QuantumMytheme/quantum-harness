@@ -106,3 +106,19 @@ test('shared in-browser runner + recipe builder wired on both pages', () => {
   assert.ok(existsSync(v('og-lab.png')), 'viewer/og-lab.png (notebook social card) should exist')
   assert.match(lab, /og-lab\.png/)
 })
+
+test('homepage advertises the full platform, not just the bench', () => {
+  // Guards against the front page drifting back to a stale "just a repo" pitch:
+  // the overview must surface the notebook, the in-browser/WASM judge, the recipe builder,
+  // and the curriculum, and the metrics must match the real judge + measurement suites.
+  assert.match(html, /id="platform"/)                       // the "explore the platform" hub section
+  assert.match(html, /field notebook/i)                     // notebook is named in prose
+  assert.match(html, /WebAssembly/)                          // the real judge runs in-page as WASM
+  assert.match(html, /recipe builder/i)                      // recipe builder is surfaced
+  assert.match(html, /href="lab\.html#recipe"/)             // and deep-linked
+  assert.match(html, /href="education\.html"/)              // curriculum is linked from the hero/hub
+  assert.match(html, /8\/8 exit 0/)                          // scoreboard prose matches verify.py
+  assert.match(html, /38\/38/)                               // judge suite metric is current
+  assert.match(html, /92\/92/)                               // measurement suite metric is current
+  assert.doesNotMatch(html, /Phase 2 of the platform/)      // old footer tagline is gone
+})

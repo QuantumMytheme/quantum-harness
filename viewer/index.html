@@ -34,6 +34,7 @@
       <div class="right">
         <nav>
           <a href="#why">Why</a>
+          <a href="#platform">Platform</a>
           <a href="#judge">Bench</a>
           <a href="education.html">Learn</a>
           <a href="#scoreboard">Scoreboard</a>
@@ -56,7 +57,8 @@
         deterministic judge — four gates, no human in the scoring loop, every claim reproducible on a laptop
         (numpy only, no QPU). A submission is re-derived from scratch and rejected if it violates its constraints,
         fabricates a result, underperforms, or overfits a held-out check. The figures below run the real bench
-        math in your browser and are interactive.</p>
+        math in your browser and are interactive — or open the <a href="lab.html">field notebook</a> to re-run any
+        verified circuit yourself, even the real numpy judge compiled to WebAssembly.</p>
     </div>
 
     <div class="metrics">
@@ -68,10 +70,10 @@
     </div>
 
     <div class="cta">
-      <a class="btn primary" href="https://github.com/QuantumMytheme/quantum-harness/generate">Use this template ↗</a>
-      <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness">View on GitHub ↗</a>
+      <a class="btn primary" href="lab.html">Open the field notebook ↗</a>
+      <a class="btn" href="education.html">Learn the arc</a>
       <a class="btn" href="#scoreboard">See the scoreboard</a>
-      <a class="btn" href="#run">Do your own run</a>
+      <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate">Use this template ↗</a>
     </div>
   </div>
 </header>
@@ -110,6 +112,49 @@
     <blockquote class="pull">Models are model-agnostic fuel. The judge doesn't care who — or what — produced a bundle;
       it only re-simulates. Drive a run with <b>Opus 4.8</b> or <b>Fable 5</b> today; the harness is built to be ready for
       the next-gen models you may know as <b>Mythos</b>.</blockquote>
+  </div>
+</section>
+
+<!-- ===================== EXPLORE THE PLATFORM ===================== -->
+<section id="platform">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Explore the platform</p>
+      <h2>Four ways in — none of them leave your browser</h2>
+      <p class="lead">The bench isn't just a repo to read. It's a notebook you can re-run, a judge you can invoke,
+        and a curriculum that builds the idea from one gate to a public scoreboard. Pick a door.</p>
+    </div>
+
+    <div class="why two">
+      <div class="why-item">
+        <span class="why-n">NOTEBOOK</span>
+        <h3>The field notebook</h3>
+        <p>A tabbed lab — brief, field guide, atlas, register, primer — that walks every verified run and lets you
+          step the circuit, watch the Bloch sphere, and read the bundle that proves it.</p>
+        <a class="why-go" href="lab.html">Open the notebook</a>
+      </div>
+      <div class="why-item">
+        <span class="why-n">RE-RUN</span>
+        <h3>Re-run it yourself</h3>
+        <p>Hit <b>▸ run</b> on any scoreboard row to re-simulate it live in a hand-rolled statevector engine — or load
+          <b>the real numpy judge compiled to WebAssembly</b> and watch it re-derive the verdict, in-page.</p>
+        <a class="why-go" href="#scoreboard">Find a row to run</a>
+      </div>
+      <div class="why-item">
+        <span class="why-n">RECIPE</span>
+        <h3>Blend a recipe</h3>
+        <p>Select past runs as ingredients, set ratios and parameters with graphical toggles, and mint a fresh
+          problem-and-bundle for a brand-new repository — created straight from your Claude desktop, GitHub and all.</p>
+        <a class="why-go" href="lab.html#recipe">Open the recipe builder</a>
+      </div>
+      <div class="why-item">
+        <span class="why-n">LEARN</span>
+        <h3>Learn the arc</h3>
+        <p>A twelve-module animated curriculum that builds the whole idea from a single gate up to a hermetic judge,
+          held-out checks, and a public, re-verifiable scoreboard.</p>
+        <a class="why-go" href="education.html">Start the curriculum</a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -233,7 +278,8 @@
       <h2>Seeded leaderboard — the baselines to beat</h2>
       <p class="lead">A per-problem leaderboard of judge-ACCEPTED designs, ranked by the verified metric. Seeded with the
         harness's reference baselines; every number is the judge's own and re-verifiable
-        (<span class="mono">scoreboard/verify.py</span> → 5/5 exit 0). No score here is self-reported.</p>
+        (<span class="mono">scoreboard/verify.py</span> → 8/8 exit 0). No score here is self-reported — click
+        <b>▸ run</b> on any row to re-simulate it in your browser, or load the real judge as WebAssembly.</p>
     </div>
 
     <div class="panel results-wrap">
@@ -319,10 +365,12 @@
       <div class="aside">
         <div class="panel" style="padding:20px">
           <p class="note" style="margin-bottom:14px">The run repo is the permanent, public, re-verifiable record. Anyone re-runs the judge on your committed bundle and gets the same verdict — that's the whole contract.</p>
+          <p class="note" style="margin-bottom:14px">No terminal? Open the <a href="lab.html#recipe">recipe builder</a>, sign in with GitHub, and mint a fresh
+            run repo — ingredients, ratios, and the first bundle — without leaving your browser.</p>
           <div class="cta" style="margin:0">
-            <a class="btn primary" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/GETTING-STARTED.md">Getting started ↗</a>
+            <a class="btn primary" href="lab.html#recipe">Mint from the notebook ↗</a>
+            <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/GETTING-STARTED.md">Getting started ↗</a>
             <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate">Use this template ↗</a>
-            <a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/blob/main/ACCESS.md">Get a chip ↗</a>
             <a class="btn" href="https://github.com/QuantumMytheme">The org ↗</a>
           </div>
         </div>
@@ -341,7 +389,7 @@
     <div style="text-align:right">
       <div class="mono" style="color:var(--ink-2)">QuantumMytheme / quantum-harness</div>
       <div class="mono" style="margin-top:6px"><span class="tag">MIT</span> <span class="tag">numpy-only judge</span> <span class="tag">offline</span></div>
-      <div class="mono" style="margin-top:9px;color:var(--faint)">Phase 2 of the platform — the bench, made visible · <span id="year">2026</span></div>
+      <div class="mono" style="margin-top:9px;color:var(--faint)">The platform — bench · notebook · curriculum · in-browser runner · <span id="year">2026</span></div>
     </div>
   </div>
 </footer>
