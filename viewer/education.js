@@ -3650,6 +3650,138 @@
 };
   // ==========================================================================
 
+  // ============ EXPANSION: landmark experiments · nonlocality + one-query ============
+
+// ───── ghz-mermin (all-versus-nothing nonlocality — a single-shot contradiction) ─────
+  EDU["ghz-mermin"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var S2 = 1 / Math.sqrt(2);
+  // |GHZ⟩ = (|000⟩+|111⟩)/√2 over 8 amplitudes, index = 4b0+2b1+b2
+  function ghz() { var st = []; for (var i = 0; i < 8; i++) st.push(K.C(0, 0)); st[0] = K.C(S2, 0); st[7] = K.C(S2, 0); return st; }
+  function bit(i, q) { return (i >> (2 - q)) & 1; }
+  function applyP(st, P) {                                  // P = ['X'|'Y'|'Z'] per qubit
+    var s = st.slice();
+    for (var q = 0; q < 3; q++) { var m = 1 << (2 - q), o = [], p = P[q]; for (var i = 0; i < 8; i++) o.push(K.C(0, 0));
+      for (var i2 = 0; i2 < 8; i2++) { var b = bit(i2, q), a = s[i2];
+        if (p === 'X') o[i2 ^ m] = a;
+        else if (p === 'Y') o[i2 ^ m] = K.cmul(b ? K.C(0, -1) : K.C(0, 1), a);
+        else o[i2] = b ? K.C(-a.re, -a.im) : a; }
+      s = o; }
+    return s;
+  }
+  function expect(P) { var g = ghz(), ps = applyP(g, P), e = 0; for (var i = 0; i < 8; i++) e += g[i].re * ps[i].re + g[i].im * ps[i].im; return Math.round(e); }
+  var ROWS = [['XXX', ['X', 'X', 'X']], ['XYY', ['X', 'Y', 'Y']], ['YXY', ['Y', 'X', 'Y']], ['YYX', ['Y', 'Y', 'X']]];
+  // local-hidden-variable assignment: definite ±1 for each of X1,X2,X3,Y1,Y2,Y3
+  var lhv = { X1: 1, X2: 1, X3: 1, Y1: 1, Y2: 1, Y3: -1 };
+  function classicalRow(name) { var v = 1; for (var k = 0; k < 3; k++) v *= lhv[name[k] + (k + 1)]; return v; }
+
+  function mkb(key) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = key + '=' + (lhv[key] > 0 ? '+1' : '−1'); b.addEventListener('click', function () { lhv[key] = -lhv[key]; b.textContent = key + '=' + (lhv[key] > 0 ? '+1' : '−1'); draw(); }); controls.appendChild(b); return b; }
+  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'pre-set local values'; controls.appendChild(lab);
+  ['X1', 'X2', 'X3', 'Y1', 'Y2', 'Y3'].forEach(mkb);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('|GHZ⟩ = (|000⟩ + |111⟩)/√2.  Try to pre-assign definite ±1 values that reproduce all four quantum results at once.', 14, 22);
+
+    var x0 = 24, col1 = 220, col2 = 330, col3 = 440, y0 = 56, rh = 30;
+    ctx.font = '10px ' + mono; ctx.fillStyle = faint; ctx.textAlign = 'left';
+    ctx.fillText('measurement', x0, y0); ctx.textAlign = 'center';
+    ctx.fillText('your local values', col1, y0); ctx.fillText('quantum', col2, y0); ctx.fillText('match?', col3, y0);
+    var prodC = 1, prodQ = 1, mism = 0;
+    for (var r = 0; r < 4; r++) {
+      var name = ROWS[r][0], cv = classicalRow(name), qv = expect(ROWS[r][1]), yy = y0 + (r + 1) * rh, ok = cv === qv;
+      if (!ok) mism++; prodC *= cv; prodQ *= qv;
+      ctx.textAlign = 'left'; ctx.fillStyle = ink; ctx.font = '600 13px ' + mono; ctx.fillText('⟨' + name.split('').join('') + '⟩', x0, yy);
+      ctx.textAlign = 'center'; ctx.fillStyle = ink2; ctx.font = '13px ' + mono; ctx.fillText(cv > 0 ? '+1' : '−1', col1, yy);
+      ctx.fillStyle = qv > 0 ? ink : acc; ctx.fillText(qv > 0 ? '+1' : '−1', col2, yy);
+      ctx.fillStyle = ok ? pass : reject; ctx.font = '600 13px ' + mono; ctx.fillText(ok ? '✓' : '✗', col3, yy);
+    }
+    // product row
+    var py = y0 + 5 * rh + 10;
+    ctx.strokeStyle = rule; ctx.beginPath(); ctx.moveTo(x0, py - 18); ctx.lineTo(col3 + 30, py - 18); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = faint; ctx.font = '11px ' + mono; ctx.fillText('product of all four', x0, py);
+    ctx.textAlign = 'center'; ctx.fillStyle = ink2; ctx.font = '600 13px ' + mono; ctx.fillText(prodC > 0 ? '+1' : '−1', col1, py);
+    ctx.fillStyle = reject; ctx.fillText(prodQ > 0 ? '+1' : '−1', col2, py);
+    ctx.fillStyle = reject; ctx.fillText('✗', col3, py);
+
+    // verdict
+    ctx.textAlign = 'left'; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillStyle = reject;
+    wrap('Every local assignment forces the product to +1 (each value appears twice), but quantum mechanics demands −1. No pre-set values can match all four — local realism fails in a single shot, no inequality, no statistics.', x0, py + 26, W - x0 - 16, 15);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── bv (Bernstein–Vazirani — one query recovers the whole secret) ─────
+  EDU["bv"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var n = 5, s = parseInt('10110', 2);                     // hidden string (n bits)
+  function popcnt(x) { var c = 0; while (x) { c ^= (x & 1); x >>= 1; } return c; }    // parity
+  function runBV() {                                        // returns recovered index (= s)
+    var DIM = 1 << n, st = []; for (var i = 0; i < DIM; i++) st.push(K.C(i === 0 ? 1 : 0, 0));
+    function H(q) { var o = st.slice(), sq = 1 / Math.sqrt(2), m = 1 << (n - 1 - q);
+      for (var i = 0; i < DIM; i++) { if (i & m) continue; var j = i | m; o[i] = K.C((st[i].re + st[j].re) * sq, (st[i].im + st[j].im) * sq); o[j] = K.C((st[i].re - st[j].re) * sq, (st[i].im - st[j].im) * sq); } st = o; }
+    for (var q = 0; q < n; q++) H(q);                       // H^n → uniform superposition
+    for (var x = 0; x < DIM; x++) if (popcnt(s & x)) st[x] = K.C(-st[x].re, -st[x].im);   // phase oracle (−1)^{s·x}
+    for (var q2 = 0; q2 < n; q2++) H(q2);                   // H^n → |s⟩
+    var best = 0, bp = 0; for (var i2 = 0; i2 < DIM; i2++) { var p = st[i2].re * st[i2].re + st[i2].im * st[i2].im; if (p > bp) { bp = p; best = i2; } }
+    return { rec: best, prob: bp, amps: st };
+  }
+  function bits(v) { var a = []; for (var i = n - 1; i >= 0; i--) a.push((v >> i) & 1); return a; }
+
+  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'hidden string s'; controls.appendChild(lab);
+  var sbtn = [];
+  for (var i = 0; i < n; i++) (function (i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; var bitpos = n - 1 - i;
+    b.textContent = String((s >> bitpos) & 1); b.addEventListener('click', function () { s ^= (1 << bitpos); b.textContent = String((s >> bitpos) & 1); draw(); }); controls.appendChild(b); sbtn.push(b); })(i);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var res = runBV(), recOK = res.rec === s;
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('A hidden n-bit string s. Classically you must query one bit at a time (n queries). Quantum: one query.', 14, 22);
+
+    // circuit sketch: n wires, H — oracle — H — measure
+    var top = 50, wireGap = Math.min(30, (H * 0.42) / n), x0 = 60, x1 = W * 0.52;
+    var stages = ['H', 'Uₛ', 'H', '↗'], sx = [x0 + 40, (x0 + x1) / 2, x1 - 70, x1 - 24];
+    for (var q = 0; q < n; q++) { var y = top + q * wireGap;
+      ctx.strokeStyle = rule; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.textAlign = 'right'; ctx.fillText('q' + q, x0 - 6, y + 3);
+      for (var g = 0; g < 3; g++) { ctx.fillStyle = K.v('--panel'); ctx.strokeStyle = g === 1 ? acc : faint; ctx.lineWidth = 1.2;
+        var bx = sx[g] - 9, by = y - 8; rr(bx, by, 18, 16, 3); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = g === 1 ? acc : ink; ctx.font = '9px ' + mono; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(stages[g], sx[g], y); ctx.textBaseline = 'alphabetic'; }
+    }
+    // oracle bracket label
+    ctx.fillStyle = acc; ctx.font = '9px ' + mono; ctx.textAlign = 'center'; ctx.fillText('oracle  (−1)^{s·x}', (x0 + x1) / 2, top + n * wireGap + 6);
+
+    // result panel (right)
+    var rx = x1 + 30;
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
+    ctx.fillStyle = faint; ctx.fillText('after ONE query, measure:', rx, top + 4);
+    var bs = bits(res.rec), cw = 24;
+    for (var k = 0; k < n; k++) { var cx = rx + k * (cw + 4), yy = top + 16;
+      ctx.fillStyle = acc; ctx.globalAlpha = 0.12; rr(cx, yy, cw, cw, 4); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = acc; ctx.lineWidth = 1.4; rr(cx, yy, cw, cw, 4); ctx.stroke();
+      ctx.fillStyle = ink; ctx.font = '600 14px ' + mono; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(bs[k]), cx + cw / 2, yy + cw / 2); ctx.textBaseline = 'alphabetic'; }
+    ctx.fillStyle = pass; ctx.font = '600 12px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('recovered s = ' + bits(s).join('') + (recOK ? '  ✓  (prob ' + (res.prob * 100).toFixed(0) + '%)' : ''), rx, top + 16 + cw + 22);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    wrap('Hadamards spread every input at once; the oracle stamps each with the phase (−1)^{s·x}; a second layer of Hadamards focuses all of it onto the single answer |s⟩. One oracle call, n bits — where a classical computer needs n.', rx, top + 16 + cw + 48, W - rx - 16, 14);
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('quantum: 1 query     classical: ' + n + ' queries', rx, H - 14);
+  }
+  function rr(x, y, w, h, rad) { ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; } ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad); ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath(); }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+
   // ============ EXPANSION: landmark experiments · classical + bridge ============
 
 // ───── hamming (Hamming(7,4) — the syndrome spells the error position) ─────

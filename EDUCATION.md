@@ -1,6 +1,6 @@
 # Education — from a bit and a qubit to your own quantum-harness run
 
-Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Twenty-six slices in five parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs six landmark experiments — Bell's inequality, teleportation, quantum error correction, then the classical counterparts (the Hamming code, the 3-SAT phase transition) and the RSA→Shor bridge — each computing its headline result live — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
+Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Twenty-eight slices in five parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs eight landmark experiments — Bell's inequality, teleportation, quantum error correction, the GHZ all-or-nothing refutation of local realism, Bernstein–Vazirani's one-query secret, then the classical counterparts (the Hamming code, the 3-SAT phase transition) and the RSA→Shor bridge — each computing its headline result live — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
 
 
 ---
@@ -212,7 +212,23 @@ The central puzzle of quantum error correction is that measuring a qubit destroy
 
 > **Slice (animation):** technique=canvas — Encode on a 3-qubit statevector (CNOT 0→1, 0→2), optionally inject X or Z on a chosen qubit, then extract the syndrome from the stabilizer expectations: s1=⟨Z₀Z₁⟩, s2=⟨Z₁Z₂⟩ (compute Σ|amp|²·(±1) per parity; for code-space + a Pauli error these are exactly ±1). Mapping (s1,s2) bit=1 means eigenvalue −1: (0,0)→none, (1,0)→q0, (1,1)→q1, (0,1)→q2; apply X to the flagged qubit to correct. A Z (phase) error commutes with the Z-checks → syndrome (0,0), undetected (teach the limit). Draw 3 data-qubit nodes (the errored one flashes red), the two stabilizer brackets with their ±1 values, the syndrome, the pointer to the flipped qubit, and the recovered verdict. Buttons pick the error qubit + X/Z. prefers-reduced-motion is the default (static). Verified: stabilizers + syndrome mapping by direct computation.
 
-## 22. The Hamming code: the syndrome spells the error   
+## 22. Local realism, refuted in a single shot   
+`LANDMARK · NONLOCALITY`  
+**Takeaway:** Three entangled qubits force a contradiction with any "local hidden variables" theory outright — no inequality, no statistics, just one measurement that can't be explained.
+
+Bell's inequality needed many runs and a statistical margin; Greenberger, Horne and Zeilinger (1989), made vivid by Mermin (1990), found a *logical* contradiction in a single measurement. For |GHZ⟩ = (|000⟩+|111⟩)/√2, quantum mechanics fixes four joint measurements with certainty: ⟨X₁X₂X₃⟩ = +1 and ⟨X₁Y₂Y₃⟩ = ⟨Y₁X₂Y₃⟩ = ⟨Y₁Y₂X₃⟩ = −1, so their product is −1. But if each qubit carried definite ±1 values for X and Y in advance (local realism), the product of the four is forced to +1 — every value appears twice. No local assignment matches all four; the contradiction is total, not statistical. (Rules out *local* hidden variables; signs are for the +|111⟩ convention.)
+
+> **Slice (animation):** technique=canvas — Compute the four GHZ correlators from the statevector: |GHZ⟩ over 8 amplitudes, apply each Pauli string (XXX, XYY, YXY, YYX) and take ⟨GHZ|P|GHZ⟩ → +1, −1, −1, −1. A table compares the user's pre-set local ±1 values (six toggles X1,X2,X3,Y1,Y2,Y3) against the quantum column, per-row ✓/✗, then the product row: local always +1, quantum −1, an irreducible ✗. Verified by direct computation (+|111⟩ convention; GHSZ AJP 58,1131,1990; Mermin PRL 65,1838,1990); rules out LOCAL hidden variables only; this is the all-versus-nothing (logical) version, distinct from the Mermin inequality.
+
+## 23. One query for the whole secret   
+`LANDMARK · QUERY SPEEDUP`  
+**Takeaway:** To learn a hidden n-bit string a classical computer must ask n questions — one quantum query gets the whole thing, with certainty.
+
+A black box hides an n-bit secret s and returns only the parity s·x (mod 2) for any input x; classically that leaks one bit per query, so n queries are needed. Bernstein and Vazirani (1993) showed a quantum computer needs exactly one: Hadamards put all inputs in superposition, the box stamps each with the phase (−1)^{s·x}, a second Hadamard layer focuses that onto |s⟩, and a measurement returns s with certainty. A clean, exact 1-vs-n query separation (a refinement of Deutsch–Jozsa) — not an asymptotic or heuristic one.
+
+> **Slice (animation):** technique=canvas — Run the real circuit on an n-qubit statevector (n=5): start |0…0⟩, H on all (uniform superposition), phase oracle amp[x] *= (−1)^{popcount(s&x)}, H on all → |s⟩, take argmax → s (probability 1). Draw the circuit (n wires; H — Uₛ — H — measure), the recovered bits, the hidden-string toggles, and the 1-query-vs-n-query contrast. Verified by direct computation (recovers s at prob 1.000 for all tested strings); Bernstein–Vazirani STOC 1993 / SICOMP 1997; the separation is n→1 queries (not 'exponential' for this non-recursive version).
+
+## 24. The Hamming code: the syndrome spells the error   
 `LANDMARK · CLASSICAL ERROR CORRECTION`  
 **Takeaway:** Three parity checks over seven bits localize any single-bit error — and read as a binary number, the checks give the error's position outright.
 
@@ -220,7 +236,7 @@ The same idea behind the quantum bit-flip code was invented for classical bits f
 
 > **Slice (animation):** technique=canvas — Pure-logic re-run. Data bits at positions 3,5,6,7; parity p1=d3⊕d5⊕d7 (pos 1), p2=d3⊕d6⊕d7 (pos 2), p4=d5⊕d6⊕d7 (pos 4). On a received word recompute c1={1,3,5,7}, c2={2,3,6,7}, c4={4,5,6,7}; syndrome = c1+2·c2+4·c4 = the 1-based error position (0=none). Draw 7 bit cells (parity 1,2,4 tinted, data 3,5,6,7), the flipped one red; three parity-check rows with coverage dots + ✓/✗; the syndrome as binary + decimal; the verdict. Toggle the 4 data bits; click any cell to flip it. Verified: syndrome=position for all 8 cases by direct computation; Hamming 1950 BSTJ 29(2):147-160 confirmed.
 
-## 23. The 3-SAT phase transition   
+## 25. The 3-SAT phase transition   
 `LANDMARK · COMPLEXITY`  
 **Takeaway:** Pile logical constraints onto random variables and satisfiability collapses abruptly near a critical ratio — and the problems get hardest right at the edge.
 
@@ -228,7 +244,7 @@ The Cook–Levin theorem (1971/73) made SAT the first proven NP-complete problem
 
 > **Slice (animation):** technique=canvas — Compute the curve live at mount: for ~16 ratios α∈[2,7], generate K random 3-SAT instances (n≈12, seeded LCG) and brute-force-solve each (early-exit), recording the fraction satisfiable and the average solve cost. Plot P(satisfiable) (sigmoid, 1→0) and a faint solve-effort curve (peaks near the threshold), with a dashed threshold line at ≈4.27 and a draggable α marker + readout. A resample button reseeds. prefers-reduced-motion renders the cached curve statically. Verified: ~4.27 is empirical/conjectured for 3-SAT (sharp-threshold existence proven, exact value only for large k); hardness peak is near (not provably at) the threshold and algorithm-dependent.
 
-## 24. RSA, and the one step Shor speeds up   
+## 26. RSA, and the one step Shor speeds up   
 `LANDMARK · THE BRIDGE`  
 **Takeaway:** RSA's security is the hardness of factoring; Shor's algorithm factors by finding a period — and that single step is the only part a quantum computer accelerates.
 
@@ -236,7 +252,7 @@ Where the two ladders meet. RSA (Rivest, Shamir, Adleman, 1977) encrypts with N 
 
 > **Slice (animation):** technique=canvas — Two panels on small semiprimes (N = 15, 21, 33, 35). LEFT (RSA): N=p·q, public (N,e), private d = e⁻¹ mod φ(N) (NOT mod N), encrypt c = m^e mod N, decrypt c^d mod N = m (round-trips ✓); a message slider. RIGHT (factor by period-finding): a base a, the sequence a^x mod N as cells with one period highlighted, the period r, then — when r is even and a^(r/2) ≢ −1 — gcd(a^(r/2)∓1, N) = p, q (else "odd period / a^(r/2) ≡ −1 — try another base", the real Shor retry). A note localizing the quantum speedup to period-finding only. Verified by direct computation (N=15,a=7 → r=4 → 3×5; e·d≡1 mod φ; both period conditions required; gcd is classical).
 
-## 25. Your turn: fork and run   
+## 27. Your turn: fork and run   
 `YOUR TURN`  
 **Takeaway:** Fork it, aim your own model at a brief, and a judge anyone can re-run decides whether your result joins the board.
 

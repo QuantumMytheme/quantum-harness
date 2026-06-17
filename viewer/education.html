@@ -73,7 +73,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Twenty-six slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs six landmark experiments — Bell's inequality, teleportation, and quantum error correction, then their classical counterparts (the Hamming code, the 3-SAT phase transition) and the bridge between the tracks (RSA, and the one step Shor's algorithm speeds up) — each computing its headline result live — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Twenty-eight slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs eight landmark experiments — Bell's inequality, teleportation, quantum error correction, the GHZ all-or-nothing refutation of local realism, and Bernstein–Vazirani's one-query secret, then their classical counterparts (the Hamming code, the 3-SAT phase transition) and the bridge between the tracks (RSA, and the one step Shor's algorithm speeds up) — each computing its headline result live — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -104,10 +104,12 @@
       <a href="#m-chsh"><b>19</b>Bell's inequality: S beyond 2</a>
       <a href="#m-teleport"><b>20</b>Teleporting a qubit</a>
       <a href="#m-qec-code"><b>21</b>Catching an error without looking</a>
-      <a href="#m-hamming"><b>22</b>The Hamming code (classical twin)</a>
-      <a href="#m-sat3"><b>23</b>The 3-SAT phase transition</a>
-      <a href="#m-rsa-shor"><b>24</b>RSA, and what Shor speeds up</a>
-      <a href="#m-your-run"><b>25</b>Your turn: prove, then run</a>
+      <a href="#m-ghz-mermin"><b>22</b>GHZ: local realism in one shot</a>
+      <a href="#m-bv"><b>23</b>One query for the whole secret</a>
+      <a href="#m-hamming"><b>24</b>The Hamming code (classical twin)</a>
+      <a href="#m-sat3"><b>25</b>The 3-SAT phase transition</a>
+      <a href="#m-rsa-shor"><b>26</b>RSA, and what Shor speeds up</a>
+      <a href="#m-your-run"><b>27</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
@@ -515,6 +517,40 @@
 </section>
 
 <!-- ============================= 22 ============================= -->
+<section id="m-ghz-mermin">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · nonlocality</p>
+      <h2>Local realism, refuted in a single shot</h2>
+      <p class="takeaway"><b>Takeaway.</b> Three entangled qubits force a contradiction with any "local hidden variables" theory outright — no inequality, no statistics, just one measurement that can't be explained.</p>
+    </div>
+    <p>Bell's inequality (a few slices back) needed many runs and a statistical margin. Greenberger, Horne and Zeilinger found something sharper in 1989, made vivid by Mermin: a <em>logical</em> contradiction in a single measurement. Take the three-qubit state |GHZ⟩ = (|000⟩ + |111⟩)/√2. Quantum mechanics fixes four joint measurements with certainty: ⟨X₁X₂X₃⟩ = +1, while ⟨X₁Y₂Y₃⟩ = ⟨Y₁X₂Y₃⟩ = ⟨Y₁Y₂X₃⟩ = −1. Now suppose, as "local realism" demands, that each qubit already carried definite ±1 answers for X and Y before you looked. Multiply the four predictions together: every value appears exactly twice, so the product must be +1 — for <em>any</em> pre-set assignment. But quantum mechanics gives (+1)(−1)(−1)(−1) = −1. No local assignment can match all four at once; the contradiction is total, not statistical. (This rules out <em>local</em> hidden variables — nonlocal theories like Bohmian mechanics survive — and the four signs are stated here for the +|111⟩ convention.)</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="ghz-mermin" aria-label="A table of the four GHZ correlators comparing your pre-set local values against the quantum values computed from the statevector, with the product row showing the local +1 versus quantum −1 contradiction"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 22.</b> Pre-assign definite ±1 values to each X and Y, as a local-realist must. The quantum column is computed from |GHZ⟩; the product of all four is forced to +1 by your values but −1 by quantum mechanics — at least one row can never match.</p>
+  </div>
+</section>
+
+<!-- ============================= 23 ============================= -->
+<section id="m-bv">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Landmark · query speedup</p>
+      <h2>One query for the whole secret</h2>
+      <p class="takeaway"><b>Takeaway.</b> To learn a hidden n-bit string a classical computer must ask n questions — one quantum query gets the whole thing, with certainty.</p>
+    </div>
+    <p>Here is a clean, exact quantum advantage — not a heuristic, not asymptotic. A black box hides an n-bit secret s and will tell you, for any input x, only the single parity bit s·x (mod 2). Classically that leaks one bit of s per question, so you need n questions — probe 100…0, then 010…0, and so on. Bernstein and Vazirani showed in 1993 that a quantum computer needs exactly <em>one</em>. Put all n qubits into superposition with Hadamards so the box sees every input at once; the box stamps each with the phase (−1)<sup>s·x</sup>; a second layer of Hadamards turns that phase pattern into the answer, and the register collapses to |s⟩ with certainty. The figure runs the real circuit — set any secret and watch a single query recover it exactly. (It's a refinement of Deutsch–Jozsa, and the separation here is a clean n queries down to 1.)</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="bv" aria-label="A Bernstein–Vazirani circuit — Hadamards, a phase oracle, Hadamards, measure — recovering the hidden string in one query, computed from the statevector"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 23.</b> Toggle the hidden string, then read the recovered bits after a single oracle call — Hⁿ, the phase oracle, Hⁿ, measure → |s⟩ at probability 1, where a classical computer would need n separate queries.</p>
+  </div>
+</section>
+
+<!-- ============================= 24 ============================= -->
 <section id="m-hamming">
   <div class="wrap">
     <div class="sec-head">
@@ -527,7 +563,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="hamming" aria-label="Seven Hamming-code bit cells with three parity-check rows; clicking a bit flips it and the syndrome, read as a binary number, points to the flipped position"></canvas>
     </div>
-    <p class="figcap"><b>Fig 22.</b> Set the four data bits, then click any bit to flip it. The three parity checks light up, and the syndrome read as a binary number (c₄c₂c₁) names the flipped position directly — the classical cousin of the qubit code's syndrome.</p>
+    <p class="figcap"><b>Fig 24.</b> Set the four data bits, then click any bit to flip it. The three parity checks light up, and the syndrome read as a binary number (c₄c₂c₁) names the flipped position directly — the classical cousin of the qubit code's syndrome.</p>
   </div>
 </section>
 
@@ -544,7 +580,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="sat3" aria-label="A plot of the probability a random 3-SAT formula is satisfiable versus the clause-to-variable ratio, dropping sharply near 4.27, with a solver-effort curve peaking at the same place"></canvas>
     </div>
-    <p class="figcap"><b>Fig 23.</b> The curve is computed live — random 3-SAT formulas generated and brute-force solved. Drag the clause/variable ratio: P(satisfiable) falls off a cliff near 4.27, and the faint effort curve peaks there too. Press resample for a fresh batch.</p>
+    <p class="figcap"><b>Fig 25.</b> The curve is computed live — random 3-SAT formulas generated and brute-force solved. Drag the clause/variable ratio: P(satisfiable) falls off a cliff near 4.27, and the faint effort curve peaks there too. Press resample for a fresh batch.</p>
   </div>
 </section>
 
@@ -561,7 +597,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="rsa-shor" aria-label="An RSA panel showing encrypt and decrypt on small primes, beside a factoring panel that finds the period of a^x mod N and extracts the factors by gcd"></canvas>
     </div>
-    <p class="figcap"><b>Fig 24.</b> Left: pick N = p·q, slide the message, watch encrypt and decrypt round-trip. Right: the sequence aˣ mod N, its period r, and the gcd that turns r into the factors — the period-finding is the only step a quantum computer speeds up.</p>
+    <p class="figcap"><b>Fig 26.</b> Left: pick N = p·q, slide the message, watch encrypt and decrypt round-trip. Right: the sequence aˣ mod N, its period r, and the gcd that turns r into the factors — the period-finding is the only step a quantum computer speeds up.</p>
   </div>
 </section>
 
@@ -578,7 +614,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 25.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 27.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 
