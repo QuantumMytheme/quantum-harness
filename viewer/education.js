@@ -3650,6 +3650,108 @@
 };
   // ==========================================================================
 
+  // ============ PART V: the efficiency frontier (North Star) ============
+
+// ───── efficiency (the North Star: where machine intelligence gets more efficient) ─────
+  EDU["efficiency"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  // DATA — every lever, adversarially verified, with the baseline it was measured against + source.
+  // mult = verified efficiency multiplier (× vs its stated baseline); headline = the marketed number (if inflated).
+  var LEVERS = [
+    { name: 'Quantization (INT4/8)', cat: 'arch', mult: 6, measures: 'memory', val: '4–8× memory', base: 'vs FP16 · ~lossless (INT8 1–3%)', mat: 0, src: 'arXiv:2411.02355 (>500k evals)' },
+    { name: 'Sparse MoE', cat: 'arch', mult: 18, measures: 'active params', val: '~5–20× sparsity', base: 'DeepSeek-V3 671B total / 37B active', mat: 0, src: 'arXiv:2412.19437' },
+    { name: 'Speculative decoding', cat: 'arch', mult: 2.2, headline: 6.5, measures: 'throughput', val: '~1.8–2.5× (prod), lossless', base: 'vs autoregressive · 3–6.5× academic', mat: 0, src: 'EAGLE-3 / vLLM' },
+    { name: 'Distillation', cat: 'arch', mult: 10, measures: 'params', val: 'small model from big teacher', base: 'Gemma 2 2.6B/9B from 27B', mat: 0, src: 'arXiv:2408.00118' },
+    { name: 'SSM / Mamba hybrid', cat: 'arch', mult: 3.3, measures: 'memory', val: '>70% long-context memory cut', base: 'IBM Granite 4.0 (9:1 Mamba:Tf)', mat: 0, src: 'IBM 2025' },
+    { name: 'Retrieval (RETRO)', cat: 'arch', mult: 25, measures: 'params', val: '~25× fewer params', base: '7.5B+DB ≈ GPT-3 175B on the Pile', mat: 1, src: 'arXiv:2112.04426' },
+    { name: 'BitNet b1.58 (ternary)', cat: 'arch', mult: 12, measures: 'energy (est.)', val: '~12× energy, ~6.5× memory', base: '~2B scale only · estimate', mat: 1, src: 'arXiv:2504.12285' },
+    { name: 'Mixture-of-Depths', cat: 'arch', mult: 2, measures: 'FLOPs', val: '~50% FLOPs / forward pass', base: 'research · equal-FLOP match', mat: 2, src: 'arXiv:2404.02258' },
+    { name: 'Test-time compute', cat: 'arch', mult: 0.5, measures: 'NOT a win', val: 'trades energy for quality', base: 'more tokens per query — the honest counter-example', mat: 0, src: 'DeepSeek-R1' },
+    { name: 'Analog in-memory (IBM PCM)', cat: 'sub', mult: 12.4, measures: 'TOPS/W', val: '~12.4 TOPS/W (measured)', base: '14nm chip · near-digital accuracy · inference-only', mat: 1, src: 'Nature 2023' },
+    { name: 'Near-memory (IBM NorthPole)', cat: 'sub', mult: 25, measures: 'FPS/W', val: '25× frames/joule', base: 'vs 12nm V100 (ResNet-50) · capped to on-chip SRAM', mat: 1, src: 'Science 2023' },
+    { name: 'Neuromorphic (Loihi 2)', cat: 'sub', mult: 15, headline: 100, measures: 'TOPS/W', val: '~15 TOPS/W', base: '“100×” is vs a Jetson Orin + i9 — NOT a datacenter GPU', mat: 1, src: 'Intel Hala Point' },
+    { name: 'Photonic (Lightmatter)', cat: 'sub', mult: 0.82, measures: 'TOPS/W', val: '~0.82 TOPS/W', base: 'feasibility proven · not a present win — the bet is interconnect', mat: 1, src: 'Nature 2025' },
+    { name: 'Thermodynamic (Normal)', cat: 'sub', mult: 2, headline: 1000, measures: 'energy (claim)', val: '“1,000×” — proof of concept', base: '8-cell RLC sampler, PCB-level · unvalidated at scale', mat: 2, src: 'Nature Comms 2025' },
+    { name: 'Thermodynamic (Extropic)', cat: 'sub', mult: 2, headline: 10000, measures: 'energy (claim)', val: '“10,000×” — unvalidated', base: 'per-op extrapolation · X0 test chip only', mat: 3, src: 'Extropic 2025' },
+    { name: 'Quantum → today’s LLMs', cat: 'q', mult: 1, measures: 'no path', val: 'no near/mid-term advantage', base: 'read-in/out wall · dequantization · barren plateaus', mat: 3, src: 'Aaronson 2015 · Tang 2018' },
+    { name: 'Quantum → better classical chips', cat: 'q', mult: 1, measures: 'indirect · 10–20 yr', val: 'simulate materials → better classical hardware', base: 'fault-tolerant · FeMoco ~4M physical qubits', mat: 3, src: 'Feynman · resource estimates' }
+  ];
+  var MAT = ['shipping', 'demonstrated', 'research', 'speculative'];
+  var CATNAME = { arch: 'classical architecture', sub: 'post-CMOS substrate', q: 'quantum' };
+  var filter = 'all', headline = false, sel = LEVERS[1], hitmap = [];
+  function catColor(c) { return c === 'arch' ? K.v('--accent') : c === 'sub' ? K.v('--accent-2') : K.v('--faint'); }
+
+  function mk(label, fn, group) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('data-g', group || ''); b.addEventListener('click', function () { fn(); sync(); draw(); }); controls.appendChild(b); return b; }
+  var flbl = document.createElement('span'); flbl.className = 'chip'; flbl.textContent = 'show'; controls.appendChild(flbl);
+  var fbtns = {};
+  [['all', 'all'], ['arch', 'architectures'], ['sub', 'substrates'], ['q', 'quantum']].forEach(function (o) { fbtns[o[0]] = mk(o[1], function () { filter = o[0]; }, 'f'); });
+  var hb = mk('headline vs verified', function () { headline = !headline; }, 'h');
+  function sync() { for (var k in fbtns) fbtns[k].setAttribute('aria-pressed', filter === k ? 'true' : 'false'); hb.setAttribute('aria-pressed', headline ? 'true' : 'false'); }
+  sync();
+
+  canvas.style.cursor = 'pointer';
+  canvas.addEventListener('pointermove', function (e) { var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, hit = nearest(px, py); if (hit && hit !== sel) { sel = hit; draw(); } });
+  function nearest(px, py) { var best = null, bd = 18; for (var i = 0; i < hitmap.length; i++) { var d = Math.hypot(px - hitmap[i].x, py - hitmap[i].y); if (d < bd) { bd = d; best = hitmap[i].l; } } return best; }
+
+  function vis(l) { return filter === 'all' || filter === l.cat; }
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace', sans = K.v('--sans') || 'sans-serif';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic'; hitmap = [];
+    var px0 = 56, px1 = W - 16, py0 = 30, py1 = Math.min(H * 0.58, H - 150);
+    // y = log multiplier (0.5× .. 10000×)
+    var lo = Math.log10(0.5), hi = Math.log10(10000);
+    function Y(m) { return py1 - (Math.log10(m) - lo) / (hi - lo) * (py1 - py0); }
+    function X(mat, jit) { return px0 + (mat + 0.5) / MAT.length * (px1 - px0) + jit; }
+    // axes + maturity bands
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px0, py1); ctx.lineTo(px1, py1); ctx.stroke();
+    ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.textAlign = 'right';
+    [1, 10, 100, 1000, 10000].forEach(function (g) { var yy = Y(g); ctx.fillText(g + '×', px0 - 5, yy + 3); ctx.strokeStyle = rule; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.moveTo(px0, yy); ctx.lineTo(px1, yy); ctx.stroke(); ctx.globalAlpha = 1; });
+    ctx.save(); ctx.translate(14, (py0 + py1) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('efficiency gain (× vs its baseline)', 0, 0); ctx.restore();
+    ctx.textAlign = 'center'; ctx.font = '9px ' + mono;
+    for (var m = 0; m < MAT.length; m++) ctx.fillText(MAT[m], X(m, 0), py1 + 14);
+    ctx.fillText('maturity →', px1 - 30, py1 + 28);
+    // "1× = no change" line
+    ctx.strokeStyle = faint; ctx.globalAlpha = 0.6; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px0, Y(1)); ctx.lineTo(px1, Y(1)); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+    // points
+    var perMat = {}; LEVERS.forEach(function (l) { perMat[l.mat] = (perMat[l.mat] || 0); });
+    var idxMat = {};
+    LEVERS.forEach(function (l) {
+      if (!vis(l)) return;
+      idxMat[l.mat] = (idxMat[l.mat] || 0); var jit = ((idxMat[l.mat] % 3) - 1) * 16; idxMat[l.mat]++;
+      var shown = (headline && l.headline) ? l.headline : l.mult;
+      var x = X(l.mat, jit), y = Y(shown), on = sel === l, col = catColor(l.cat);
+      hitmap.push({ x: x, y: y, l: l });
+      if (headline && l.headline) { ctx.strokeStyle = reject; ctx.globalAlpha = 0.5; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(x, Y(l.mult)); ctx.lineTo(x, Y(l.headline)); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
+      ctx.fillStyle = col; ctx.globalAlpha = on ? 1 : 0.78; ctx.beginPath(); ctx.arc(x, y, on ? 7 : 5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      if (on) { ctx.strokeStyle = ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke(); }
+    });
+    // legend
+    ctx.font = '9.5px ' + mono; ctx.textAlign = 'left'; var lx = px0 + 6, ly = py0 + 10;
+    [['arch', 'architectures (shipping the real wins)'], ['sub', 'post-CMOS substrates (real but narrow)'], ['q', 'quantum (not an LLM lever)']].forEach(function (c, i) { ctx.fillStyle = catColor(c[0]); ctx.beginPath(); ctx.arc(lx + 4, ly + i * 14 - 3, 4, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = ink2; ctx.fillText(c[1], lx + 14, ly + i * 14); });
+
+    // selected detail card
+    var dy = py1 + 30, dx = px0 - 40;
+    if (sel) {
+      ctx.fillStyle = catColor(sel.cat); ctx.font = '600 13px ' + mono; ctx.textAlign = 'left'; ctx.fillText(sel.name, dx, dy);
+      ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.fillText(CATNAME[sel.cat] + '  ·  ' + (sel.mat < MAT.length ? MAT[sel.mat] : '') + (sel.measures === 'no path' || sel.measures === 'NOT a win' ? '' : '  ·  measures: ' + sel.measures), dx, dy + 14);
+      ctx.fillStyle = ink; ctx.font = '600 12px ' + mono; ctx.fillText('as measured:  ' + sel.val, dx, dy + 31);
+      ctx.fillStyle = sel.cat === 'q' || sel.measures === 'NOT a win' ? reject : ink2; ctx.font = '11px ' + sans;
+      wrap('baseline:  ' + sel.base, dx, dy + 48, W - dx - 16, 13);
+      ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.fillText('source: ' + sel.src, dx, dy + 79);
+    }
+    // floors footer
+    var fy = H - 10;
+    ctx.fillStyle = faint; ctx.font = '8.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('the hard floors:  Landauer kT·ln2 ≈ 2.8 zJ/bit  ·  brain ~6 J/word  ·  today’s LLM ~1.8 J/token  ·  CMOS ~10⁶× above Landauer  ·  moving a bit ~50× the math  ·  doubling slowed 1.6→2.6 yr (Koomey)', dx, fy);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+
   // ============ EXPANSION: landmark experiments · queries, thermodynamics, universality ============
 
 // ───── deutsch-jozsa (constant or balanced in one query) ─────

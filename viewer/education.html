@@ -73,7 +73,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Thirty-three slices in five parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live — then hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Thirty-four slices in six parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live. <b>Part&nbsp;V</b> is the North Star: an honest, source-backed map of where machine intelligence actually gets more efficient — and where quantum does and doesn't fit — before the page hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -114,7 +114,9 @@
       <a href="#m-simon"><b>29</b>A hidden period, exponentially faster</a>
       <a href="#m-rule110"><b>30</b>A universal computer from one rule</a>
       <a href="#m-landauer"><b>31</b>The energy price of erasing a bit</a>
-      <a href="#m-your-run"><b>32</b>Your turn: prove, then run</a>
+      <span class="ph">Part V · the North Star</span>
+      <a href="#m-efficiency"><b>32</b>Where intelligence gets more efficient</a>
+      <a href="#m-your-run"><b>33</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
@@ -691,7 +693,31 @@
   </div>
 </section>
 
+<!-- ===================== PART V divider ===================== -->
+<div class="partsep"><div class="wrap">
+  <p class="pl">Part V · The North Star</p>
+  <h3>Where intelligence gets more efficient</h3>
+  <p>Everything so far was groundwork for one question: how do we make machine intelligence useful and far more efficient than the classical computers running today's LLMs — and inspire the technologies that get us there? Here is the honest map, every claim measured against one yardstick anyone can re-check.</p>
+</div></div>
+
 <!-- ============================= 32 ============================= -->
+<section id="m-efficiency">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · the efficiency frontier</p>
+      <h2>Where intelligence gets more efficient</h2>
+      <p class="takeaway"><b>Takeaway.</b> Quantum will not make today's LLMs more efficient — but the frontier is real, and it is won by whoever can be honestly measured. This is the map.</p>
+    </div>
+    <p>The blunt, verified answer first: a quantum computer will not make today's language models faster, cheaper, or greener — the data-loading wall, dequantization, and barren plateaus all close that door, and anyone claiming otherwise is selling something. Quantum's genuine role is narrower and further off: simulating the strongly-correlated materials we would need to build better <em>classical</em> chips, a decade-plus away on fault-tolerant hardware. The near-term gains come from two places — <em>classical architectures</em> shipping today (quantization, sparse mixture-of-experts, speculative decoding, distillation, state-space hybrids) and <em>post-CMOS substrates</em> that are real but narrow (analog in-memory, neuromorphic, photonic, thermodynamic). And every one of them is bounded by the same physics: the memory wall, where moving a bit costs far more than the arithmetic, and the Landauer floor, kT·ln2 per erased bit, that today's chips sit a million times above. The explorer plots each lever by how mature it is and how much it actually saves — but the honest part is the small print: every point shows the baseline it was measured against, because almost every headline multiplier (25×, 100×, 1,000×, 10,000×) shrinks or collapses under like-for-like accounting. That is the whole point of this project. We are not here to promise that quantum saves us. We are here to map where intelligence — and everything else — actually gets more efficient, to hold every claim to a number a third party can re-check, and to inspire the technologies that move the frontier. Toggle <em>headline vs verified</em> to watch the inflated numbers fall to where the evidence puts them.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="efficiency" aria-label="A scatter plot of efficiency levers by maturity and measured efficiency gain, each annotated with the baseline it was measured against and its source, with the physical floors and quantum shown as a separate distant track"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 32.</b> Every efficiency lever, placed by maturity and its <em>measured</em> gain (× vs its own baseline). Hover any point for the as-measured number, the baseline it was measured against, and the source; filter by track; toggle <em>headline vs verified</em> to see the marketed multipliers fall. Quantum sits in a separate, distant track — materials simulation for better classical hardware, not an LLM accelerator. Sources incl. <a href="https://arxiv.org/abs/2411.02355">quantization</a>, <a href="https://www.nature.com/articles/s41586-023-06337-5">analog in-memory</a>, <a href="https://www.science.org/doi/10.1126/science.adh1174">NorthPole</a>, <a href="https://www.scottaaronson.com/papers/qml.pdf">QML “read the fine print”</a>, <a href="https://arxiv.org/abs/2312.08595">CMOS vs Landauer</a>.</p>
+  </div>
+</section>
+
+<!-- ============================= 33 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
@@ -704,7 +730,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 32.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 33.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 
