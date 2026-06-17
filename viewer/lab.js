@@ -190,7 +190,7 @@
   function ingColor(id, a) { return 'hsla(' + hueOf(id) + ',' + (rdark() ? 72 : 64) + '%,' + (rdark() ? 62 : 46) + '%,' + (a == null ? 1 : a) + ')'; }
   function fam(task) { return ({ state_prep: 'state', populations: 'state', vqe: 'energy', architecture: 'arch', classify: 'ml' })[task] || task; }
   function affinity(id, tgt) { if (id === tgt) return 1; var a = ingTask(id), b = ingTask(tgt); if (a === b) return 0.62; if (fam(a) === fam(b)) return 0.4; return 0.22; }
-  function gates2q() { var n = 3, d = recipe.params.depth, per = recipe.params.entangle === 'all' ? n * (n - 1) / 2 : recipe.params.entangle === 'ring' ? n : (n - 1); return d * per; }
+  function gates2q() { var p = window.QMKnowledge && window.QMKnowledge.PROBLEMS[recipe.target], n = p ? p.n : 3, d = recipe.params.depth, per = recipe.params.entangle === 'all' ? n * (n - 1) / 2 : recipe.params.entangle === 'ring' && n > 2 ? n : (n - 1); return d * Math.max(0, per); }
   function predict() {
     var g = GOALS[recipe.target]; if (!g) return null;
     var P = recipe.params, mix = mixList(), aff = 0;
@@ -260,7 +260,7 @@
     var P = recipe.params;
     var ings = INGREDIENTS.map(function (ing) { var on = ing[0] in recipe.ings, hc = ingColor(ing[0], 0.9);
       return '<button class="lab-gcard" data-ing="' + ing[0] + '" style="padding:12px 13px;transition:box-shadow .15s;' + (on ? 'border-color:' + hc + ';' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:600"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + hc + ';margin-right:6px;vertical-align:middle"></span>' + ing[1] + '</span><span class="chip" style="font-size:8px;border-color:' + ingColor(ing[0], 0.5) + ';color:' + hc + '">' + ing[3] + '</span></div><div style="font-size:13px;color:var(--ink-2);margin-top:4px">' + ing[2] + '</div>' +
-        (on ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()"><span class="mono" style="font-size:10px;color:' + hc + '">ratio</span><input type="range" min="5" max="100" value="' + recipe.ings[ing[0]] + '" data-ratio="' + ing[0] + '" style="flex:1"></div>' : '<div class="mono" style="font-size:9px;color:var(--faint);margin-top:8px">click to add</div>') + '</button>';
+        (on ? '<div class="ratio-row" style="margin-top:8px;display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:10px;color:' + hc + '">ratio</span><input type="range" min="5" max="100" value="' + recipe.ings[ing[0]] + '" data-ratio="' + ing[0] + '" style="flex:1"></div>' : '<div class="mono" style="font-size:9px;color:var(--faint);margin-top:8px">click to add</div>') + '</button>';
     }).join('');
     var targets = TARGETS.map(function (tg) { return '<button class="chip" data-rparam="target:' + tg[0] + '" style="cursor:pointer;' + (recipe.target === tg[0] ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + tg[1] + '</button>'; }).join('');
     var ent = ENTANGLE.map(function (e) { return '<button data-rparam="entangle:' + e[0] + '" aria-pressed="' + (P.entangle === e[0]) + '">' + e[1] + '</button>'; }).join('');
@@ -268,8 +268,9 @@
     var back = BACKENDS.map(function (b) { return '<button data-rparam="backend:' + b[0] + '" aria-pressed="' + (P.backend === b[0]) + '">' + b[1] + '</button>'; }).join('');
     function slider(name, label, mn, mx, st, val, unit) { return '<p class="eyebrow" style="margin:12px 0 7px">' + label + ' · ' + val + (unit || '') + '</p><input type="range" min="' + mn + '" max="' + mx + '" step="' + st + '" value="' + val + '" data-rslider="' + name + '" style="width:100%">'; }
     return '<div class="lab-sheet">' + head('§ 07 · Recipe', 'Combine prior runs into a new recipe', 'Ingredients · ratios<br>device · forecast') +
-      '<p style="max-width:760px">Pick verified runs as <b>ingredients</b>, set their <b>ratios</b>, tune the <b>ansatz &amp; device</b> — and watch the <b>forecast</b> predict whether the judge will ACCEPT before you mint. Hover an ingredient to light it up in the 3-D blend. The recipe rides to your model in <span class="mono">RECIPE.json</span>; it molds a fresh circuit from the mix. The compounding flywheel, made graphical.</p>' +
-      '<div class="lab-grid2" style="margin-top:20px"><div><p class="eyebrow" style="margin-bottom:12px">Ingredients · select &amp; weight</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + ings + '</div></div>' +
+      '<p style="max-width:760px">Pick verified runs as <b>ingredients</b>, set their <b>ratios</b>, tune the <b>ansatz &amp; device</b>, and read the <b>design schematic</b> — the actual circuit your recipe builds and the chip topology it needs — beside a <b>forecast</b> of whether the judge will ACCEPT. The <b>problem card</b> spells out what a good result looks like. The recipe rides to your model in <span class="mono">RECIPE.json</span>; it molds a fresh circuit from the mix.</p>' +
+      '<div class="lab-grid2" style="margin-top:20px"><div><p class="eyebrow" style="margin-bottom:12px">Ingredients · select &amp; weight</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + ings + '</div>' +
+        '<div id="recipe-pcard" style="margin-top:16px">' + (window.QMKnowledge ? window.QMKnowledge.problemCard(recipe.target) : '') + '</div></div>' +
       '<div><p class="eyebrow" style="margin-bottom:10px">Target problem</p><div class="controls" style="margin-bottom:8px">' + targets + '</div>' +
         slider('depth', 'Ansatz depth', 1, 5, 1, P.depth, '') +
         '<p class="eyebrow" style="margin:12px 0 7px">Entanglement</p><div class="qm-pathtab">' + ent + '</div>' +
@@ -280,7 +281,7 @@
         slider('shots', 'Shots', 256, 8192, 256, P.shots, '') +
         slider('novelty', 'Novelty', 0, 100, 1, P.novelty, '%') +
       '</div></div>' +
-      '<div class="lab-grid2" style="margin-top:22px;align-items:stretch"><div class="panel" style="padding:6px">' + stage('recipe', 'recipe', 248) + '</div>' +
+      '<div class="lab-grid2" style="margin-top:22px;align-items:stretch"><div class="panel" style="padding:6px 6px 8px"><p class="eyebrow" style="margin:6px 8px 2px">Design schematic · circuit ↦ chip</p>' + stage('recipe', 'recipe', 248) + '</div>' +
       '<div class="panel" style="padding:16px 18px"><div id="recipe-forecast">' + predictHTML() + '</div></div></div>' +
       '<div id="recipe-out" style="margin-top:26px;border-top:1px solid var(--rule);padding-top:22px">' + recipeOutHTML() + '</div></div>';
   }
@@ -307,6 +308,7 @@
 
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
+    if (e.target.closest('.ratio-row')) return;            // clicking a ratio slider must not toggle its parent ingredient (replaces an inline onclick — CSP-safe)
     var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam]');
     if (!el) return;
     // runner / overlay / copy / github actions are owned by runner.js (window.QMRunner)
@@ -329,7 +331,7 @@
     else if (t.matches('[data-rslider]')) { recipe.params[t.getAttribute('data-rslider')] = +t.value; updateRecipeOutput(); updateForecast(); }
   });
   document.addEventListener('change', function (e) { if (e.target.matches && e.target.matches('[data-rslider]')) { recipe.params[e.target.getAttribute('data-rslider')] = +e.target.value; render(); } });
-  // highlight: hover an ingredient card OR a 3-D node, light up the matching one (both directions)
+  // highlight: hovering an ingredient card lights it up; hovering the schematic clears the highlight
   sheet.addEventListener('mousemove', function (e) {
     var cv = e.target.closest && e.target.closest('canvas[data-key="recipe"]');
     if (cv) { var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, hit = null; recipeHits.forEach(function (p) { if (Math.hypot(mx - p.x, my - p.y) <= p.r + 5) hit = p.id; }); setHi(hit); return; }
@@ -488,38 +490,68 @@
       ctx.strokeStyle = c.accent; ctx.lineWidth = 2; ctx.strokeRect(ox, oy + hi * cs, N * cs, cs);
       ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText('illustrative weights · row attends to columns', ox, oy + N * cs + 16);
     },
+    // DESIGN SCHEMATIC — the actual circuit the recipe builds + the chip it needs.
     recipe: function (ctx, w, h, t) {
-      var c = C(), cx = w / 2, cy = h / 2; ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
-      var mix = mixList(); recipeHits = [];
-      var rot = reduce ? 0.7 : t * 0.28, tilt = 0.46, cr = Math.cos(rot), sr = Math.sin(rot), ct2 = Math.cos(tilt), st2 = Math.sin(tilt);
-      var R = Math.min(w, h) * 0.34, persp = R * 3.6;
-      function proj(x, y, z) { var x1 = x * cr + z * sr, z1 = -x * sr + z * cr, y2 = y * ct2 - z1 * st2, z2 = y * st2 + z1 * ct2, s = persp / (persp + z2); return { x: cx + x1 * s, y: cy + y2 * s, z: z2, s: s }; }
-      // faint great-circle for depth cue
-      ctx.strokeStyle = accA(c, 0.10); ctx.lineWidth = 1; ctx.beginPath();
-      for (var a = 0; a <= 64; a++) { var an = a / 64 * Math.PI * 2, p = proj(Math.cos(an) * R, 0, Math.sin(an) * R); a ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); } ctx.stroke();
-      var N = mix.length, pts = [];
-      for (var i = 0; i < N; i++) {
-        var phi = Math.acos(1 - 2 * (i + 0.5) / N), th = Math.PI * (1 + Math.sqrt(5)) * i;
-        var x = R * Math.sin(phi) * Math.cos(th), y = R * Math.cos(phi) * 0.82, z = R * Math.sin(phi) * Math.sin(th);
-        pts.push({ m: mix[i], pr: proj(x, y, z) });
-      }
-      pts.sort(function (A, B) { return A.pr.z - B.pr.z; });
-      var ctr = proj(0, 0, 0);
-      pts.forEach(function (Q) { var hot = recipe.hi === Q.m.id; ctx.strokeStyle = hot ? ingColor(Q.m.id, 0.85) : ingColor(Q.m.id, 0.16 + Q.pr.s * 0.12); ctx.lineWidth = hot ? 2.2 : 0.8 + Q.m.pct / 90; ctx.beginPath(); ctx.moveTo(ctr.x, ctr.y); ctx.lineTo(Q.pr.x, Q.pr.y); ctx.stroke(); });
-      ctx.fillStyle = accA(c, 0.16); ctx.beginPath(); ctx.arc(ctr.x, ctr.y, 21, 0, 7); ctx.fill(); ctx.strokeStyle = c.accent; ctx.lineWidth = 1.6; ctx.stroke();
-      ctx.fillStyle = c.ink; ctx.font = '600 ' + MONOF(10); ctx.textAlign = 'center'; ctx.fillText(recipe.target, ctr.x, ctr.y + 3);
-      pts.forEach(function (Q) {
-        var hot = recipe.hi === Q.m.id, dim = (recipe.hi && !hot) ? 0.32 : 1;
-        var rad = (6 + Q.m.pct / 100 * 14) * (0.62 + Q.pr.s * 0.5) * (hot ? 1.35 : 1);
-        ctx.shadowBlur = hot ? 18 : 8 * Q.pr.s; ctx.shadowColor = ingColor(Q.m.id, 0.9);
-        ctx.fillStyle = ingColor(Q.m.id, (0.5 + Q.pr.s * 0.4) * dim); ctx.beginPath(); ctx.arc(Q.pr.x, Q.pr.y, rad, 0, 7); ctx.fill();
-        ctx.shadowBlur = 0; ctx.lineWidth = hot ? 2 : 1.2; ctx.strokeStyle = ingColor(Q.m.id, 0.95 * dim); ctx.stroke();
-        if (hot) { ctx.strokeStyle = rdark() ? '#fff' : c.ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(Q.pr.x, Q.pr.y, rad + 4, 0, 7); ctx.stroke(); }
-        recipeHits.push({ id: Q.m.id, x: Q.pr.x, y: Q.pr.y, r: rad });
-        if (hot || Q.pr.s > 1.0) { ctx.globalAlpha = hot ? 1 : Math.min(1, (Q.pr.s - 0.92) * 3) * dim; ctx.fillStyle = hot ? c.ink : c.faint; ctx.font = MONOF(9.5); ctx.textAlign = 'center'; ctx.fillText(Q.m.name + ' ' + Q.m.pct.toFixed(0) + '%', Q.pr.x, Q.pr.y + rad + 12); ctx.globalAlpha = 1; }
+      var KN = window.QMKnowledge; var c = C(); ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
+      recipeHits = [];
+      if (!KN) return;
+      var P = recipe.params, ans = KN.buildAnsatz(recipe.target, P.depth, P.entangle), chip = KN.couplingMap(ans.n, P.entangle);
+      var hue = KN.taskColor((KN.PROBLEMS[recipe.target] || {}).task || 'vqe');
+      var splitX = Math.round(w * 0.60);
+      ctx.textBaseline = 'alphabetic';
+      ctx.font = '600 ' + MONOF(10); ctx.textAlign = 'left'; ctx.fillStyle = c.faint;
+      ctx.fillText('CIRCUIT · the ansatz your recipe builds', 12, 16);
+      ctx.fillText('CHIP · the topology it needs', splitX + 14, 16);
+      ctx.strokeStyle = c.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(splitX, 24); ctx.lineTo(splitX, h - 32); ctx.stroke();
+
+      // ===== CIRCUIT (left) =====
+      var n = ans.n, top = 36, botPad = 36, span = h - top - botPad;
+      var wy = function (q) { return n === 1 ? top + span / 2 : top + q * (span / (n - 1)); };
+      var cx0 = 44, cx1 = splitX - 18, colN = ans.cols.length, colGap = (cx1 - cx0) / Math.max(1, colN);
+      var colX = function (i) { return cx0 + (i + 0.5) * colGap; };
+      ctx.strokeStyle = c.rule2; ctx.lineWidth = 1.2;
+      for (var q = 0; q < n; q++) { ctx.beginPath(); ctx.moveTo(cx0 - 16, wy(q)); ctx.lineTo(cx1 + 6, wy(q)); ctx.stroke();
+        ctx.fillStyle = c.faint; ctx.font = MONOF(9.5); ctx.textAlign = 'right'; ctx.fillText('q' + q, cx0 - 20, wy(q) + 3); }
+      if (!reduce) { var ph = (t * 0.18) % 1, px = (cx0 - 16) + (cx1 + 6 - (cx0 - 16)) * ph;
+        for (q = 0; q < n; q++) { ctx.fillStyle = accA(c, 0.5 * Math.sin(Math.PI * ph)); ctx.beginPath(); ctx.arc(px, wy(q), 2.4, 0, 7); ctx.fill(); } }
+      ans.cols.forEach(function (col, ci) {
+        var x = colX(ci);
+        if (col.type === 'cx') {
+          col.pairs.forEach(function (pr) {
+            var ya = wy(pr[0]), yb = wy(pr[1]);
+            ctx.strokeStyle = hue; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, ya); ctx.lineTo(x, yb); ctx.stroke();
+            ctx.fillStyle = hue; ctx.beginPath(); ctx.arc(x, ya, 3.4, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(x, yb, 6, 0, 7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x - 6, yb); ctx.lineTo(x + 6, yb); ctx.moveTo(x, yb - 6); ctx.lineTo(x, yb + 6); ctx.stroke();
+          });
+        } else {
+          col.qubits.forEach(function (qb) {
+            var yy = wy(qb), bw = 22, bh = 15;
+            ctx.fillStyle = col.type === 'init' ? accA(c, 0.10) : c.bg; rr(ctx, x - bw / 2, yy - bh / 2, bw, bh, 3); ctx.fill();
+            ctx.strokeStyle = col.type === 'init' ? c.accent : c.rule2; ctx.lineWidth = 1.1; rr(ctx, x - bw / 2, yy - bh / 2, bw, bh, 3); ctx.stroke();
+            ctx.fillStyle = c.ink; ctx.font = '600 ' + MONOF(9); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(col.gate, x, yy); ctx.textBaseline = 'alphabetic';
+          });
+        }
       });
-      ctx.textAlign = 'left';
-      if (!N) { ctx.fillStyle = c.faint; ctx.font = MONOF(11); ctx.textAlign = 'center'; ctx.fillText('select ingredients to blend the constellation', cx, h - 12); ctx.textAlign = 'left'; }
+      ctx.fillStyle = c.ink2; ctx.font = MONOF(10); ctx.textAlign = 'left';
+      ctx.fillText('depth ' + ans.depth + '  ·  ' + ans.twoq + ' two-qubit gates  ·  ' + ans.rot + ' rotations', cx0 - 16, h - 14);
+
+      // ===== CHIP (right) =====
+      var ox = (splitX + w) / 2 + 4, oy = (24 + h - 32) / 2 - 6, R = Math.min((w - splitX) * 0.28, span * 0.42);
+      chip.edges.forEach(function (e) {
+        var a = chip.nodes[e[0]], b = chip.nodes[e[1]];
+        ctx.strokeStyle = hue; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
+        ctx.beginPath(); ctx.moveTo(ox + a.x * R, oy + a.y * R); ctx.lineTo(ox + b.x * R, oy + b.y * R); ctx.stroke(); ctx.globalAlpha = 1;
+      });
+      chip.nodes.forEach(function (nd) {
+        var x = ox + nd.x * R, y = oy + nd.y * R;
+        ctx.fillStyle = c.bg; ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.fill();
+        ctx.strokeStyle = hue; ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.fillStyle = c.ink; ctx.font = '600 ' + MONOF(9.5); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('q' + nd.i, x, y); ctx.textBaseline = 'alphabetic';
+      });
+      ctx.fillStyle = c.ink2; ctx.font = MONOF(10); ctx.textAlign = 'left';
+      ctx.fillText(chip.fits.name + '  ·  degree ' + chip.degree, splitX + 14, h - 28);
+      ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText('fits: ' + chip.fits.hw, splitX + 14, h - 14);
     },
   };
   function bv(a0, a1) { return [2 * (a0[0] * a1[0] + a0[1] * a1[1]), 2 * (a0[0] * a1[1] - a0[1] * a1[0]), (a0[0] * a0[0] + a0[1] * a0[1]) - (a1[0] * a1[0] + a1[1] * a1[1])]; }

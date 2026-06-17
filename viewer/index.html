@@ -283,45 +283,18 @@
         <b>▸ run</b> on any row to re-simulate it in your browser, or load the real judge as WebAssembly.</p>
     </div>
 
+    <div id="sb-tools" class="sb-tools"></div>
     <div class="panel results-wrap">
       <table class="results">
         <thead>
-          <tr><th>Problem · task</th><th>Paradigm</th><th>Verified metric</th><th>Cost</th><th>Model</th><th>Proof</th></tr>
+          <tr><th>Problem · task</th><th>Paradigm</th><th>Verified metric</th><th>Quality · grade</th><th>Cost</th><th>Model</th><th>Proof</th></tr>
         </thead>
         <tbody id="sb-body">
-          <tr>
-            <td><b>ghz3</b> · state_prep</td><td><span class="ptag">chain-cascade</span></td>
-            <td class="num">fidelity <b>1.000</b><span class="sub">≥ 0.99 · base 0.5</span></td><td class="num">2q 2 · depth 3</td>
-            <td><span class="mtag">reference-baseline</span></td>
-            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-poc.json">bundle ↗</a></td>
-          </tr>
-          <tr>
-            <td><b>isingbell2</b> · vqe</td><td><span class="ptag">minimal-bell-ansatz</span></td>
-            <td class="num">gap <b>0.000</b> to E₀=−2<span class="sub">budget 0.05 · base −1</span></td><td class="num">2q 1 · depth 2</td>
-            <td><span class="mtag">reference-baseline</span></td>
-            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-vqe.json">bundle ↗</a></td>
-          </tr>
-          <tr>
-            <td><b>bell_pops2</b> · populations</td><td><span class="ptag">phase-correct-bell</span></td>
-            <td class="num">⟨X₀X₁⟩ <b>+1.00</b><span class="sub">held-out · pops dev 0</span></td><td class="num">2q 1 · depth 2</td>
-            <td><span class="mtag">reference-baseline</span></td>
-            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-pops.json">bundle ↗</a></td>
-          </tr>
-          <tr>
-            <td><b>aiaccel4</b> · architecture</td><td><span class="ptag">ring</span></td>
-            <td class="num">routing <b>2</b><span class="sub">budget 2 · base 4 · held-out 2</span></td><td class="num">edges 4 · deg 2</td>
-            <td><span class="mtag">reference-baseline</span></td>
-            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-arch.json">bundle ↗</a></td>
-          </tr>
-          <tr>
-            <td><b>qml_sign1</b> · classify</td><td><span class="ptag">low-frequency-encoding</span></td>
-            <td class="num">test <b>100%</b><span class="sub">held-out · train 100%</span></td><td class="num">ops 1 · 1 qubit</td>
-            <td><span class="mtag">reference-baseline</span></td>
-            <td><a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-qml.json">bundle ↗</a></td>
-          </tr>
+          <tr><td colspan="7" class="dimnum">loading verified runs… (click any row for the problem &amp; quality breakdown)</td></tr>
         </tbody>
       </table>
     </div>
+    <div id="sb-legend" class="sb-legend"></div>
     <p class="figcap"><b>Table 1.</b> Seeded leaderboard. <b>Model</b> = <span class="mono">reference-baseline</span> — hand-authored
       worked examples, not a model run; the bar to beat. A real run names the model it pointed at the BRIEF and links its own
       public run repo. Model is provenance, never a ranking key — the judge re-simulates regardless of author.
@@ -396,6 +369,7 @@
 </footer>
 
 <script src="scoreboard-data.js"></script>
+<script src="knowledge.js"></script>
 <script src="runner.js"></script>
 <script src="app.js"></script>
 <script src="railnav.js"></script>

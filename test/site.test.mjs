@@ -138,9 +138,9 @@ test('every page carries the same top-bar nav (no links drop off across pages)',
   assert.match(readFileSync(v('lab.html'), 'utf8'), /<a href="lab\.html" aria-current="page">Notebook/)
 })
 
-test('recipe builder has the device variables, 3-D blend, hues, highlight + forecaster', () => {
+test('recipe builder has the device variables, forecaster + the circuit↦chip design schematic', () => {
   const js = readFileSync(v('lab.js'), 'utf8')
-  // new design variables
+  // design variables
   for (const p of ['backend', 'noise', 'twoq', 'shots']) assert.match(js, new RegExp(`${p}:`), `recipe param ${p}`)
   assert.match(js, /BACKENDS\s*=/)                       // ideal / noisy-sim / real-QPU toggle
   assert.match(js, /bellnoisy2/)                          // the added 7th ingredient
@@ -150,12 +150,44 @@ test('recipe builder has the device variables, 3-D blend, hues, highlight + fore
   assert.match(js, /GOALS\s*=/)
   assert.match(js, /predicted ACCEPT/)
   assert.match(js, /id="recipe-forecast"/)
-  // 3-D constellation + colour + highlight
-  assert.match(js, /function ingColor\(/)               // task-hued nodes
-  assert.match(js, /TASK_HUE/)
-  assert.match(js, /recipeHits/)                         // node hit-testing for highlight
-  assert.match(js, /function setHi\(/)                  // card<->node highlight
-  assert.match(js, /persp\s*\/\s*\(persp/)              // perspective projection (the 3-D math)
+  // the design schematic — a real circuit + the chip topology it needs (replaces the decorative 3-D blend)
+  assert.match(js, /buildAnsatz/)                        // derives the circuit from the recipe
+  assert.match(js, /couplingMap/)                        // derives the chip topology
+  assert.match(js, /CIRCUIT · the ansatz/)
+  assert.match(js, /CHIP · the topology/)
+  assert.match(js, /id="recipe-pcard"/)                  // the problem card (what a good result looks like)
+  assert.doesNotMatch(js, /blend the constellation/)     // the decorative 3-D viz is gone
+})
+
+test('knowledge.js is the shared source of truth, wired on both pages', () => {
+  assert.ok(existsSync(v('knowledge.js')), 'viewer/knowledge.js should exist')
+  const k = readFileSync(v('knowledge.js'), 'utf8')
+  assert.match(k, /window\.QMKnowledge\s*=/)
+  for (const sym of ['TASKS', 'PROBLEMS', 'QUALITY_AXES', 'profileBadge', 'problemCard', 'buildAnsatz', 'couplingMap'])
+    assert.match(k, new RegExp(sym), `knowledge.js should define ${sym}`)
+  assert.match(html, /<script src="knowledge\.js">/)                                   // index.html
+  assert.match(readFileSync(v('lab.html'), 'utf8'), /<script src="knowledge\.js">/)    // lab.html
+})
+
+test('scoreboard carries a holistic quality grade + 5 axes, sortable/filterable', () => {
+  const sb = readFileSync(v('scoreboard-data.js'), 'utf8')
+  const data = JSON.parse(sb.replace(/^[^=]*=\s*/, '').replace(/;\s*$/, ''))
+  assert.ok(data.rows.length >= 6, 'expected several scored runs')
+  for (const r of data.rows) {
+    assert.ok(r.quality, `${r.problem_id} should carry a quality profile`)
+    assert.match(r.quality.grade, /^[A-F][+-]?$/, `${r.problem_id} grade is a letter`)
+    for (const ax of ['correctness', 'margin', 'efficiency', 'robustness', 'novelty'])
+      assert.equal(typeof r.quality[ax], 'number', `${r.problem_id}.quality.${ax} is numeric`)
+  }
+  // the board exposes the quality column, sort/filter tools, and a legend
+  assert.match(html, /id="sb-tools"/)
+  assert.match(html, /id="sb-legend"/)
+  assert.match(html, /Quality/)
+  const app = readFileSync(v('app.js'), 'utf8')
+  assert.match(app, /profileBadge/)                      // renders the quality badge
+  assert.match(app, /data-sbsort/)                       // sort control
+  assert.match(app, /data-sbfilter/)                     // filter control
+  assert.match(app, /problemCard/)                       // clickable problem card
 })
 
 test('long pages get the margin-index rail (railnav), wired + theme-aware + mobile-safe', () => {

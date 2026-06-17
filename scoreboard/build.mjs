@@ -40,6 +40,47 @@ function cost(e) {
   if (e.task === 'classify') return `ops ${r.feature_map_ops} · ${r.n_qubits} qubit`
   return `2q ${r.two_qubit_gates} · depth ${r.depth}`
 }
+// ---- holistic 5-axis quality profile (transparent + documented) ------------
+// A run's leaderboard RANK is its single verified primary metric. Its GRADE is a
+// holistic profile, so a leaner / hardware-validated design can out-grade a run
+// with a slightly better raw metric. Each axis is in [0,1]; formulas are mirrored
+// (in prose) in viewer/knowledge.js so the page can explain them.
+const clamp01 = x => (x < 0 ? 0 : x > 1 ? 1 : x)
+const QW = { correctness: 0.28, margin: 0.30, efficiency: 0.16, robustness: 0.16, novelty: 0.10 }
+const CLASSIFY_COST_BUDGET = 8                            // feature-map ops + qubits past which efficiency hits 0
+function qualityAxes(e) {
+  const m = e.verified_metric, r = e.resource_costs || {}, t = e.task
+  const correctness = 1                                   // on the board = passed all 4 gates
+  let margin = 0.5                                        // how far the result clears the bar toward the ideal
+  if (t === 'state_prep') { const d = 1 - m.threshold; margin = d > 1e-9 ? clamp01((m.value - m.threshold) / d) : 1 }
+  else if (t === 'vqe') margin = clamp01(1 - m.value / (m.gap_budget || 0.05))
+  else if (t === 'populations') margin = clamp01(1 - Math.abs(m.value - (m.expected ?? 1)) / 2 - num(m.populations_max_deviation))   // expected defaults to the canonical target, never the submitted value
+  else if (t === 'architecture') margin = clamp01((m.classical_baseline - m.value) / Math.max(1, m.classical_baseline - num(m.budget)))   // fraction of the baseline→budget gap closed
+  else if (t === 'classify') { const lo = (m.min ?? 0.5), d = 1 - lo; margin = d > 1e-9 ? clamp01((m.value - lo) / d) : 1 }
+  let efficiency = 0.5                                    // leaner circuit / topology = higher
+  if (t === 'architecture') efficiency = clamp01(1 - (num(r.edges) - (num(r.n_qubits) - 1)) / Math.max(1, num(r.n_qubits)))   // excess edges over a spanning tree
+  else if (t === 'classify') efficiency = clamp01(1 - (num(r.feature_map_ops) + num(r.n_qubits)) / CLASSIFY_COST_BUDGET)
+  else { const n = num(r.n_qubits) || 2; efficiency = clamp01(1 - (num(r.two_qubit_gates) + 0.5 * num(r.depth)) / (2.5 * n + 3)) }
+  const teeth = (t === 'populations' || t === 'architecture' || t === 'classify') ? 0.40 : 0   // a real held-out gate
+  const hw = (e.hardware_reports && e.hardware_reports[0]) ? 0.35 : 0                            // verified hardware overlay
+  const robustness = clamp01(0.25 + teeth + hw)
+  // novelty is a pure function of the row: a reference baseline is the floor, a model-authored run adds new knowledge
+  const isRef = String(e.model || '').toLowerCase().includes('reference')
+  const novelty = isRef ? 0.5 : 0.75
+  return { correctness, margin, efficiency, robustness, novelty }
+}
+function gradeOf(s) {
+  const bands = [[0.90, 'A+'], [0.85, 'A'], [0.80, 'A-'], [0.75, 'B+'], [0.70, 'B'], [0.65, 'B-'], [0.60, 'C+'], [0.54, 'C'], [0.48, 'C-'], [0.40, 'D'], [0, 'F']]
+  for (const [th, g] of bands) if (s >= th) return g
+  return 'F'
+}
+function quality(e) {
+  const a = qualityAxes(e)
+  const score = QW.correctness * a.correctness + QW.margin * a.margin + QW.efficiency * a.efficiency + QW.robustness * a.robustness + QW.novelty * a.novelty
+  const rnd = x => Math.round(x * 100) / 100
+  return { correctness: rnd(a.correctness), margin: rnd(a.margin), efficiency: rnd(a.efficiency), robustness: rnd(a.robustness), novelty: rnd(a.novelty), score: rnd(score), grade: gradeOf(score) }
+}
+
 function rankGroup(list) {
   const t = list[0].task, dir = DIR[t] || 'higher', ties = TIES[t] || []
   return [...list].sort((a, b) => {
@@ -73,6 +114,7 @@ for (const pid of problems) {
       paradigm_short: e.paradigm_short || e.paradigm.split(/ \(| — /)[0],
       metricName: m.name, metricValue: m.value, metricSub: m.sub,
       costLabel: cost(e), model: e.model,
+      quality: quality(e),
       bundleUrl: `${e.run_repo}/blob/main/${e.proof_bundle}`,
       why: e.why_it_scores,
       hardware: (e.hardware_reports && e.hardware_reports[0])

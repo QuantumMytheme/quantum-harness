@@ -299,23 +299,71 @@ function setupTheme() {
 }
 
 /* ----------------------------- scoreboard -------------------------------- */
+/* rank = the verified primary metric (the leaderboard). grade = a holistic
+   quality profile from knowledge.js, so the board sorts/filters by either. */
+let sbSort = 'grade', sbFilter = 'all';
+const SB_SORTS = [['grade', 'Grade'], ['margin', 'Margin'], ['efficiency', 'Efficiency'], ['robustness', 'Robustness'], ['metric', 'Rank']];
+function sbVal(r, key) {
+  if (key === 'metric') return -(r.rank || 1);
+  const q = r.quality || {};
+  return key === 'grade' ? (q.score || 0) : (q[key] || 0);
+}
+function findRun(pid, para) {
+  const d = window.SCOREBOARD_DATA; if (!d) return null;
+  return d.rows.find(r => r.problem_id === pid && r.paradigm_short === para) || d.rows.find(r => r.problem_id === pid) || null;
+}
+function proofLinks(r, esc) {
+  let h = `<a href="${esc(r.bundleUrl)}">bundle ↗</a>`;
+  if (r.hardware) h += ` <a class="hwlink" href="${esc(r.hardware.url)}" title="hardware overlay · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">⚛ hw ↗</a>`;
+  if (window.QMRunner && window.QMRunner.RUNS[r.problem_id]) h += ` · <a href="#" data-run="${esc(r.problem_id)}" title="re-run this circuit in your browser">▸ run</a>`;
+  return h;
+}
 function renderScoreboard() {
-  const d = window.SCOREBOARD_DATA, body = document.getElementById('sb-body');
-  if (!d || !d.rows || !body) return;            // keep the static fallback rows
-  body.innerHTML = d.rows.map(r =>
-    '<tr>' +
-    `<td><b>${r.problem_id}</b> · ${r.task}${r.rank > 1 ? ` <span class="dimnum">#${r.rank}</span>` : ''}</td>` +
-    `<td><span class="ptag">${r.paradigm_short}</span></td>` +
-    `<td class="num">${r.metricName} <b>${r.metricValue}</b><span class="sub">${r.metricSub}</span></td>` +
-    `<td class="num">${r.costLabel}</td>` +
-    `<td><span class="mtag">${r.model}</span></td>` +
-    `<td><a href="${r.bundleUrl}">bundle ↗</a>${r.hardware ? ` <a class="hwlink" href="${r.hardware.url}" title="hardware overlay · ${r.hardware.backend} · ${r.hardware.metric} ${r.hardware.value}">⚛ hw ↗</a>` : ''}${window.QMRunner && window.QMRunner.RUNS[r.problem_id] ? ` · <a href="#" data-run="${r.problem_id}" title="re-run this circuit in your browser">▸ run</a>` : ''}</td>` +
-    '</tr>').join('');
+  const d = window.SCOREBOARD_DATA, body = document.getElementById('sb-body'), K = window.QMKnowledge;
+  if (!d || !d.rows || !body) return;
+  const esc = K ? K.esc : (s => s);
+  const tools = document.getElementById('sb-tools');
+  if (tools) {
+    const tasks = ['all', ...Array.from(new Set(d.rows.map(r => r.task)))];
+    tools.innerHTML =
+      '<div class="sb-tool"><span class="sb-tlabel">sort by</span>' + SB_SORTS.map(s => `<button class="sb-chip${sbSort === s[0] ? ' on' : ''}" data-sbsort="${s[0]}">${s[1]}</button>`).join('') + '</div>' +
+      '<div class="sb-tool"><span class="sb-tlabel">task</span>' + tasks.map(t => `<button class="sb-chip${sbFilter === t ? ' on' : ''}" data-sbfilter="${t}">${esc(t)}</button>`).join('') + '</div>';
+  }
+  let rows = d.rows.filter(r => sbFilter === 'all' || r.task === sbFilter);
+  rows = rows.slice().sort((a, b) => (sbVal(b, sbSort) - sbVal(a, sbSort)) || ((a.rank || 1) - (b.rank || 1)));
+  body.innerHTML = rows.length ? rows.map(r => {
+    const q = r.quality, taskCell = K ? K.taskChip(r.task) : r.task;
+    return '<tr class="sb-row" data-pid="' + esc(r.problem_id) + '" data-para="' + esc(r.paradigm_short) + '">' +
+      `<td><b>${esc(r.problem_id)}</b> ${taskCell}${r.rank > 1 ? ` <span class="dimnum">#${r.rank}</span>` : ''}</td>` +
+      `<td><span class="ptag">${esc(r.paradigm_short)}</span></td>` +
+      `<td class="num">${esc(r.metricName)} <b>${esc(r.metricValue)}</b><span class="sub">${esc(r.metricSub)}</span></td>` +
+      `<td>${K && q ? K.profileBadge(q) : ''}</td>` +
+      `<td class="num">${esc(r.costLabel)}</td>` +
+      `<td><span class="mtag">${esc(r.model)}</span></td>` +
+      `<td>${proofLinks(r, esc)}</td>` +
+      '</tr>';
+  }).join('') : '<tr><td colspan="7" class="dimnum">no runs match this filter</td></tr>';
+  const leg = document.getElementById('sb-legend');
+  if (leg && K) leg.innerHTML =
+    '<p class="sb-legtitle"><b>How to read quality.</b> ' + esc(K.GRADE_NOTE) + ' Click any row for the problem and its full breakdown.</p>' +
+    '<div class="sb-axes">' + K.QUALITY_AXES.map(a => `<span class="sb-axis"><b>${esc(a[1])}</b> — ${esc(a[2])}</span>`).join('') + '</div>';
   const why = document.getElementById('sb-why');
-  if (why) why.innerHTML = d.rows.map(r => `<li><b>${r.problem_id}</b> — ${r.why}</li>`).join('');
+  if (why) why.innerHTML = d.rows.map(r => `<li><b>${esc(r.problem_id)}</b> — ${esc(r.why)}</li>`).join('');
   const meta = document.getElementById('sb-meta');
   if (meta) meta.textContent = `· ${d.count} entr${d.count === 1 ? 'y' : 'ies'}, generated ${d.generated}`;
 }
+// scoreboard interactions: sort / filter / open the problem + quality card
+document.addEventListener('click', (e) => {
+  const sortBtn = e.target.closest('[data-sbsort]');
+  if (sortBtn) { sbSort = sortBtn.getAttribute('data-sbsort'); renderScoreboard(); return; }
+  const filtBtn = e.target.closest('[data-sbfilter]');
+  if (filtBtn) { sbFilter = filtBtn.getAttribute('data-sbfilter'); renderScoreboard(); return; }
+  const row = e.target.closest('.sb-row');
+  if (row && !e.target.closest('a') && window.QMKnowledge && window.QMRunner) {
+    const run = findRun(row.getAttribute('data-pid'), row.getAttribute('data-para'));
+    if (run) window.QMRunner.openOverlay('modal', '<div class="pcard-modal">' + window.QMKnowledge.problemCard(run.problem_id, run.quality) + '</div>');
+  }
+});
 
 /* -------------------------------- boot ----------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {

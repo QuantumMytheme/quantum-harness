@@ -22,6 +22,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "≥ 0.99 · base 0.5",
       "costLabel": "2q 2 · depth 3",
       "model": "reference-baseline",
+      "quality": {
+        "correctness": 1,
+        "margin": 1,
+        "efficiency": 0.67,
+        "robustness": 0.25,
+        "novelty": 0.5,
+        "score": 0.78,
+        "grade": "B+"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-poc.json",
       "why": "Perfect fidelity (1.000) at the minimal cost for a 3-qubit GHZ state on the [0-1-2] coupling map: depth 3, two CX. No design reaches the target with fewer entangling gates, so this is the optimum — only a tie at lower cost could outrank it.",
       "hardware": null
@@ -36,6 +45,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "to E₀=-2 · base -1",
       "costLabel": "2q 1 · depth 2",
       "model": "reference-baseline",
+      "quality": {
+        "correctness": 1,
+        "margin": 1,
+        "efficiency": 0.75,
+        "robustness": 0.25,
+        "novelty": 0.5,
+        "score": 0.79,
+        "grade": "B+"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-vqe.json",
       "why": "Reaches the EXACT ground state (gap 0.000 to E0 = -2) at depth 2 with a single CX. The Bell state is the true ground state of H = -X0X1 - Z0Z1, and entangling beats the best product-state baseline (-1). You cannot improve on a zero gap — only a tie at lower cost competes.",
       "hardware": null
@@ -50,6 +68,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "held-out · pops dev 0",
       "costLabel": "2q 1 · depth 2",
       "model": "reference-baseline",
+      "quality": {
+        "correctness": 1,
+        "margin": 1,
+        "efficiency": 0.75,
+        "robustness": 0.65,
+        "novelty": 0.5,
+        "score": 0.85,
+        "grade": "A"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-pops.json",
       "why": "Matches the visible 50/50 populations AND the HIDDEN held-out ⟨X0X1⟩ = +1 — the genuine |Φ+>, not a phase-flipped impostor that games only the visible spec. It clears the anti-overfit gate (exit 6) that the OVERFIT fixture fails, at depth 2 with one CX.",
       "hardware": null
@@ -64,6 +91,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "budget 2 · base 4 · held-out 2",
       "costLabel": "edges 4 · deg 2",
       "model": "reference-baseline",
+      "quality": {
+        "correctness": 1,
+        "margin": 1,
+        "efficiency": 0.75,
+        "robustness": 0.65,
+        "novelty": 0.5,
+        "score": 0.85,
+        "grade": "A"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-arch.json",
       "why": "A ring routes BOTH the visible and the held-out workload at cost 2 within the degree-2 budget, beating the linear-chain baseline (4). It generalizes — the overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6. Only a sparser map at equal cost could outrank it.",
       "hardware": null
@@ -78,6 +114,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "held-out · train 100%",
       "costLabel": "ops 1 · 1 qubit",
       "model": "reference-baseline",
+      "quality": {
+        "correctness": 1,
+        "margin": 1,
+        "efficiency": 0.75,
+        "robustness": 0.65,
+        "novelty": 0.5,
+        "score": 0.85,
+        "grade": "A"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-qml.json",
       "why": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes.",
       "hardware": null
@@ -92,6 +137,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "to E₀=-1.851199124123644 · base -1.8302",
       "costLabel": "2q 1 · depth 3",
       "model": "reference-baseline",
+      "quality": {
+        "correctness": 1,
+        "margin": 0.92,
+        "efficiency": 0.69,
+        "robustness": 0.25,
+        "novelty": 0.5,
+        "score": 0.76,
+        "grade": "B+"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-h2.json",
       "why": "Reaches within 4e-4 Ha of the exact H₂ ground energy (E0 = -1.8512) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline.",
       "hardware": null
@@ -106,6 +160,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "to E₀=-3.0090221197813234 · base -2.72",
       "costLabel": "2q 4 · depth 7",
       "model": "opus-4.8",
+      "quality": {
+        "correctness": 1,
+        "margin": 1,
+        "efficiency": 0.29,
+        "robustness": 0.25,
+        "novelty": 0.75,
+        "score": 0.74,
+        "grade": "B"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/run-tfim3-qaoa/blob/main/quantum-proof-tfim3.json",
       "why": "Remix that takes rank 1 on tfim3: a problem-specific QAOA p=2 ansatz (rzz couplers matching the Ising bonds + an rx mixer) reaches gap 0.000103 to E0 — 138x closer than the hardware-efficient ingredient (0.0143) — at the same 4 two-qubit gates. The frontier moves when a run builds on prior ingredients.",
       "hardware": null
@@ -120,6 +183,15 @@ window.SCOREBOARD_DATA = {
       "metricSub": "to E₀=-3.0090221197813234 · base -2.72",
       "costLabel": "2q 2 · depth 3",
       "model": "opus-4.8",
+      "quality": {
+        "correctness": 1,
+        "margin": 0.71,
+        "efficiency": 0.67,
+        "robustness": 0.6,
+        "novelty": 0.75,
+        "score": 0.77,
+        "grade": "B+"
+      },
       "bundleUrl": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/quantum-proof-tfim3.json",
       "why": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1.",
       "hardware": {
