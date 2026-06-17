@@ -134,6 +134,31 @@ test('every page carries the same top-bar nav (no links drop off across pages)',
   assert.match(readFileSync(v('lab.html'), 'utf8'), /<a href="lab\.html" aria-current="page">Notebook/)
 })
 
+test('long pages get the margin-index rail (railnav), wired + theme-aware + mobile-safe', () => {
+  assert.ok(existsSync(v('railnav.js')), 'viewer/railnav.js should exist')
+  const rail = readFileSync(v('railnav.js'), 'utf8')
+  assert.match(rail, /class\s*=\s*'railnav'|className = 'railnav'/)   // builds the rail
+  assert.match(rail, /aria-current/)                                  // scroll-spy marks the active section
+  assert.match(rail, /scrollIntoView/)                               // click-to-jump
+  assert.match(rail, /prefers-reduced-motion/)                       // motion-safe
+
+  // included on the two long scroll pages, not on the tabbed notebook
+  assert.match(html, /<script src="railnav\.js">/)
+  assert.match(readFileSync(v('education.html'), 'utf8'), /<script src="railnav\.js">/)
+  assert.doesNotMatch(readFileSync(v('lab.html'), 'utf8'), /railnav\.js/)
+
+  // homepage sections carry curated rail labels
+  assert.match(html, /<header class="hero" data-rail="Abstract">/)
+  for (const lbl of ['Why', 'Platform', 'Judge', 'Scoreboard', 'Run']) {
+    assert.match(html, new RegExp(`data-rail="${lbl}"`), `index section labelled ${lbl}`)
+  }
+
+  // styled + hidden on narrow viewports
+  const css = readFileSync(v('style.css'), 'utf8')
+  assert.match(css, /\.railnav\s*\{/)
+  assert.match(css, /max-width:\s*1180px\s*\)\s*\{\s*\.railnav\s*\{\s*display:\s*none/)
+})
+
 test('homepage advertises the full platform, not just the bench', () => {
   // Guards against the front page drifting back to a stale "just a repo" pitch:
   // the overview must surface the notebook, the in-browser/WASM judge, the recipe builder,

@@ -274,6 +274,29 @@ ol.runsteps li b { color: var(--ink); }
 
 @media (max-width: 860px) { .why, .why.two { grid-template-columns: 1fr; } }
 
+/* railnav — a measured margin index down the right edge of long pages (railnav.js) */
+.railnav { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); z-index: 30; width: 26px;
+  display: flex; flex-direction: column; align-items: flex-end; }
+.railnav::before { content: ""; position: absolute; right: 0; top: 8px; bottom: 8px; width: 1px; background: var(--rule); } /* the spine */
+.rail-item { position: relative; display: flex; align-items: center; justify-content: flex-end;
+  width: 100%; padding: 8px 0; margin: 0; background: none; border: 0; cursor: pointer; -webkit-appearance: none; }
+.rail-tick { display: block; width: 13px; height: 1.5px; background: var(--faint); transition: width .18s ease, background .18s ease; }
+.rail-item:hover .rail-tick, .rail-item:focus-visible .rail-tick { width: 22px; background: var(--ink-2); }
+.rail-item[aria-current="true"] .rail-tick { width: 26px; background: var(--accent); }
+.rail-label { position: absolute; right: 22px; white-space: nowrap; pointer-events: none;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2);
+  background: var(--bg); border: 1px solid var(--rule); border-radius: 5px; padding: 4px 9px;
+  opacity: 0; transform: translateX(5px); transition: opacity .18s ease, transform .18s ease;
+  box-shadow: 0 1px 7px rgba(20, 23, 28, 0.06); }
+.rail-num { color: var(--faint); margin-right: 7px; }
+.rail-item:hover .rail-label, .rail-item:focus-visible .rail-label, .rail-item[aria-current="true"] .rail-label {
+  opacity: 1; transform: none; }
+.rail-item[aria-current="true"] .rail-label { color: var(--ink); border-color: var(--rule-2); }
+.rail-item[aria-current="true"] .rail-num { color: var(--accent); }
+html[data-theme="dark"] .rail-label { background: var(--panel); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45); }
+@media (max-width: 1180px) { .railnav { display: none; } }
+@media (prefers-reduced-motion: reduce) { .rail-tick, .rail-label { transition: none; } }
+
 /* dark overrides for added components */
 html[data-theme="dark"] .why-item { border-color: var(--rule-2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 html[data-theme="dark"] .ptag { color: var(--accent); border-color: var(--rule-2); }
