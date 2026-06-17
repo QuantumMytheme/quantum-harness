@@ -132,19 +132,25 @@ async function getKickoff({ problem_id } = {}) {
 }
 
 function runJudge(bundlePath) {
+  // python3 on macOS/Linux, python on Windows — try both (QH_PYTHON overrides).
+  const PY = process.env.QH_PYTHON ? [process.env.QH_PYTHON] : ['python3', 'python']
   return new Promise(resolve => {
-    execFile('python3', [JUDGE, bundlePath, '--json'], { cwd: ROOT, timeout: 60000 }, (err, stdout, stderr) => {
-      const out = (stdout || '').trim()
-      if (out) {
-        try { return resolve({ ok: true, result: JSON.parse(out.split('\n').pop()) }) } catch { /* fall through */ }
-      }
-      // No parseable verdict — distinguish "no python / no numpy" from a real failure.
-      const msg = `${stderr || ''}${err ? `\n${err.message}` : ''}`.trim()
-      const missing =
-        /ENOENT/.test(msg) || /not found/i.test(msg) ? 'python3 was not found on PATH' :
-        /No module named .?numpy/.test(msg) ? 'numpy is not installed (pip install numpy)' : null
-      resolve({ ok: false, missing, msg })
-    })
+    const attempt = i => {
+      execFile(PY[i], [JUDGE, bundlePath, '--json'], { cwd: ROOT, timeout: 60000 }, (err, stdout, stderr) => {
+        const out = (stdout || '').trim()
+        if (out) {
+          try { return resolve({ ok: true, result: JSON.parse(out.split('\n').pop()) }) } catch { /* fall through */ }
+        }
+        const msg = `${stderr || ''}${err ? `\n${err.message}` : ''}`.trim()
+        const notFound = /ENOENT/.test(msg) || /not found/i.test(msg)
+        if (notFound && i + 1 < PY.length) return attempt(i + 1) // this interpreter is absent — try the next
+        const missing =
+          notFound ? `${PY.join('/')} was not found on PATH` :
+          /No module named .?numpy/.test(msg) ? 'numpy is not installed (pip install numpy)' : null
+        resolve({ ok: false, missing, msg })
+      })
+    }
+    attempt(0)
   })
 }
 
