@@ -46,20 +46,24 @@ test('every in-page nav link resolves to a real section id', () => {
 })
 
 // --- education page ---------------------------------------------------------
+// 20-slice, two-track curriculum (Part 0 history; Part I classical bit->silicon;
+// Part II quantum qubit->hardware; Part III explorer + your-run), in page order.
 const EDU_IDS = [
-  'rules-to-learning', 'machine-learning', 'big-data', 'neural-nets', 'transformers',
-  'slm-llm', 'pretrain-posttrain', 'inference-zoo', 'classical-stack', 'quantum-sim',
-  'hybrid-quantum', 'your-run',
+  'history',
+  'bit', 'rules-to-learning', 'machine-learning', 'big-data', 'neural-nets',
+  'transformers', 'architectures', 'slm-llm', 'pretrain-posttrain', 'inference-zoo', 'classical-stack',
+  'quantum-sim', 'entanglement', 'quantum-algorithms', 'noise-qec', 'hardware-zoo', 'hybrid-quantum',
+  'qubit-explorer', 'your-run',
 ]
 
-test('education page exists, is wired, and mounts all 12 module canvases', () => {
+test('education page exists, is wired, and mounts all 20 module canvases', () => {
   assert.ok(existsSync(v('education.html')), 'viewer/education.html should exist')
   assert.ok(existsSync(v('education.js')), 'viewer/education.js should exist')
   const edu = readFileSync(v('education.html'), 'utf8')
   assert.match(edu, /rel="canonical" href="https:\/\/quantummytheme\.com\/education"/)
   assert.match(edu, /<script src="education\.js">/)
   const mounts = [...edu.matchAll(/data-edu="([a-z0-9-]+)"/g)].map(m => m[1])
-  assert.equal(mounts.length, 12, 'expected exactly 12 module canvases')
+  assert.equal(mounts.length, EDU_IDS.length, `expected exactly ${EDU_IDS.length} module canvases`)
   for (const id of EDU_IDS) assert.ok(mounts.includes(id), `education.html should mount a canvas for ${id}`)
 })
 
