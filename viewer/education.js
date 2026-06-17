@@ -3650,6 +3650,229 @@
 };
   // ==========================================================================
 
+  // ============ PART V: efficiency lesson sub-modules ============
+
+// ───── walls (the three physical walls on efficient computing) ─────
+  EDU["walls"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var MAC_pJ = 0.05, HBM_pJ_bit = 2.5, LAND_J = 2.8e-21, bytes = 1;     // bytes moved off-chip per op
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'bytes moved / op ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '1'; range.max = '64'; range.step = '1'; range.value = String(bytes); range.style.marginLeft = '6px';
+  range.addEventListener('input', function () { bytes = parseInt(range.value, 10); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), acc2 = K.v('--accent-2'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('Wall 1 — the memory wall: moving data costs far more than the arithmetic.', 14, 22);
+    var movePJ = bytes * 8 * HBM_pJ_bit, ratio = movePJ / MAC_pJ;
+    // two bars: compute vs data movement
+    var bx = 30, bw = W * 0.42, y0 = 46, bh = 26, maxPJ = 64 * 8 * HBM_pJ_bit;
+    function bar(y, label, pj, col) { var w = Math.max(2, (pj / maxPJ) * bw);
+      ctx.fillStyle = col; ctx.globalAlpha = 0.85; ctx.fillRect(bx, y, w, bh); ctx.globalAlpha = 1;
+      ctx.fillStyle = ink2; ctx.font = '10px ' + mono; ctx.textAlign = 'left'; ctx.fillText(label, bx, y - 5);
+      ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.fillText(pj.toFixed(pj < 1 ? 2 : 0) + ' pJ', bx + w + 8, y + bh - 8); }
+    bar(y0 + 14, 'compute · one INT8 MAC', MAC_pJ, acc);
+    bar(y0 + 60, 'data movement · ' + bytes + ' bytes from HBM (2.5 pJ/bit)', movePJ, acc2);
+    ctx.fillStyle = reject; ctx.font = '600 13px ' + mono; ctx.textAlign = 'left'; ctx.fillText('→ moving the data costs ' + Math.round(ratio) + '× the math', bx, y0 + 116);
+
+    // Wall 2 — Landauer floor (log energy)
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.fillText('Wall 2 — the Landauer floor: today’s chips burn ~10⁶× the thermodynamic minimum.', 14, H * 0.62);
+    var lx0 = 30, lx1 = W - 24, ly = H * 0.74;
+    function E2X(j) { var lo = -22, hi = -10; return lx0 + (Math.max(lo, Math.min(hi, Math.log10(j))) - lo) / (hi - lo) * (lx1 - lx0); }
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(lx1, ly); ctx.stroke();
+    [[LAND_J, 'Landauer kT·ln2', pass(K)], [1e-12, 'one logic op (~1 pJ)', acc], [1e-15, 'one INT8 MAC', acc2]].forEach(function (m) {
+      var x = E2X(m[0]); ctx.strokeStyle = faint; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.moveTo(x, ly - 7); ctx.lineTo(x, ly + 7); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = m[2]; ctx.font = '9px ' + mono; ctx.textAlign = 'center'; ctx.fillText(m[1], x, ly - 11); ctx.fillStyle = faint; ctx.fillText(m[0].toExponential(0) + ' J', x, ly + 18); });
+    ctx.fillStyle = reject; ctx.font = '600 11px ' + mono; ctx.textAlign = 'right'; ctx.fillText('~10⁶× gap', lx1, ly - 24);
+
+    // Wall 3 — Koomey
+    ctx.fillStyle = faint; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'left';
+    wrap('Wall 3 — Koomey’s law: efficiency once doubled every ~1.6 years; since Dennard scaling ended (~2005) it doubles every ~2.6 years. The free ride is over — which is why architecture and new substrates, not faster switches, now carry the gains.', 30, H - 28, W - 54, 13);
+  }
+  function pass(K) { return K.v('--pass'); }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── levers (stack the shipping levers — honestly) ─────
+  EDU["levers"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var BASE = 1.8;                                            // J/token baseline (datacenter GPU)
+  // ENERGY levers reduce J/token (they multiply on the energy axis); THROUGHPUT levers cut latency, NOT energy/token.
+  // g = realistic energy/token factor · hl = the marketed headline number.
+  var LEVERS = [
+    { id: 'quant', name: 'Quantization (INT4/8)', kind: 'energy', g: 2.0, hl: 4, on: true },
+    { id: 'moe', name: 'Sparse MoE', kind: 'energy', g: 3.5, hl: 18, on: true },
+    { id: 'distill', name: 'Distillation', kind: 'energy', g: 2.5, hl: 2.5, on: false },
+    { id: 'spec', name: 'Speculative decoding', kind: 'latency', g: 1, hl: 2.2, on: false },
+    { id: 'ssm', name: 'SSM / Mamba hybrid', kind: 'latency', g: 1, hl: 5, on: false }
+  ];
+  function combined() {
+    var on = LEVERS.filter(function (l) { return l.on; });
+    var real = 1; on.filter(function (l) { return l.kind === 'energy'; }).forEach(function (l) { real *= l.g; });   // energy levers multiply (cross-axis)
+    var naive = 1; on.forEach(function (l) { naive *= l.hl; });          // naïve = product of EVERY headline number
+    var latency = on.filter(function (l) { return l.kind === 'latency'; });
+    return { real: real, naive: naive, latency: latency };
+  }
+  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'stack levers'; controls.appendChild(lab);
+  LEVERS.forEach(function (l) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l.name; b.setAttribute('aria-pressed', l.on); b.addEventListener('click', function () { l.on = !l.on; b.setAttribute('aria-pressed', l.on); draw(); }); controls.appendChild(l.btn = b); });
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('The levers shipping today — stacked on a ~1.8 J/token baseline. The catch: they do NOT cleanly multiply.', 14, 22);
+    var c = combined(), realJ = BASE / c.real, naiveJ = BASE / c.naive;
+    // bars: baseline → realistic → (naive, dashed)
+    var bx = 40, bw = W * 0.5, y0 = 52, bh = 24, maxJ = BASE;
+    function row(y, label, j, col, dashed) { var w = Math.max(2, (j / maxJ) * bw);
+      if (dashed) { ctx.strokeStyle = col; ctx.setLineDash([3, 3]); ctx.strokeRect(bx, y, w, bh); ctx.setLineDash([]); }
+      else { ctx.fillStyle = col; ctx.globalAlpha = 0.85; ctx.fillRect(bx, y, w, bh); ctx.globalAlpha = 1; }
+      ctx.fillStyle = ink2; ctx.font = '10px ' + mono; ctx.textAlign = 'left'; ctx.fillText(label, bx, y - 5);
+      ctx.fillStyle = dashed ? faint : ink; ctx.fillText(j.toFixed(2) + ' J/token', bx + Math.max(w, 60) + 10, y + bh - 7); }
+    row(y0, 'baseline', BASE, faint);
+    row(y0 + 46, 'realistic energy (' + c.real.toFixed(1) + '× from energy levers)', realJ, pass);
+    row(y0 + 92, 'naïve product of headlines (' + c.naive.toFixed(0) + '× — fantasy)', naiveJ, reject, true);
+    // throughput note (these cut latency, not energy/token)
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText(c.latency.length ? '+ ' + c.latency.map(function (l) { return l.name; }).join(' · ') + ': cut latency, NOT energy/token' : 'throughput levers (spec-decode, SSM) cut latency, not energy/token', bx, y0 + 124);
+    ctx.fillStyle = ink2; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif');
+    wrap('Only quantization, MoE and distillation lower energy per token — and even those win on different axes (memory traffic, active compute, parameters), so the honest combined number is a few ×, far below the naïve product of every headline.', bx, H - 26, W - bx - 16, 13);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── claim-checker (the normalization gauntlet) ─────
+  EDU["claim-checker"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  // each claim walks 5 normalization gates; pass/fail per gate + honest verdict
+  var GATES = ['vs a current datacenter baseline (not edge/old silicon)?', 'full-system / PUE-inclusive energy?', 'fixed precision & a real workload at scale?', 'independently measured (not a datasheet/extrapolation)?', 'read-in / read-out included (for quantum)?'];
+  var CLAIMS = [
+    { name: 'Neuromorphic “100×” (Loihi)', gates: [0, 1, 1, 1, 1], verdict: 'shrinks', honest: '~15 TOPS/W, narrow event-driven win — the “100×” is vs a Jetson Orin + i9, not a datacenter GPU.' },
+    { name: 'Thermodynamic “10,000×” (Extropic)', gates: [1, 0, 0, 0, 1], verdict: 'collapses', honest: 'a per-operation extrapolation from an X0 test chip — unvalidated end-to-end at scale.' },
+    { name: 'Near-memory “25×” (NorthPole)', gates: [1, 1, 1, 1, 1], verdict: 'survives', honest: '25× frames/joule vs a 12nm V100, peer-reviewed (Science 2023) — but capped to models that fit on-chip SRAM.' },
+    { name: 'Analog “10×” (Mythic)', gates: [1, 0, 0, 1, 1], verdict: 'shrinks', honest: '~8 TOPS/W datasheet; the “10× less power” is a vendor comparison, not an independent at-scale benchmark.' },
+    { name: 'Quantum ML “exponential”', gates: [0, 0, 0, 0, 0], verdict: 'collapses', honest: 'dequantized (Tang) and eaten by the O(N) read-in / O(√N) read-out wall — no end-to-end advantage.' }
+  ];
+  var ci = 0;
+  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'check a claim'; controls.appendChild(lab);
+  var cbtn = []; CLAIMS.forEach(function (c, i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = c.name.split(' (')[0]; b.addEventListener('click', function () { ci = i; sync(); draw(); }); controls.appendChild(b); cbtn.push(b); });
+  function sync() { cbtn.forEach(function (b, i) { b.setAttribute('aria-pressed', i === ci ? 'true' : 'false'); }); }
+  sync();
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), amber = '#c4880c', mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var c = CLAIMS[ci];
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('The referee tool: run a headline efficiency claim through the normalization gauntlet.', 14, 22);
+    ctx.fillStyle = ink; ctx.font = '600 14px ' + mono; ctx.fillText(c.name, 24, 48);
+    // gates
+    var passed = 0; for (var g = 0; g < GATES.length; g++) { var ok = c.gates[g], yy = 76 + g * 26;
+      ctx.fillStyle = ok ? pass : reject; ctx.font = '600 13px ' + mono; ctx.textAlign = 'left'; ctx.fillText(ok ? '✓' : '✗', 26, yy);
+      ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillText(GATES[g], 44, yy); if (ok) passed++; }
+    // verdict
+    var vy = 76 + GATES.length * 26 + 14, vc = c.verdict === 'survives' ? pass : c.verdict === 'shrinks' ? amber : reject;
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left'; ctx.fillText('passes ' + passed + ' / 5 gates  →', 26, vy);
+    ctx.fillStyle = vc; ctx.font = '600 16px ' + mono; ctx.fillText(c.verdict.toUpperCase(), 170, vy + 1);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); wrap(c.honest, 26, vy + 24, W - 50, 14);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── quantum-lever (a simulation lever, not an LLM lever) ─────
+  EDU["quantum-lever"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var n = 30;                                                // problem size (log) slider value
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'problem size ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '4'; range.max = '60'; range.step = '1'; range.value = String(n); range.style.marginLeft = '6px';
+  range.addEventListener('input', function () { n = parseInt(range.value, 10); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var splitX = Math.round(W * 0.5);
+    ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(splitX, 30); ctx.lineTo(splitX, H - 28); ctx.stroke();
+    // LEFT: quantum for ML — the data wall eats the speedup
+    ctx.textAlign = 'left'; ctx.font = '600 10.5px ' + mono; ctx.fillStyle = reject; ctx.fillText('quantum for today’s ML  ✗', 14, 18);
+    var N = Math.pow(2, n / 6);                              // scaled "data size"
+    ctx.font = '11px ' + mono; ctx.fillStyle = ink2;
+    ctx.fillText('claimed speedup:   ~√N or “exponential”', 14, 42);
+    ctx.fillStyle = reject; ctx.fillText('read-in cost:      O(N)  — load weights/data', 14, 64);
+    ctx.fillText('read-out cost:     O(√N) — collapse to one answer', 14, 86);
+    // a little bar: speedup vs overhead
+    var bx = 20, bw = splitX - 50, by = 116;
+    ctx.fillStyle = acc; ctx.globalAlpha = 0.5; ctx.fillRect(bx, by, bw * 0.3, 14); ctx.globalAlpha = 1; ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.fillText('claimed gain', bx, by - 4);
+    ctx.fillStyle = reject; ctx.globalAlpha = 0.7; var ov = Math.min(1, (n / 60)); ctx.fillRect(bx, by + 22, bw * (0.3 + 0.7 * ov), 14); ctx.globalAlpha = 1; ctx.fillStyle = faint; ctx.fillText('data-movement overhead (grows with N)', bx, by + 18);
+    ctx.fillStyle = reject; ctx.font = '600 11px ' + mono; ctx.fillText('→ net advantage: none (the wall eats it)', bx, by + 56);
+    ctx.fillStyle = faint; ctx.font = '9px ' + (K.v('--sans') || 'sans-serif'); wrap('plus dequantization (Tang) & barren plateaus', bx, by + 76, bw, 12);
+
+    // RIGHT: quantum for materials — the state space explodes
+    var rx = splitX + 16;
+    ctx.textAlign = 'left'; ctx.font = '600 10.5px ' + mono; ctx.fillStyle = pass; ctx.fillText('quantum for materials  ✓', rx, 18);
+    ctx.font = '11px ' + mono; ctx.fillStyle = ink2; ctx.fillText('classical cost to simulate n electrons: 2ⁿ', rx, 42);
+    // exponential curve
+    var px0 = rx + 4, px1 = W - 20, py0 = 58, py1 = H - 64;
+    ctx.strokeStyle = pass; ctx.lineWidth = 2; ctx.beginPath();
+    for (var i = 0; i <= 60; i++) { var nn = (i / 60) * n, yv = Math.min(1, (nn * Math.log10(2)) / 30); var x = px0 + (i / 60) * (px1 - px0), y = py1 - yv * (py1 - py0); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+    var states = Math.pow(2, n);
+    ctx.fillStyle = pass; ctx.font = '600 12px ' + mono; ctx.fillText('2^' + n + ' ≈ ' + (states >= 1e6 ? states.toExponential(1) : Math.round(states)) + ' states', rx, py1 + 16);
+    ctx.fillStyle = faint; ctx.font = '9px ' + (K.v('--sans') || 'sans-serif'); wrap('FeMoco (nitrogen fixation): ~10²⁹ configurations — classically intractable, a genuine quantum-simulation target. The lever for better CLASSICAL chips, 10–20 yr out.', rx, py1 + 34, px1 - rx, 12);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
+  // ───── metric (the one honest yardstick) ─────
+  EDU["metric"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  // J/token anchors. brain ~6 J/word; ~0.75 word/token → ~4.5 J/token. LLM ~1.8 J/token. Landauer ~ per-token floor.
+  var sysJ = 1.8;                                            // the system the user places (J/token)
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'your system (J/token) ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '-2'; range.max = '1'; range.step = '0.02'; range.value = String(Math.log10(sysJ)); range.style.marginLeft = '6px';
+  range.addEventListener('input', function () { sysJ = Math.pow(10, parseFloat(range.value)); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('The one honest number: energy per token at fixed quality, full-system — placed against the brain and the floor.', 14, 22);
+    // log J/token axis, practical range 0.01 .. 10 (brain, LLM, your system)
+    var lx0 = 70, lx1 = W - 30, ay = H * 0.44, lo = -2, hi = 1;
+    function X(j) { return lx0 + (Math.max(lo, Math.min(hi, Math.log10(j))) - lo) / (hi - lo) * (lx1 - lx0); }
+    ctx.strokeStyle = rule; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(lx0, ay); ctx.lineTo(lx1, ay); ctx.stroke();
+    for (var e = lo; e <= hi; e++) { var x = X(Math.pow(10, e)); ctx.strokeStyle = rule; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.moveTo(x, ay - 4); ctx.lineTo(x, ay + 4); ctx.stroke(); ctx.globalAlpha = 1; ctx.fillStyle = faint; ctx.font = '8px ' + mono; ctx.textAlign = 'center'; ctx.fillText('10' + sup(e) + ' J', x, ay + 16); }
+    ctx.textAlign = 'left'; ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.fillText('J / token (log) →  lower is better', lx0, ay + 30);
+    // anchors
+    [[4.5, 'human brain ~4.5 J/token', pass, -1], [1.8, 'today’s LLM ~1.8 J/token', acc, 1]].forEach(function (m) {
+      var x = X(m[0]); ctx.strokeStyle = m[2]; ctx.globalAlpha = 0.5; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(x, ay - 36); ctx.lineTo(x, ay + 36); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.fillStyle = m[2]; ctx.font = '9.5px ' + mono; ctx.textAlign = 'center'; ctx.fillText(m[1], x, m[3] > 0 ? ay - 44 : ay + 50); });
+    // the placed system
+    var sx = X(sysJ); ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(sx, ay, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx, ay - 56); ctx.lineTo(sx, ay + 56); ctx.stroke();
+    // readout
+    var vsBrain = 4.5 / sysJ, aboveFloor = Math.log10(sysJ / 2.8e-21);
+    ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = ink;
+    ctx.fillText('your system: ' + (sysJ >= 0.01 ? sysJ.toFixed(2) : sysJ.toExponential(1)) + ' J/token', lx0, H - 60);
+    ctx.fillStyle = vsBrain >= 1 ? ink2 : pass; ctx.fillText((vsBrain >= 1 ? vsBrain.toFixed(1) + '× the brain’s energy' : (1 / vsBrain).toFixed(1) + '× better than the brain'), lx0, H - 42);
+    ctx.fillStyle = reject; ctx.font = '600 12px ' + mono; ctx.fillText('headroom to the Landauer floor (kT·ln2 ≈ 2.8 zJ/bit):  ~' + aboveFloor.toFixed(0) + ' orders of magnitude', lx0, H - 22);
+    ctx.fillStyle = faint; ctx.font = '8.5px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'right';
+    ctx.fillText('caveat: J/word ↔ J/token via ~0.75 word/token; full-system (PUE) energy, fixed task quality', lx1, H - 8);
+  }
+  function sup(e) { var s = (e < 0 ? '⁻' : '') + String(Math.abs(e)).split('').map(function (d) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]; }).join(''); return s; }
+  draw();
+};
+
+
   // ============ PART V: the efficiency frontier (North Star) ============
 
 // ───── efficiency (the North Star: where machine intelligence gets more efficient) ─────

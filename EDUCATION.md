@@ -1,6 +1,6 @@
 # Education — from a bit and a qubit to your own quantum-harness run
 
-Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Thirty-four slices in six parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs thirteen landmark experiments — Bell's inequality, teleportation + superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (Hamming code, 3-SAT phase transition, Rule 110 universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live; **Part V** is the North Star — an honest, source-backed map of where machine intelligence actually gets more efficient, and where quantum does and doesn't fit — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
+Two ladders, climbed one rung at a time. A classical one — switch, logic, chip, learning, language model. A quantum one — qubit, entanglement, algorithm, error correction, real hardware. Thirty-nine slices in six parts: **Part 0** sets the two histories side by side; **Part I** climbs the classical stack from a single bit up through machine learning, transformers and state-space models and the silicon that runs them; **Part II** climbs the quantum stack from a single qubit through entanglement, the speedups, error correction and the machines being built; **Part III** lets you experiment with qubit counts against the chips that exist today; **Part IV** re-runs thirteen landmark experiments — Bell's inequality, teleportation + superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (Hamming code, 3-SAT phase transition, Rule 110 universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live; **Part V** is the North Star — an honest, source-backed map of where machine intelligence actually gets more efficient, and where quantum does and doesn't fit, via an explorer and five verify-it-yourself lessons (the three walls, the levers that ship, reading a multiplier, why quantum is a simulation lever, the one honest metric) — then hands you the loop — prove a design in simulation with a classical model, then run it on real silicon. Every slice pairs one idea with a small canvas figure you can poke; every figure reads in both the paper and luminous themes. Hardware counts, dates and complexity facts in this document were cross-checked and adversarially verified against primary sources.
 
 
 ---
@@ -304,7 +304,47 @@ The verified answer: quantum will not make today's LLMs faster/cheaper/greener (
 
 > **Slice (animation):** technique=canvas+DOM-controls — A scatter of every lever (DATA from the adversarially-verified North Star research, with the baseline each was measured against + source): x = maturity (shipping/demonstrated/research/speculative), y = log efficiency multiplier (× vs its own baseline, 0.5×–10000×). Category filter (architectures/substrates/quantum) + a **headline-vs-verified toggle** that animates the inflated marketed numbers (spec-decode 6.5×, Loihi "100×", Normal "1,000×", Extropic "10,000×") up to their headline and shows the gap. Hover → a detail card: as-measured value, what it measures, the baseline (the honesty move — e.g. "Loihi 100× is vs a Jetson Orin + i9, NOT a datacenter GPU"), maturity, source. A physics-floors footer (Landauer kT·ln2 ≈ 2.8 zJ/bit · brain ~6 J/word · LLM ~1.8 J/token · CMOS ~10⁶× above Landauer · data movement ~50× the math · Koomey 1.6→2.6 yr). Quantum appears as a separate distant track (materials-sim → better classical chips), explicitly NOT an LLM accelerator. Levers + numbers: quantization 4–8× (arXiv:2411.02355), MoE ~5–20× (2412.19437), distillation (Gemma 2, 2408.00118), RETRO ~25× (2112.04426), BitNet ~12× est (2504.12285), SSM Granite 4.0 >70% mem, IBM PCM ~12.4 TOPS/W (Nature 2023), NorthPole 25× FPS/W vs 12nm V100 (Science 2023), Lightmatter ~0.82 TOPS/W (Nature 2025). **Sub-modules (guided lesson capstone) queued as fast-follow.**
 
-## 33. Your turn: fork and run   
+## 33. The three walls   
+`NORTH STAR · LESSON 1`  
+**Takeaway:** Two gaps bound every chip — moving a bit costs far more than the math (memory wall), and the math sits ~10⁶× above the Landauer floor — and the free ride (Koomey/Dennard) is over.
+
+The memory wall: an 8-bit MAC ~0.05 pJ but fetching its operands from HBM ~2.5 pJ/bit → data movement ~50× the math (per bit; more per operand). The Landauer floor: erasing a bit costs ≥ kT·ln2 ≈ 2.8e-21 J; chips sit ~10⁶× above it. Koomey: efficiency doubling slowed ~1.6→~2.6 yr after Dennard scaling ended (~2005) — the gap must now be closed by design.
+
+> **Slice (animation):** technique=canvas — compute/move energy bars (MAC 0.05 pJ vs operand_bytes×8×2.5 pJ → ratio readout, ~400× at 1 byte, 50× per-bit framing), a log-energy ladder placing the op ~10⁶–10⁷× above Landauer 2.8e-21 J, and a Koomey note. Slider = bytes moved. Numbers: Horowitz ISSCC 2014 (45nm; MAC 0.05 pJ, HBM 2.5 pJ/bit), Landauer 2.8e-21, Koomey's law. Pitfall: state which ratio framing (per-bit 50× vs per-operand ~400×); the floor is the cost of ERASING a bit (reversible dodges it).
+
+## 34. The levers that ship   
+`NORTH STAR · LESSON 2`  
+**Takeaway:** Real efficiency comes from deployed levers — but they win on different axes and do not cleanly multiply, so the honest combined gain is a few ×, not the headline product.
+
+Quantization, sparse MoE, distillation lower energy/token; speculative decoding and SSM hybrids cut LATENCY, not joules. They live on different axes (memory traffic, active compute, parameters, throughput) so you cannot multiply the headlines — the honest combined energy gain is a few ×, far below the ~600× naïve product.
+
+> **Slice (animation):** technique=canvas — baseline 1.8 J/token; toggle levers. ENERGY levers (quant ~2×, MoE ~3.5×, distill ~2.5×) multiply → realistic J/token; THROUGHPUT levers (spec-decode, SSM) flagged "latency not energy/token"; a dashed "naïve product of all headlines (~600×)" ghost bar shows the dishonest number. Per the verified spec: do NOT fold throughput levers into the energy number. Caveat surfaced.
+
+## 35. Read the multiplier   
+`NORTH STAR · LESSON 3`  
+**Takeaway:** A headline multiplier means nothing until you name what it was measured against — the same claim can survive, shrink, or collapse depending on the baseline.
+
+The referee tool. Run a claim through five gates: vs a current datacenter baseline? full-system/PUE? fixed precision + real workload at scale? independently measured (not a datasheet/extrapolation)? read-in/out counted (quantum)? NorthPole's 25× SURVIVES (peer-reviewed, vs a 12nm V100); the neuromorphic "100×" SHRINKS (vs a Jetson + laptop CPU, not a datacenter GPU); the thermodynamic "10,000×" COLLAPSES (per-op extrapolation, test chip). Not "every big number is a lie" — you can't know until you check.
+
+> **Slice (animation):** technique=canvas — claim selector (Loihi 100×, Extropic 10000×, NorthPole 25×, Mythic 10×, Quantum ML); per-claim pass/fail across the 5 gates + verdict (survives/shrinks/collapses) + the honest residual & real baseline. Per the verified spec: NorthPole must SURVIVE the full gauntlet (don't imply all multipliers are lies).
+
+## 36. Quantum: a simulation lever, not an LLM lever   
+`NORTH STAR · LESSON 4`  
+**Takeaway:** Quantum cannot speed up today's LLMs — getting classical data in/out erases the advantage — but it genuinely tackles classically-intractable problems like simulating materials.
+
+Quantum will not make LLMs faster: read-in O(N) + read-out O(√N) eat the speedup for dense transformer work, plus dequantization (Tang) and barren plateaus. But it is NOT useless: simulating strongly-correlated materials (FeMoco ~10²⁹ configurations) is classically intractable and a genuine quantum target — on a fault-tolerant machine 10–20 yr out, to design better CLASSICAL chips. Indirect, and real.
+
+> **Slice (animation):** technique=canvas — LEFT "quantum for ML ✗": problem-size slider; the O(N) read-in + O(√N) read-out overhead grows and erases the claimed speedup → net none. RIGHT "quantum for materials ✓": the classical 2ⁿ state-space curve explodes, FeMoco ~10²⁹ marker. Pitfall (per spec): do NOT imply "quantum is useless" NOR "quantum will run my LLM faster" — both wrong; say so.
+
+## 37. The one honest metric   
+`NORTH STAR · LESSON 5`  
+**Takeaway:** Every efficiency claim reduces to one checkable number — energy per token at fixed quality, full-system — read against the brain and the Landauer floor.
+
+Joules per token, at fixed task quality, full-system (PUE-inclusive) — not a multiplier, not peak TOPS/W. Place a system on the scale: vs the brain (~4.5 J/token, from ~6 J/word) and the headroom to Landauer — today's LLM ~1.8 J/token sits ~21 orders of magnitude above kT·ln2 (log10(1.8/2.8e-21)≈20.8). That gap is the size of the prize. The number this project holds every claim to.
+
+> **Slice (animation):** technique=canvas — log J/token axis (practical range 0.01–10) with brain ~4.5 and LLM ~1.8 marked + a draggable system marker; readout = ×-vs-brain and a headline "~21 orders above the Landauer floor (2.8 zJ/bit)" computed log10(sysJ/2.8e-21). Per the verified spec: headroom is vs the per-BIT Landauer floor (not an invented per-token floor); unit caveat J/word↔J/token via ~0.75 word/token; full-system, fixed quality.
+
+## 38. Your turn: fork and run   
 `YOUR TURN`  
 **Takeaway:** Fork it, aim your own model at a brief, and a judge anyone can re-run decides whether your result joins the board.
 

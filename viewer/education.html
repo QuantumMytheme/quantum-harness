@@ -73,7 +73,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Thirty-four slices in six parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live. <b>Part&nbsp;V</b> is the North Star: an honest, source-backed map of where machine intelligence actually gets more efficient — and where quantum does and doesn't fit — before the page hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Thirty-nine slices in six parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live. <b>Part&nbsp;V</b> is the North Star: an honest, source-backed map of where machine intelligence actually gets more efficient — and where quantum does and doesn't fit — through an explorer and five verify-it-yourself lessons (the three physical walls, the levers that ship, how to read a multiplier, why quantum is a simulation lever, and the one honest metric), before the page hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -116,7 +116,12 @@
       <a href="#m-landauer"><b>31</b>The energy price of erasing a bit</a>
       <span class="ph">Part V · the North Star</span>
       <a href="#m-efficiency"><b>32</b>Where intelligence gets more efficient</a>
-      <a href="#m-your-run"><b>33</b>Your turn: prove, then run</a>
+      <a href="#m-walls"><b>33</b>The three walls</a>
+      <a href="#m-levers"><b>34</b>The levers that ship</a>
+      <a href="#m-claim-checker"><b>35</b>Read the multiplier</a>
+      <a href="#m-quantum-lever"><b>36</b>Quantum: a simulation lever</a>
+      <a href="#m-metric"><b>37</b>The one honest metric</a>
+      <a href="#m-your-run"><b>38</b>Your turn: prove, then run</a>
     </nav>
   </div>
 </header>
@@ -718,6 +723,91 @@
 </section>
 
 <!-- ============================= 33 ============================= -->
+<section id="m-walls">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · lesson 1</p>
+      <h2>The three walls</h2>
+      <p class="takeaway"><b>Takeaway.</b> Two gaps bound every chip — moving a bit costs far more than the math, and the math itself sits ~10⁶× above the thermodynamic floor — and the free ride that used to close them is over.</p>
+    </div>
+    <p>There are hard physical ceilings under all of this. The first is the <em>memory wall</em>: on a modern accelerator, moving data costs far more energy than the arithmetic that consumes it — an 8-bit multiply-accumulate is about 0.05 pJ, but fetching its operands from high-bandwidth memory runs ~2.5 pJ per bit, so the data movement, not the math, dominates the energy bill (roughly 50× per bit, more per operand). The second is the <em>Landauer floor</em>: erasing one bit must cost at least kT·ln2 ≈ 2.8×10⁻²¹ J, and today's chips sit about a million times above it. The third is <em>Koomey's law</em>: efficiency once doubled every ~1.6 years, but since Dennard scaling ended around 2005 it doubles only every ~2.6 years — the gap no longer closes for free; it has to be closed by design. Drag the slider and read the ratio yourself.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="walls" aria-label="An energy breakdown showing data movement dwarfing compute, a log-energy ladder placing a logic op far above the Landauer floor, and the Koomey deceleration"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 33.</b> Set the operand bytes and watch data movement dwarf the compute (≈50× per bit); the energy ladder shows a single op sitting ~10⁶× above the Landauer floor; the doubling time has slowed from ~1.6 to ~2.6 years.</p>
+  </div>
+</section>
+
+<!-- ============================= 34 ============================= -->
+<section id="m-levers">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · lesson 2</p>
+      <h2>The levers that ship</h2>
+      <p class="takeaway"><b>Takeaway.</b> Real efficiency comes from a handful of deployed levers — but they win on different axes and do not cleanly multiply, so the honest combined gain is a few ×, not the headline product.</p>
+    </div>
+    <p>The gains actually shipping come from classical architecture. Quantization stores and moves weights in fewer bits; sparse mixture-of-experts activates only a slice of the model per token; distillation trains a small model from a big one; and on the throughput side, speculative decoding and state-space hybrids cut latency and memory. The honest catch — and the reason this is a lesson, not a sales pitch — is that they live on different axes (memory traffic, active compute, parameters, throughput), so their gains overlap and you cannot just multiply the headline numbers. Only quantization, MoE and distillation lower the energy per token; speculative decoding and SSMs mostly cut latency, not joules. Stack them and watch the realistic combined number — a few × — sit far below the naïve product of every headline, which would claim something like 600×.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="levers" aria-label="Toggleable efficiency levers on a 1.8 J/token baseline, with the realistic combined energy gain shown against the overstated naive product of headline numbers"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 34.</b> Toggle the levers on a 1.8 J/token baseline; the realistic energy gain (quantization × MoE × distillation) lands a few ×, while the dashed "naïve product of headlines" shows the ~600× fantasy. Throughput levers are flagged as latency, not energy.</p>
+  </div>
+</section>
+
+<!-- ============================= 35 ============================= -->
+<section id="m-claim-checker">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · lesson 3</p>
+      <h2>Read the multiplier</h2>
+      <p class="takeaway"><b>Takeaway.</b> A headline multiplier means nothing until you name what it was measured against — the same claim can survive, shrink, or collapse depending on the baseline.</p>
+    </div>
+    <p>This is the referee tool — the platform's whole stance in one widget. A "100×" or "10,000×" is meaningless until you ask what it was measured against. Run a claim through five gates: was it benchmarked against a current datacenter baseline, not old or edge silicon? Full-system, power and cooling included? At fixed precision on a real workload at scale? Independently measured, not a datasheet or an extrapolation? And for quantum, does it count the cost of getting data in and out? Some claims survive — IBM's NorthPole really does deliver 25× more frames per joule than a comparable 12 nm GPU, peer-reviewed. Others shrink — the neuromorphic "100×" is measured against a small edge board and a laptop CPU, not a datacenter GPU — or collapse, like a thermodynamic "10,000×" that is a per-operation extrapolation from a test chip. The point isn't that every big number is a lie; it's that you cannot know until you check.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="claim-checker" aria-label="A claim-checker that runs each vendor efficiency claim through five normalization gates and reports whether it survives, shrinks, or collapses, with the honest residual"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 35.</b> Pick a claim and watch it walk the five-gate gauntlet — NorthPole's 25× survives, the "100×" shrinks, the "10,000×" collapses — with the honest number, and the real baseline, underneath.</p>
+  </div>
+</section>
+
+<!-- ============================= 36 ============================= -->
+<section id="m-quantum-lever">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · lesson 4</p>
+      <h2>Quantum: a simulation lever, not an LLM lever</h2>
+      <p class="takeaway"><b>Takeaway.</b> Quantum cannot speed up today's LLMs — getting classical data in and out erases the advantage — but it genuinely tackles problems, like simulating materials, that are classically intractable.</p>
+    </div>
+    <p>It's worth being precise about quantum, because the temptation runs both ways. It will not make your language model faster: to use a quantum speedup you must load the classical data in (a cost that grows with the data size) and read a useful answer out (a cost that grows with its square root), and for the dense, high-dimensional work inside a transformer those two steps eat the advantage whole — on top of the dequantization results that matched the headline "quantum machine learning" speedups classically, and the barren plateaus that make the circuits untrainable at scale. But quantum is not useless. It is a <em>simulation</em> lever: the energy levels of strongly-correlated molecules and materials live in a state space that doubles with every electron — FeMoco, the nitrogen-fixation catalyst, needs on the order of 10²⁹ configurations — which is exactly what a quantum computer is built for. On a fault-tolerant machine a decade or two out, that could design the superconductors and memristors that make the next classical chips more efficient. Quantum's real contribution to machine intelligence is indirect — and it is real.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="quantum-lever" aria-label="Left: a problem-size slider showing data-movement overhead erasing the claimed quantum ML speedup. Right: the 2^n classical cost of simulating electrons exploding, the genuine quantum-simulation target"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 36.</b> Left — slide the problem size and watch the data-movement overhead erase the claimed quantum speedup for ML. Right — the classical cost of simulating n electrons (2ⁿ) explodes: the genuine, distant quantum-simulation target.</p>
+  </div>
+</section>
+
+<!-- ============================= 37 ============================= -->
+<section id="m-metric">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · lesson 5</p>
+      <h2>The one honest metric</h2>
+      <p class="takeaway"><b>Takeaway.</b> Every efficiency claim reduces to one checkable number — energy per token at fixed quality, full-system — read against the brain and the Landauer floor.</p>
+    </div>
+    <p>It all comes back to a single yardstick anyone can re-check: joules per token, at fixed task quality, measured across the whole system including power and cooling — not a multiplier, not a peak TOPS/W, an actual end-to-end energy per unit of useful work. Place a system on the scale and two things become legible at once: how it compares to the human brain, which produces a word for around 4.5 joules, and how much headroom remains to the Landauer floor — today's language models, at roughly 1.8 J/token, sit about twenty-one orders of magnitude above the thermodynamic minimum. That gap is not a forecast of doom; it is the size of the prize. This is the number this project holds every claim to, and it is the honest answer to the North Star: machine intelligence gets more efficient not when someone promises a miracle, but when a system moves measurably down this scale — and a third party can confirm it.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="metric" aria-label="A log energy-per-token scale with the human brain and today's LLM marked, a draggable system marker, and a readout of its distance to the brain and its orders of magnitude above the Landauer floor"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 37.</b> Drag a system's energy per token and read its distance to the brain (~4.5 J/word) and its ~21 orders of headroom above the Landauer floor. Unit caveat: J/word ↔ J/token via ~0.75 word/token; full-system energy, fixed quality.</p>
+  </div>
+</section>
+
+<!-- ============================= 38 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
@@ -730,7 +820,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 33.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 38.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 
