@@ -21,7 +21,7 @@
   var state = { section: 'front', model: 'mythos', filter: 'all', picked: 'ghz3' };
 
   // ─────────────────────────── DATA ───────────────────────────
-  var TABS = [['front', 'Abstract', '01'], ['brief', 'Method', '02'], ['field', 'Protocol', '03'], ['atlas', 'Results', '04'], ['register', 'Logbook', '05'], ['primer', 'Theory', '06'], ['recipe', 'Recipe', '07'], ['studio', 'Studio', '08']];
+  var TABS = [['front', 'Abstract', '01'], ['brief', 'Method', '02'], ['field', 'Protocol', '03'], ['atlas', 'Results', '04'], ['register', 'Logbook', '05'], ['primer', 'Theory', '06'], ['recipe', 'Recipe', '07'], ['studio', 'Studio', '08'], ['land', 'Landscape', '09']];
   var GATES = [
     { exit: 3, name: 'Structure', body: 'Respects qubit count, depth, native gates, coupling map, 2-qubit cap.' },
     { exit: 4, name: 'Reproduce', body: 'Re-simulates the claim — fabrication caught.' },
@@ -422,11 +422,113 @@
       '<div class="controls" style="margin-top:10px"><button class="btn primary" data-goto="recipe">Compose the software for this hardware →</button><button class="btn" data-goto="field">Run your own →</button></div></div></div>' + kernelVerifyPanel + quantumPanel + '</div>';
   }
 
-  var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer, recipe: secRecipe, studio: secStudio };
+  // ─────────────────────────── LANDSCAPE EXPLORER (§09 · local-only first slice) ───────────────────────────
+  // Sweeps the tfim3 p=1 QAOA γ×β plane ENTIRELY in the visitor's browser with the
+  // exact JS statevector sim (QMRunner.landscape). Honest scope: no persistence, no
+  // uploads, no crowd tiles — a 3-qubit p=1 plane is one browser's work. Every value
+  // is the in-browser sim; the judge's verdict is the only authority.
+  var LAND_RES = 48, LAND_GMAX = Math.PI, LAND_BMAX = Math.PI;
+  var land = { grid: null, done: 0, running: false, min: 0, max: 0, minI: -1, picked: null, ver: 0 };
+  function landGamma(i) { return i / (LAND_RES - 1) * LAND_GMAX; }
+  function landBeta(j) { return j / (LAND_RES - 1) * LAND_BMAX; }
+  function landPlotRect(w, h) { return { x: 46, y: 12, w: w - 46 - 14, h: h - 12 - 34 }; }
+  function landSweep() {
+    var L = window.QMRunner && window.QMRunner.landscape; if (!L || land.running) return;
+    land.grid = new Float64Array(LAND_RES * LAND_RES); land.done = 0; land.running = true; land.ver++;
+    land.min = Infinity; land.max = -Infinity; land.minI = -1; land.picked = null;
+    var row = 0;
+    (function chunk() {                       // chunked so the UI stays responsive; progress shown live
+      if (!land.running || !land.grid) return;
+      var t0 = Date.now();
+      while (row < LAND_RES && Date.now() - t0 < 14) {
+        for (var gi = 0; gi < LAND_RES; gi++) {
+          var E = L.energyAt(landGamma(gi), landBeta(row)), idx = row * LAND_RES + gi;
+          land.grid[idx] = E;
+          if (E < land.min) { land.min = E; land.minI = idx; }
+          if (E > land.max) land.max = E;
+        }
+        row++; land.done = row;
+      }
+      landProg();
+      if (row < LAND_RES) setTimeout(chunk, 0);
+      else {
+        land.running = false;
+        var mg = land.minI % LAND_RES, mb = Math.floor(land.minI / LAND_RES);
+        land.picked = { g: landGamma(mg), b: landBeta(mb), E: land.grid[land.minI], src: 'sweep minimum — click the map to inspect any other point' };
+        landProg(); landDetail();
+      }
+      drawAllOnce();
+    })();
+  }
+  function landProgHTML() {
+    if (!land.grid) return '<p class="mono" style="font-size:10.5px;color:var(--faint);margin:4px 0 0">not swept yet — ' + (LAND_RES * LAND_RES) + ' three-qubit statevector sims, typically well under a second</p>';
+    var pct = Math.round(land.done / LAND_RES * 100);
+    var txt = land.running ? 'sweeping… row ' + land.done + ' / ' + LAND_RES + ' · in your browser'
+      : 'sweep complete · ' + (LAND_RES * LAND_RES) + ' points · min ⟨H⟩ ' + land.min.toFixed(6) + ' · max ' + land.max.toFixed(6) + ' · ran entirely on your machine';
+    return '<div class="qm-landbar"><i style="width:' + pct + '%"></i></div><p class="mono" style="font-size:10px;color:var(--ink-2);margin:2px 0 0">' + txt + '</p>';
+  }
+  function landDetailHTML() {
+    var L = window.QMRunner && window.QMRunner.landscape;
+    if (!L || !land.picked) return '<p style="font-size:13.5px;color:var(--ink-2);line-height:1.5;">Sweep the plane, then click any point on the map. The inspector shows the exact p=1 circuit at that (γ, β), its in-browser-sim energy, and a prefilled mint command to make that point the <b>starting point of a real, judge-verified run</b>.</p>';
+    var p = land.picked, ops = L.ops(p.g, p.b), gap = p.E - L.E0;
+    var opRows = ops.map(function (op) { return '<div class="qm-oprow"><span class="gn">' + op.gate.toUpperCase() + '</span><span>q' + op.q.join(',q') + (op.params ? ' (' + (+op.params[0]).toFixed(4) + ')' : '') + '</span></div>'; }).join('');
+    var repo = 'run-tfim3-p1-g' + Math.round(p.g * 1000) + 'b' + Math.round(p.b * 1000);
+    function drow(k, v) { return '<div class="qm-row"><span>' + k + '</span><span>' + v + '</span></div>'; }
+    return drow('γ (coupler angle)', p.g.toFixed(4)) + drow('β (mixer angle)', p.b.toFixed(4)) +
+      drow('⟨H⟩ · in-browser sim', p.E.toFixed(6)) + drow('gap to E₀', gap.toFixed(6)) +
+      '<p class="mono" style="font-size:9.5px;color:var(--faint);margin:6px 0 0">' + esc(p.src || '') + '</p>' +
+      '<p class="eyebrow" style="margin:14px 0 6px;">The circuit at this point</p><div class="qm-oplist">' + opRows + '</div>' +
+      '<p class="eyebrow" style="margin:14px 0 4px;">Mint this as your starting point</p>' +
+      cmdBlock('bin/new-run.sh ' + repo + ' --remix tfim3') +
+      '<details style="margin-top:6px;"><summary class="mono" style="font-size:10.5px;color:var(--ink-2);cursor:pointer;">starting-point ops (JSON, for your run repo)</summary><div class="qm-cmd"><code>' + esc(JSON.stringify(ops)) + '</code><button class="qm-copy" data-copy>copy</button></div></details>' +
+      '<p class="mono" style="font-size:9.5px;color:var(--ink-2);margin-top:8px;">Minting creates a public repo under <b>your</b> account; nothing from this page is sent anywhere. From there, optimize (p=1 cannot reach E₀ — try p=2) and let the judge grade what you commit.</p>';
+  }
+  function landProg() { var el = document.getElementById('qm-land-prog'); if (el) el.innerHTML = landProgHTML(); }
+  function landDetail() { var el = document.getElementById('qm-land-detail'); if (el) el.innerHTML = landDetailHTML(); drawAllOnce(); }
+  var landOffCv = null, landOffKey = '';
+  function landOffscreen(c) {
+    var key = land.ver + ':' + land.done + ':' + c.accent + ':' + c.bg;
+    if (key === landOffKey && landOffCv) return landOffCv;
+    var cv = landOffCv || (landOffCv = document.createElement('canvas'));
+    cv.width = LAND_RES; cv.height = LAND_RES;
+    var ictx = cv.getContext('2d'); if (!ictx) return null;
+    var img = ictx.createImageData(LAND_RES, LAND_RES);
+    var bg = hexRGB(c.bg), ac = hexRGB(c.accent);
+    var lo = land.min, span = (land.max - land.min) || 1;
+    for (var bi = 0; bi < LAND_RES; bi++) {
+      var row = LAND_RES - 1 - bi;                         // β increases upward
+      for (var gi = 0; gi < LAND_RES; gi++) {
+        var o = (row * LAND_RES + gi) * 4, done = bi < land.done;
+        var s = done ? 0.10 + 0.88 * (1 - (land.grid[bi * LAND_RES + gi] - lo) / span) : 0.03;
+        img.data[o] = Math.round(bg[0] + (ac[0] - bg[0]) * s);
+        img.data[o + 1] = Math.round(bg[1] + (ac[1] - bg[1]) * s);
+        img.data[o + 2] = Math.round(bg[2] + (ac[2] - bg[2]) * s);
+        img.data[o + 3] = 255;
+      }
+    }
+    ictx.putImageData(img, 0, 0);
+    landOffKey = key;
+    return cv;
+  }
+  function secLand() {
+    var L = window.QMRunner && window.QMRunner.landscape;
+    if (!L) return '<div class="lab-sheet">' + head('§ 09 · Landscape', 'Landscape Explorer', '') + '<p>runner unavailable.</p></div>';
+    return '<div class="lab-sheet">' + head('§ 09 · Landscape', 'TFIM₃ · the p=1 QAOA energy landscape', 'local-only<br>nothing uploads') +
+      '<div class="lab-grid-15"><div>' +
+      '<p>One question, mapped: for the committed <span class="mono">tfim3</span> brief (H = −Z₀Z₁ − Z₁Z₂ − 0.8·ΣX), what energy does every <b>p=1 QAOA</b> circuit — |+++⟩, then rzz(γ) couplers on the chain, then rx(β) mixers — actually reach across the γ×β plane? Your browser sweeps all ' + (LAND_RES * LAND_RES) + ' points with the exact JS statevector sim and paints the landscape: the ridges, the symmetries, and the basin an optimizer has to find.</p>' +
+      '<p style="margin-top:10px;"><b>Honest first slice:</b> your sweep runs and <b>stays on your machine</b> — nothing is uploaded, nothing persists, no crowd tiles (a 3-qubit p=1 plane is one browser’s work). Every number is the <b>in-browser sim</b>, deterministic and recomputable by anyone; the <b>judge’s verdict is the only authority</b>. And p=1 provably cannot reach E₀ = ' + L.E0.toFixed(4) + ' — the rank-1 run needed p=2. The map shows exactly what one layer buys.</p>' +
+      '<div class="controls" style="margin:14px 0 6px;"><button class="btn primary" data-landsweep>▸ Sweep the plane — ' + LAND_RES + '×' + LAND_RES + ', in your browser</button></div>' +
+      '<div id="qm-land-prog">' + landProgHTML() + '</div>' +
+      '<div class="panel" style="padding:6px;margin-top:10px;"><canvas class="lab-stage" data-anim="landscape" data-key="land" style="height:400px;cursor:crosshair;"></canvas></div>' +
+      '<p class="figcap" style="margin-top:8px;"><b>Fig L.</b> ⟨H⟩ over γ (→) × β (↑); darker accent = lower energy = better. ★ marks the sweep minimum; click anywhere to inspect that point exactly.</p>' +
+      '</div><div style="border-left:1px solid var(--rule);padding-left:24px;"><p class="eyebrow" style="margin-bottom:10px;">Point inspector</p><div id="qm-land-detail">' + landDetailHTML() + '</div></div></div></div>';
+  }
+
+  var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer, recipe: secRecipe, studio: secStudio, land: secLand };
 
   // ─────────────────────────── RENDER ───────────────────────────
   function renderTabs() { tabsEl.innerHTML = TABS.map(function (t) { var on = state.section === t[0]; return '<button class="lab-tab" data-tab="' + t[0] + '" role="tab" aria-selected="' + on + '"><span class="pl">§ ' + t[2] + '</span>' + t[1] + '</button>'; }).join(''); }
-  var VALID = { front: 1, brief: 1, field: 1, atlas: 1, register: 1, primer: 1, recipe: 1, studio: 1 };
+  var VALID = { front: 1, brief: 1, field: 1, atlas: 1, register: 1, primer: 1, recipe: 1, studio: 1, land: 1 };
   function sectionFromHash() { var h = (location.hash || '').replace(/^#/, ''); return VALID[h] ? h : null; }
   function render() { renderTabs(); sheet.innerHTML = (SECTIONS[state.section] || secFront)(); registerCanvases(); drawAllOnce(); }
   function setState(patch) { for (var k in patch) state[k] = patch[k]; if (patch.section) { try { history.replaceState(null, '', '#' + patch.section); } catch (e) { location.hash = patch.section; } window.scrollTo(0, 0); } render(); }
@@ -435,9 +537,10 @@
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
     if (e.target.closest('.ratio-row')) return;            // clicking a ratio slider must not toggle its parent ingredient (replaces an inline onclick — CSP-safe)
-    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-chip],[data-pod],[data-workload]');
+    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-chip],[data-pod],[data-workload],[data-landsweep]');
     if (!el) return;
-    // runner / overlay / copy / github actions are owned by runner.js (window.QMRunner)
+    // runner / overlay / copy / github / golf / impostor actions are owned by runner.js (window.QMRunner)
+    if (el.hasAttribute('data-landsweep')) return landSweep();
     if (el.hasAttribute('data-chip')) return toggleChip(el.getAttribute('data-chip'));
     if (el.hasAttribute('data-pod')) return setPod(el.getAttribute('data-pod'));
     if (el.hasAttribute('data-workload')) return setWorkload(el.getAttribute('data-workload'));
@@ -467,6 +570,18 @@
     var card = e.target.closest && e.target.closest('[data-ing]'); setHi(card ? card.getAttribute('data-ing') : null);
   });
   sheet.addEventListener('mouseleave', function () { setHi(null); });
+  // Landscape: click the map → inspect that exact (γ, β) — recomputed, not interpolated
+  sheet.addEventListener('click', function (e) {
+    var cv = e.target.closest && e.target.closest('canvas[data-key="land"]');
+    if (!cv || !land.grid) return;
+    var L = window.QMRunner && window.QMRunner.landscape; if (!L) return;
+    var r = cv.getBoundingClientRect(), pl = landPlotRect(r.width, r.height);
+    var fx = (e.clientX - r.left - pl.x) / pl.w, fy = (e.clientY - r.top - pl.y) / pl.h;
+    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return;
+    var g = fx * LAND_GMAX, b = (1 - fy) * LAND_BMAX;
+    land.picked = { g: g, b: b, E: L.energyAt(g, b), src: 'clicked point — recomputed exactly (not read off the raster)' };
+    landDetail();
+  });
 
   // ─────────────────────────── SUBMISSION FLOW ───────────────────────────
   var sub = { brief: 'ghz3', path: 'web' };
@@ -680,6 +795,40 @@
       ctx.fillStyle = c.ink2; ctx.font = MONOF(10); ctx.textAlign = 'left';
       ctx.fillText(chip.fits.name + '  ·  degree ' + chip.degree, splitX + 14, h - 28);
       ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.fillText('fits: ' + chip.fits.hw, splitX + 14, h - 14);
+    },
+    // LANDSCAPE — the locally-swept tfim3 p=1 γ×β energy heat map (theme-aware).
+    landscape: function (ctx, w, h) {
+      var c = C(); ctx.fillStyle = c.bg; ctx.fillRect(0, 0, w, h);
+      var pl = landPlotRect(w, h);
+      ctx.strokeStyle = c.rule; ctx.lineWidth = 1; ctx.strokeRect(pl.x + 0.5, pl.y + 0.5, pl.w, pl.h);
+      ctx.fillStyle = c.faint; ctx.font = MONOF(9); ctx.textAlign = 'left';
+      ctx.fillText('γ = 0', pl.x, pl.y + pl.h + 13);
+      ctx.textAlign = 'right'; ctx.fillText('γ = π', pl.x + pl.w, pl.y + pl.h + 13);
+      ctx.textAlign = 'left'; ctx.fillText('β = π', 8, pl.y + 9); ctx.fillText('β = 0', 8, pl.y + pl.h - 2);
+      if (!land.grid) {
+        ctx.fillStyle = c.ink2; ctx.font = MONOF(11); ctx.textAlign = 'center';
+        ctx.fillText('press “Sweep the plane” — it runs entirely in your browser', pl.x + pl.w / 2, pl.y + pl.h / 2);
+        ctx.textAlign = 'left'; return;
+      }
+      var off = landOffscreen(c);
+      if (off) { ctx.imageSmoothingEnabled = false; ctx.drawImage(off, pl.x + 1, pl.y + 1, pl.w - 1, pl.h - 1); ctx.imageSmoothingEnabled = true; }
+      function px(g) { return pl.x + g / LAND_GMAX * pl.w; }
+      function py(b) { return pl.y + pl.h - b / LAND_BMAX * pl.h; }
+      if (!land.running && land.minI >= 0) {
+        var mg = landGamma(land.minI % LAND_RES), mb = landBeta(Math.floor(land.minI / LAND_RES)), mx = px(mg), my = py(mb);
+        ctx.strokeStyle = c.pass; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(mx - 6, my); ctx.lineTo(mx + 6, my); ctx.moveTo(mx, my - 6); ctx.lineTo(mx, my + 6); ctx.stroke();
+        ctx.fillStyle = c.pass; ctx.font = MONOF(9); ctx.fillText('★ min', mx + 8, my - 6);
+      }
+      if (land.picked) {
+        ctx.strokeStyle = c.ink; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(px(land.picked.g), py(land.picked.b), 7, 0, 7); ctx.stroke();
+      }
+      var L = window.QMRunner && window.QMRunner.landscape;
+      ctx.fillStyle = c.faint; ctx.font = MONOF(9);
+      ctx.fillText(land.running
+        ? 'sweeping… · in-browser sim · stays on your machine'
+        : 'darker = lower ⟨H⟩ · min ' + land.min.toFixed(4) + ' · max ' + land.max.toFixed(4) + (L ? ' · E₀ ' + L.E0.toFixed(4) + ' (out of p=1 reach)' : '') + ' · in-browser sim', pl.x, h - 4);
     },
   };
   function bv(a0, a1) { return [2 * (a0[0] * a1[0] + a0[1] * a1[1]), 2 * (a0[0] * a1[1] - a0[1] * a1[0]), (a0[0] * a0[0] + a0[1] * a0[1]) - (a1[0] * a1[0] + a1[1] * a1[1])]; }

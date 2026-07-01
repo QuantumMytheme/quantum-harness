@@ -411,3 +411,7 @@ html[data-theme="dark"] table.results tr.sb-row:hover td { background: rgba(63, 
 /* ---- appended: Impostor Workshop (Gallery of Traps cards) ---- */
 .lab-trap{ border:1px solid var(--rule); border-radius:var(--r); background:var(--panel); padding:14px 15px 13px; text-align:left; cursor:pointer; color:inherit; font:inherit; display:flex; flex-direction:column; gap:8px; transition:border-color .15s, transform .15s; }
 .lab-trap:hover{ border-color:var(--reject); transform:translateY(-2px); }
+
+/* ---- appended: Landscape Explorer (local-only sweep progress) ---- */
+.qm-landbar{ position:relative; height:9px; border:1px solid var(--rule); border-radius:5px; background:var(--panel); overflow:hidden; margin:6px 0 4px; }
+.qm-landbar i{ position:absolute; left:0; top:0; bottom:0; background:var(--accent); opacity:.75; transition:width .12s linear; }

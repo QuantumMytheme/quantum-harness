@@ -57,7 +57,11 @@ export function makeStubDom() {
     _el: el,
   }
   doc.documentElement.getAttribute = () => null
-  const win = { document: doc, crypto: globalThis.crypto, location: { origin: 'https://example.test' } }
+  const win = {
+    document: doc, crypto: globalThis.crypto,
+    location: { origin: 'https://example.test', hash: '', search: '' },
+    addEventListener() {}, removeEventListener() {}, scrollTo() {},
+  }
   return { win, doc, events }
 }
 
