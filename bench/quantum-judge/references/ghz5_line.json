@@ -1,0 +1,166 @@
+{
+  "_comment": "HIDDEN GROUND TRUTH for the 5-qubit GHZ under sparse coupling (IMPROVEMENTS item 3). The BRIEF states the target CONCEPTUALLY ('the 5-qubit GHZ state on a linear [0-1-2-3-4] chip'); this exact 32-amplitude vector + thresholds are what judge_verify.py grades against. The linear coupling map is pinned HOST-SIDE below, so entangling the ends requires a cascade (or SWAP routing) \u2014 a direct cx 0,4 is rejected at STRUCTURE. Committed so the public template's judge is exercisable in CI; hold out via QH_REFERENCES_DIR for a contest.",
+  "problem_id": "ghz5_line",
+  "task": "state_prep",
+  "n_qubits": 5,
+  "target_statevector": [
+    [
+      0.7071067811865476,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.7071067811865476,
+      0.0
+    ]
+  ],
+  "constraints": {
+    "_comment": "HOST-AUTHORITATIVE pin: identity keys override the bundle, numeric budgets take the tighter of the two \u2014 a bundle cannot self-declare a denser coupling map or a looser 2q budget.",
+    "n_qubits": 5,
+    "coupling_map": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "max_two_qubit_gates": 4
+  },
+  "thresholds": {
+    "fidelity": 0.99,
+    "two_qubit_cost": 0.05
+  },
+  "tolerance": {
+    "fidelity_reproduce": 1e-06
+  }
+}

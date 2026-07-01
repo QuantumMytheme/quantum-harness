@@ -321,6 +321,20 @@ def main():
         os.environ.pop("QH_REFERENCES_DIR", None)
         shutil.rmtree(tmpd)
 
+    # --- LARGER GHZ UNDER SPARSE COUPLING (ghz5_line, 32-amplitude statevector) ---
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz5line.json"))
+    record("quantum-proof-ghz5line.json (5-qubit cascade) ACCEPTs (exit 0)",
+           code == 0, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz5line-COUPLING.json"))
+    record("cx 0,4 across the line REJECTed as a coupling violation (exit 3)",
+           code == judge_verify.EXIT_STRUCTURE, f"exit {code}: {out}")
+    # declaring a denser coupling map bundle-side cannot evade the reference pin.
+    g5 = load("quantum-proof-ghz5line-COUPLING.json")
+    b = copy.deepcopy(g5)
+    b["constraints"]["coupling_map"] = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 4]]
+    record("bundle-declared denser coupling map overridden by reference pin (exit 3)",
+           verify_code(b) == judge_verify.EXIT_STRUCTURE)
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

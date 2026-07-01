@@ -41,16 +41,21 @@ real error budgets — make the rubric prefer the shallower of two correct solut
 - Ref: bench/quantum-judge/judge_verify.py `_effective_constraints` + the two_qubit_cost
   sub-check in `verify_state_prep`, references/ghz3.json, quantum-proof-ghz3-3CX.json.
 
-## ☐ 3. Larger GHZ / graph-state prep under sparse coupling
+## ☑ 3. Larger GHZ / graph-state prep under sparse coupling — ghz5_line is LIVE
 Scale state_prep past the 3-qubit toy to a 5-qubit GHZ (or a ring graph state) where a sparse
 coupling map forces SWAP routing or a cascade order.
-- **Do:** add problem `ghz5_line` (task state_prep): 5-qubit GHZ, linear [0-1-2-3-4] coupling,
-  threshold fidelity 0.99, classical baseline 0.5; ship the held-out reference + a worked
-  cascade solution (h q0; cx 0,1; cx 1,2; cx 2,3; cx 3,4).
-- **Done =** `judge_verify.py` exits 0 on the cascade reaching fidelity ≥ 0.99 vs
-  `references/ghz5_line.json`, and a bundle that violates the coupling map (e.g. cx 0,4) is
-  REJECTED at STRUCTURE (exit 3).
-- Ref: bench/quantum-judge/references/ghz3.json (as the n=3 prior).
+- **Did:** added problem `ghz5_line` (task state_prep): 5-qubit GHZ, threshold fidelity 0.99,
+  classical baseline 0.5, and the linear [0-1-2-3-4] coupling map pinned HOST-SIDE in the
+  reference (with `max_two_qubit_gates: 4` and `two_qubit_cost: 0.05` from item 2), so a
+  bundle cannot self-declare a denser map. No simulator change was needed — `sim.py` is
+  n-qubit generic and the judge verified the full 32-amplitude statevector at n=5.
+- **Done =** the worked cascade (h q0; cx 0,1; cx 1,2; cx 2,3; cx 3,4 — depth 5, 4 entangling
+  gates) ACCEPTs (exit 0, fidelity 1.0 vs `references/ghz5_line.json`,
+  `quantum-proof-ghz5line.json`); a shortcut `cx 0,4` between the line's ends is REJECTED at
+  STRUCTURE (exit 3, `quantum-proof-ghz5line-COUPLING.json`), including when the bundle
+  declares [0,4] in its own coupling map. `test_judge.py` asserts all three (48/48, was 45/45).
+- Ref: bench/quantum-judge/references/ghz5_line.json, quantum-proof-ghz5line.json,
+  quantum-proof-ghz5line-COUPLING.json.
 
 ## ☑ 4. Quantum feature-map for a small classification task — task=classify is LIVE
 A problem class where the circuit ENCODES a classical input and the judge scores a
