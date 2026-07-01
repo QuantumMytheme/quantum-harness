@@ -68,7 +68,16 @@ Each entry carries a **`paradigm`** tag: a short, honest label for the *design a
 the row represents, so the board shows **which paradigm currently leads each problem**.
 This is the comparative heart of the project — not "model X vs model Y" (the judge is
 model-agnostic; see below), but **design idea vs design idea** on identical, hidden-graded
-problems. Pick or coin a tag that names the actual choice you made. Suggested vocab:
+problems. Pick or coin a tag that names the actual choice you made.
+
+So the comparison survives many contributors coining their own spellings (`qaoa` vs
+`QAOA p=2 (…)` vs `ansatz-qaoa`), an entry may also carry a **`family`** field from a
+small controlled vocabulary — the stable grouping key, while `paradigm` stays the
+free-text human label: `qaoa` · `hardware-efficient` · `brickwork` · `ring` · `grid` ·
+`heavy-hex` · `low-frequency-encoding` · `classical-baseline` · `other`. The merge gate
+(`scoreboard/verify.py`) checks it and **warns — never rejects** — when it is missing or
+unknown (a `paradigm_short` that already equals a family name counts as the tag).
+Suggested vocab for the free-text tag:
 
 - **Ansatz family** (state tasks): `hardware-efficient` vs `problem-specific` /
   `chain-cascade` vs `brickwork` vs `qaoa-p1` …
@@ -147,10 +156,15 @@ merge gate; no maintainer scores anything by taste. The flow mirrors
 2. **Open a registration PR** adding your entry object/row (the format in (d)), linking
    `run_repo` + `proof_bundle`.
 3. **The merge gate re-verifies.** A PR is mergeable **only if**:
-   - `judge_verify.py <proof_bundle>` exits `0` (re-run against the held-out references —
-     no self-reported numbers survive this), **and**
-   - the regression suite stays green: `python3 bench/quantum-judge/test_judge.py` is
-     `38/38` **and** `node --test test/*.test.mjs` is `107/107`.
+   - `scoreboard/verify.py` passes the entry: the judge re-runs the bundle against the
+     held-out references (exit `0`), the bundle's **own `problem_id`/`task` match the
+     entry's** (you cannot point at someone else's ACCEPTing bundle), the claimed
+     `verified_metric.value` **matches the judge's recompute** (an entry whose metric
+     the judge cannot recompute FAILs — it would be self-reported), and the claimed
+     `resource_costs` match the judge's `checks.structure`, **and**
+   - the regression suites stay green: `python3 bench/quantum-judge/test_judge.py`
+     (`38/38`), `python3 scoreboard/test_verify.py` (`30/30`), and
+     `node --test test/*.test.mjs`.
 4. **Re-verification, not negotiation.** No human reviewer overrides a REJECT into a
    merge. If the judge accepts and the suite is green, the row earns its place; the
    ranking follows mechanically from (b).
@@ -250,18 +264,32 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 <https://quantum-harness.pages.dev/#scoreboard>. CI
 (`.github/workflows/scoreboard.yml`) is the merge gate: `scoreboard/verify.py` re-verifies
 every entry — **including entries whose bundle lives in an external run repo, which it
-fetches and re-runs against the canonical hidden references** — and **checks the reported
-metric matches the judge's own recompute** (no rank overclaim); it runs the suites
-(38/38 + 107/107) and **fails any PR whose generated board is stale**
-(`node scoreboard/build.mjs --check`). **Discovery is automated too:** a run repo opts in
-with the GitHub topic `quantum-harness-run` + a `scoreboard-entry.json` at its root;
-`scoreboard/discover.mjs` (scheduled via `.github/workflows/discover.yml`) crawls the org for
-tagged repos, ingests their entries into `scoreboard/discovered.json`, re-verifies them, and
+fetches and re-runs against the canonical hidden references** — **binds each entry to its
+bundle** (the bundle's own `problem_id`/`task` must equal the entry's), **checks the
+reported metric matches the judge's own recompute** (an entry whose metric the judge
+cannot recompute FAILs, and so does any `resource_costs` claim that contradicts the
+judge's `checks.structure` — no rank overclaim, on the metric or the tie-breaks); it runs
+the suites and **fails any PR whose generated board is stale**
+(`node scoreboard/build.mjs --check`). Malformed entries FAIL individually with a message;
+they never crash the gate or block other entries. **Discovery is automated too:** a run
+repo opts in with the GitHub topic `quantum-harness-run` + a `scoreboard-entry.json` at
+its root; `scoreboard/discover.mjs` searches **all of GitHub** for the topic (a run repo
+under your personal account registers exactly like one in the org — subject to GitHub's
+search-index lag, usually minutes to hours after you add the topic), plus the org's own
+live repo list as a fast path and fallback, shape-validates each entry (invalid ones are
+skipped and logged), ingests them into `scoreboard/discovered.json`, re-verifies them, and
 rebuilds the board — **no PR needed** (the [PR template](.github/pull_request_template.md)
 still works if you prefer). Seeds live in `entries.json`, discovered runs in `discovered.json`;
-the aggregator merges both. The one manual step for a fully-live board is the Cloudflare
-deploy — automated if you add a `CLOUDFLARE_API_TOKEN` repo secret (the discover workflow
-deploys when it's present).
+the aggregator merges both.
+
+**Refresh cadence, honestly:** a scheduled workflow (`.github/workflows/discover.yml`,
+every 6 hours) exists, but org CI is not guaranteed to be running; in practice the board
+refreshes when a maintainer runs `node scoreboard/discover.mjs && python3
+scoreboard/verify.py && node scoreboard/build.mjs` and deploys — expect **hours to a few
+days**, not instant. Your run repo (bundle + judge verdict) is the permanent record either
+way; discovery only decides when the row appears on the hosted board. The one manual step
+for a fully-live board is the Cloudflare deploy — automated if you add a
+`CLOUDFLARE_API_TOKEN` repo secret (the discover workflow deploys when it's present).
 
 What this means in practice, right now:
 - **The numbers are real and already re-verifiable** — re-run `judge_verify.py` on any
