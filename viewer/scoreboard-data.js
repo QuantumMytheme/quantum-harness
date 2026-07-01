@@ -39,6 +39,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "Perfect fidelity (1.000) at the minimal cost for a 3-qubit GHZ state on the [0-1-2] coupling map: depth 3, two CX. No design reaches the target with fewer entangling gates, so this is the optimum — only a tie at lower cost could outrank it.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 1,
       "reproduced_by": [
         "quantum-harness-ci"
@@ -71,6 +72,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "Reaches the EXACT ground state (gap 0.000 to E0 = -2) at depth 2 with a single CX. The Bell state is the true ground state of H = -X0X1 - Z0Z1, and entangling beats the best product-state baseline (-1). You cannot improve on a zero gap — only a tie at lower cost competes.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 0,
       "reproduced_by": []
     },
@@ -101,6 +103,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "Matches the visible 50/50 populations AND the HIDDEN held-out ⟨X0X1⟩ = +1 — the genuine |Φ+>, not a phase-flipped impostor that games only the visible spec. It clears the anti-overfit gate (exit 6) that the OVERFIT fixture fails, at depth 2 with one CX.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 0,
       "reproduced_by": []
     },
@@ -131,6 +134,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "A ring routes BOTH the visible and the held-out workload at cost 2 within the degree-2 budget, beating the linear-chain baseline (4). It generalizes — the overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6. Only a sparser map at equal cost could outrank it.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 0,
       "reproduced_by": []
     },
@@ -161,6 +165,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 0,
       "reproduced_by": []
     },
@@ -191,6 +196,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "Reaches within 4e-4 Ha of the exact electronic ground energy of the reduced 2-qubit H₂ Hamiltonian (E0 = -1.8512 Ha, STO-3G; nuclear repulsion excluded) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 0,
       "reproduced_by": []
     },
@@ -221,6 +227,7 @@ window.SCOREBOARD_DATA = {
       "verified_at": "2026-06-16",
       "why": "Remix that takes rank 1 on tfim3: a problem-specific QAOA p=2 ansatz (rzz couplers matching the Ising bonds + an rx mixer) reaches gap 0.000103 to E0 — 138x closer than the hardware-efficient ingredient (0.0143) — at the same 4 two-qubit gates. The frontier moves when a run builds on prior ingredients.",
       "hardware": null,
+      "hardware_reports": [],
       "reproduced": 0,
       "reproduced_by": []
     },
@@ -255,9 +262,27 @@ window.SCOREBOARD_DATA = {
         "metric": "energy",
         "value": -2.903418,
         "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json",
+        "shots": 8192,
         "emulated": true,
-        "label": "noisy-sim"
+        "label": "noisy-sim",
+        "sim_value": -2.9947640963492943,
+        "delta": 0.0913461,
+        "delta_pct": 3.05
       },
+      "hardware_reports": [
+        {
+          "backend": "local-noisy (emulated)",
+          "metric": "energy",
+          "value": -2.903418,
+          "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json",
+          "shots": 8192,
+          "emulated": true,
+          "label": "noisy-sim",
+          "sim_value": -2.9947640963492943,
+          "delta": 0.0913461,
+          "delta_pct": 3.05
+        }
+      ],
       "reproduced": 0,
       "reproduced_by": []
     }

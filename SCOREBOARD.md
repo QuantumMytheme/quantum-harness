@@ -262,6 +262,13 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 > separately-labeled noisy-sim credit applies instead), and it does **not** satisfy a
 > problem's "hardware overlay" cell on the wanted board. Only a real device run does.
 
+**All reports, with deltas.** `hardware_reports` is an array and the board emits
+**every** report (never just the first), each with a computed **sim-vs-hw delta**
+(measured − sim, plus a percent) wherever the report's metric is comparable to a
+sim-side number — shown inline per row. Multi-backend reports on the same design are
+the raw material for an honest per-backend noise landscape; when no comparable sim
+number exists the delta stays `null` rather than being guessed.
+
 ---
 
 ## (c2) The paradigm league — §(c) answered at corpus level, honestly

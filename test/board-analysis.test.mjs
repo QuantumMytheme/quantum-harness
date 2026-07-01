@@ -393,3 +393,51 @@ test('reproduced viewer wiring: badge renderer, honest attested-not-rank languag
   assert.match(sb, /attestations\//)
   assert.match(sb, /PR-only|PR only/i)
 })
+
+/* ------------------- 5 · hardware overlays: all reports ------------------- */
+test('hardwareViews emits ALL reports (never truncated to [0]) with per-report sim-vs-hw deltas', async () => {
+  const { hardwareViews } = await import(new URL('../scoreboard/build.mjs', import.meta.url))
+  const e = {
+    task: 'vqe',
+    verified_metric: { name: 'energy_gap_to_E0', value: 0.01, energy: -3.0 },
+    hardware_reports: [
+      { backend: 'ibm_torino', metric: 'energy', value: -2.9, report_url: 'https://x/1', shots: 4096 },
+      { backend: 'local-noisy (emulated)', metric: 'energy', value: -2.8, report_url: 'https://x/2' },
+      { backend: 'ionq_aria', metric: 'weird_metric', value: 0.5, report_url: 'https://x/3' },
+    ],
+  }
+  const v3 = hardwareViews(e)
+  assert.equal(v3.length, 3, 'every report is emitted')
+  assert.equal(v3[0].label, 'hw')
+  assert.equal(v3[0].sim_value, -3.0)
+  assert.ok(Math.abs(v3[0].delta - 0.1) < 1e-9, 'delta = measured − sim')
+  assert.ok(Math.abs(v3[0].delta_pct - 3.33) < 0.01)
+  assert.equal(v3[0].shots, 4096)
+  assert.equal(v3[1].label, 'noisy-sim', 'emulated is never presented as hardware')
+  assert.equal(v3[1].emulated, true)
+  assert.ok(Math.abs(v3[1].delta - 0.2) < 1e-9)
+  assert.equal(v3[2].delta, null, 'no comparable sim-side number → delta stays null, never faked')
+  assert.equal(v3[2].delta_pct, null)
+  assert.deepEqual(hardwareViews({ task: 'vqe', verified_metric: {} }), [], 'no reports → empty list')
+})
+
+test('the emitted tfim3 noisy-sim overlay carries the computed sim-vs-hw delta; rows keep back-compat hardware[0]', () => {
+  const d = sbData()
+  const hwe = d.rows.find(r => r.problem_id === 'tfim3' && r.paradigm_short === 'hardware-efficient')
+  assert.ok(Array.isArray(hwe.hardware_reports))
+  assert.equal(hwe.hardware_reports.length, 1)
+  const hw = hwe.hardware_reports[0]
+  assert.equal(hw.label, 'noisy-sim')
+  assert.equal(hw.sim_value, -2.9947640963492943, 'delta is vs the SIM energy, not E0')
+  assert.ok(Math.abs(hw.delta - 0.0913461) < 1e-6)
+  assert.ok(Math.abs(hw.delta_pct - 3.05) < 0.01)
+  assert.deepEqual(hwe.hardware, hw, 'hardware stays as the first report for back-compat')
+  for (const r of d.rows) assert.ok(Array.isArray(r.hardware_reports), `${r.problem_id} row carries hardware_reports[]`)
+})
+
+test('viewer lists every hardware report per row with the delta visible inline (not tooltip-only)', () => {
+  const app = readFileSync(v('app.js'), 'utf8')
+  assert.match(app, /hardware_reports/, 'the loop reads the full array')
+  assert.match(app, /for \(const hw of reports\)/, 'reports are iterated, never truncated to [0]')
+  assert.match(app, /Δ \$\{hw\.delta_pct/, 'the sim-vs-hw delta is rendered in visible link text')
+})

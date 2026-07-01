@@ -314,10 +314,19 @@ function findRun(pid, para) {
 }
 function proofLinks(r, esc) {
   let h = `<a href="${esc(r.bundleUrl)}">bundle ↗</a>`;
-  // an emulated/synthetic backend is labeled inline as noisy-sim — never presented as hardware
-  if (r.hardware && (r.hardware.emulated || r.hardware.label === 'noisy-sim'))
-    h += ` <a class="hwlink simlink" href="${esc(r.hardware.url)}" title="EMULATED backend — a noisy simulation, not a device run · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">≈ noisy-sim ↗</a>`;
-  else if (r.hardware) h += ` <a class="hwlink" href="${esc(r.hardware.url)}" title="hardware overlay · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">⚛ hw ↗</a>`;
+  // ALL hardware reports are listed (the schema is an array — never truncated to
+  // the first), each with its sim-vs-hw delta shown inline, not tooltip-only.
+  // An emulated/synthetic backend is labeled noisy-sim — never presented as hardware.
+  const reports = r.hardware_reports || (r.hardware ? [r.hardware] : []);
+  for (const hw of reports) {
+    const dTxt = hw.delta != null ? ` Δ ${hw.delta_pct != null ? hw.delta_pct + '%' : hw.delta}` : '';
+    const dTitle = hw.delta != null
+      ? ` · sim ${hw.sim_value} vs measured ${hw.value} → Δ ${hw.delta > 0 ? '+' : ''}${hw.delta}${hw.delta_pct != null ? ' (' + hw.delta_pct + '%)' : ''}`
+      : '';
+    if (hw.emulated || hw.label === 'noisy-sim')
+      h += ` <a class="hwlink simlink" href="${esc(hw.url)}" title="EMULATED backend — a noisy simulation, not a device run · ${esc(hw.backend)} · ${esc(hw.metric)} ${esc(hw.value)}${esc(dTitle)}">≈ noisy-sim${esc(dTxt)} ↗</a>`;
+    else h += ` <a class="hwlink" href="${esc(hw.url)}" title="hardware overlay · ${esc(hw.backend)} · ${esc(hw.metric)} ${esc(hw.value)}${esc(dTitle)}">⚛ ${esc(hw.backend)}${esc(dTxt)} ↗</a>`;
+  }
   if (window.QMRunner && window.QMRunner.RUNS[r.problem_id]) h += ` · <a href="#" data-run="${esc(r.problem_id)}" title="re-run this circuit in your browser">▸ run</a>`;
   // reproduced ×N — attested, trusted-but-labeled credibility display; NEVER changes rank
   if (r.reproduced) h += ` <span class="repro" title="reproduced ×${r.reproduced}: ${esc(r.reproduced_by.join(', '))} re-ran the judge on this exact bundle (sha256-pinned attestation in scoreboard/attestations/) and it ACCEPTed. Attested and labeled — it never changes rank; or re-run it yourself: ${esc(r.reverify)}">↺ reproduced ×${r.reproduced}</span>`;

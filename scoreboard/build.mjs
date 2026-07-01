@@ -77,6 +77,31 @@ export function isEmulatedReport(hr) {
   return /emulat|synthetic|simulat/.test(b) || b.startsWith('local-')
 }
 
+// ---- hardware overlays: ALL reports + a computed sim-vs-hw delta -------------
+// The schema is an array; the board used to truncate to [0], silently dropping
+// multi-backend reports (audit finding). Every report is emitted, each with the
+// honest emulated/noisy-sim labeling and — where the report's metric is comparable
+// to a sim-side number — a computed delta (measured − sim), the raw material for a
+// real per-backend noise landscape. No comparable sim number → delta stays null.
+export function hardwareViews(e) {
+  const vm = e.verified_metric || {}
+  return (e.hardware_reports || []).map(hr => {
+    const emu = isEmulatedReport(hr)
+    let sim = null
+    if (e.task === 'vqe' && hr.metric === 'energy' && Number.isFinite(Number(vm.energy))) sim = Number(vm.energy)
+    else if (hr.metric && hr.metric === vm.name && Number.isFinite(Number(vm.value))) sim = Number(vm.value)
+    const val = Number(hr.value)
+    const delta = sim !== null && Number.isFinite(val) ? Number((val - sim).toPrecision(6)) : null
+    return {
+      backend: hr.backend, metric: hr.metric, value: hr.value, url: hr.report_url,
+      shots: hr.shots ?? null,
+      emulated: emu, label: emu ? 'noisy-sim' : 'hw',
+      sim_value: sim, delta,
+      delta_pct: delta !== null && sim ? Number(Math.abs(100 * delta / sim).toPrecision(3)) : null,
+    }
+  })
+}
+
 export function metric(e) {
   const m = e.verified_metric, v = Number(m.value)
   switch (e.task) {
@@ -547,7 +572,7 @@ export function buildAll(root = ROOT, opts = {}) {
   for (const pid of problems) {
     rankGroup(byProblem[pid]).forEach((e, i) => {
       const m = metric(e)
-      const hr = (e.hardware_reports && e.hardware_reports[0]) || null
+      const hwViews = hardwareViews(e)
       rows.push({
         ...lin(e),
         problem_id: e.problem_id, task: e.task, rank: i + 1,
@@ -560,9 +585,8 @@ export function buildAll(root = ROOT, opts = {}) {
         reverify: reverifyCommand(e, harness),
         verified_at: e.verified_at || null,
         why: e.why_it_scores,
-        hardware: hr
-          ? { backend: hr.backend, metric: hr.metric, value: hr.value, url: hr.report_url, emulated: isEmulatedReport(hr), label: isEmulatedReport(hr) ? 'noisy-sim' : 'hw' }
-          : null,
+        hardware: hwViews[0] || null,        // back-compat convenience: first report
+        hardware_reports: hwViews,           // ALL reports, each with sim-vs-hw delta
       })
     })
   }
