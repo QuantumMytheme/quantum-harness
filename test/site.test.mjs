@@ -181,11 +181,13 @@ test('mint flow works for strangers: own-account defaults, honest OAuth probe, r
   assert.match(gs, /scoreboard-entry\.json/)
   assert.match(gs, /"problem_id"/, 'a minimal scoreboard-entry.json example is inline')
   assert.match(gs, /org membership NOT required/i)
+  // RUN-FLOW.md was merged into GETTING-STARTED.md; the root stub must keep
+  // old links (org profile, EDUCATION.md, minted repos) resolving, and the
+  // merged lifecycle section must retain the honest template-UI wording.
   const rf = readFileSync(new URL('../RUN-FLOW.md', import.meta.url), 'utf8')
-  assert.match(rf, /quantum-harness-run/)
-  assert.match(rf, /scoreboard-entry\.json/)
-  assert.match(rf, /org membership NOT required/i)
-  assert.doesNotMatch(rf, /owner \*\*QuantumMytheme\*\*/, 'the template-UI path no longer defaults to the org')
+  assert.match(rf, /GETTING-STARTED\.md/, 'RUN-FLOW stub points at the merged doc')
+  assert.match(gs, /full run lifecycle/i, 'the five-step lifecycle detail survived the merge')
+  assert.doesNotMatch(gs, /owner \*\*QuantumMytheme\*\*/, 'the template-UI path no longer defaults to the org')
 
   // lab.js copy: no fake `claude --kickoff` flag, no frozen repo-name date, no
   // org-owned `gh repo create QuantumMytheme/...` commands for strangers.

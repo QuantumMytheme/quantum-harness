@@ -1,8 +1,8 @@
 # kernel-judge — the Oracle-Diff Gate (hermetic half, Phase T0)
 
 The **correctness notary** for TPU-native kernels: the gate that must pass before
-any speed number is scored (design: [`../../TPU-ORACLE-DIFF-GATE.md`](../../TPU-ORACLE-DIFF-GATE.md);
-platform track: [`../../PLATFORM-VISION.md`](../../PLATFORM-VISION.md) “Track 2”).
+any speed number is scored (design: [`../../docs/roadmap/TPU-ORACLE-DIFF-GATE.md`](../../docs/roadmap/TPU-ORACLE-DIFF-GATE.md);
+platform track: [`../../docs/roadmap/PLATFORM-VISION.md`](../../docs/roadmap/PLATFORM-VISION.md) “Track 2”).
 
 It is built in the image of [`../quantum-judge`](../quantum-judge): a
 self-contained, **offline, numpy-only, exit-code** judge that re-derives ground

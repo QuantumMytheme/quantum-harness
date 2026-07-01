@@ -6,7 +6,7 @@ Companion to bench/quantum-judge/judge_verify.py, and deliberately built in its
 image: a SELF-CONTAINED, OFFLINE, exit-code judge that re-derives ground truth
 with numpy alone and either ACCEPTS (exit 0) or REJECTS (non-zero). It verifies a
 `kernel-correctness-oracle` proof bundle — the correctness NOTARY that must pass
-before any TPU speed number is scored (see ../../TPU-ORACLE-DIFF-GATE.md).
+before any TPU speed number is scored (see ../../docs/roadmap/TPU-ORACLE-DIFF-GATE.md).
 
 It runs the same gate discipline and the SAME exit codes as the quantum judge:
 

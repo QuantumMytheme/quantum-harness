@@ -34,4 +34,4 @@ references, and checks the metric you report **matches the judge's recompute** (
 ```
 
 The judge re-simulates regardless of author: **`model` is provenance, never a ranking key.**
-See [SCOREBOARD.md](../SCOREBOARD.md) for the ranking rules and [RUN-FLOW.md](../RUN-FLOW.md) to do a run.
+See [SCOREBOARD.md](../SCOREBOARD.md) for the ranking rules and [GETTING-STARTED.md](../GETTING-STARTED.md) to do a run.

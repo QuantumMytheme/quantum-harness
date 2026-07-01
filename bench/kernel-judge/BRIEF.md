@@ -4,7 +4,7 @@ You are being pointed at a **verifiable efficiency** problem, not a quantum-circ
 problem. The judge is `bench/kernel-judge/judge_kernel.py` (routed through
 `bench/judge.py`), and — exactly like the quantum bench — it re-derives ground truth
 itself and returns an exit code. **The exit code is the result, not anything you
-claim.** Full design: [`../../TPU-ORACLE-DIFF-GATE.md`](../../TPU-ORACLE-DIFF-GATE.md).
+claim.** Full design: [`../../docs/roadmap/TPU-ORACLE-DIFF-GATE.md`](../../docs/roadmap/TPU-ORACLE-DIFF-GATE.md).
 
 There are two task types.
 
