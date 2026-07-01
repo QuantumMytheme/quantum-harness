@@ -319,8 +319,71 @@ function proofLinks(r, esc) {
     h += ` <a class="hwlink simlink" href="${esc(r.hardware.url)}" title="EMULATED backend — a noisy simulation, not a device run · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">≈ noisy-sim ↗</a>`;
   else if (r.hardware) h += ` <a class="hwlink" href="${esc(r.hardware.url)}" title="hardware overlay · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">⚛ hw ↗</a>`;
   if (window.QMRunner && window.QMRunner.RUNS[r.problem_id]) h += ` · <a href="#" data-run="${esc(r.problem_id)}" title="re-run this circuit in your browser">▸ run</a>`;
+  h += ` <button class="citebtn" type="button" title="export a citation pinned to this bundle's sha256 + the exact re-verify command">cite</button>`;
   return h;
 }
+
+/* ---------------------------- cite-this-run ------------------------------- */
+/* Exports BibTeX + CSL-JSON pinned to the committed bundle's sha256 (raw file
+   bytes, lowercase hex) plus the exact offline re-verify command — the citation
+   IS the reproduction instructions. HONESTY: when a bundle's bytes are not
+   committed in this repo (external run repo), the hash is null and the export
+   says "hash unavailable — re-verify from the run repo" rather than faking one. */
+const HASH_UNAVAILABLE = 'hash unavailable — re-verify from the run repo';
+function citeStrings(r) {
+  const pin = r.bundle_sha256 ? `sha256:${r.bundle_sha256}` : HASH_UNAVAILABLE;
+  const year = (r.verified_at || '').slice(0, 4) || 'n.d.';
+  const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const key = `quantummytheme_${slug(r.problem_id)}_${slug(r.paradigm_short)}`;
+  const title = `${r.problem_id}: ${r.paradigm_short} — judge-verified ${r.task} design (${r.metricName} ${r.metricValue})`;
+  const note = `Machine-verified by a re-runnable four-gate judge (exit 0), not peer review. Proof bundle ${pin}. Re-verify offline: ${r.reverify}. Model provenance (never a ranking key): ${r.model}.`;
+  const bibtex = `@misc{${key},
+  title        = {{${title}}},
+  author       = {{QuantumMytheme scoreboard contributors}},
+  year         = {${year}},
+  howpublished = {\\url{${r.bundleUrl}}},
+  note         = {${note}}
+}`;
+  const dp = (r.verified_at || '').split('-').map(Number).filter(Number.isFinite);
+  const csl = JSON.stringify({
+    id: key.replace(/_/g, '-'), type: 'dataset', title,
+    URL: r.bundleUrl,
+    ...(dp.length === 3 ? { issued: { 'date-parts': [dp] } } : {}),
+    note,
+  }, null, 2);
+  return { bibtex, csl, reverify: r.reverify, pin };
+}
+function openCiteModal(r) {
+  const K = window.QMKnowledge, R = window.QMRunner;
+  if (!R) return;
+  const esc = (K && K.esc) || R.esc || (s => String(s));
+  const c = citeStrings(r);
+  const block = (label, text) =>
+    `<div class="citeblock"><div class="citehead"><b>${esc(label)}</b><button class="citecopy" type="button">copy</button></div>` +
+    `<pre><code>${esc(text)}</code></pre></div>`;
+  R.openOverlay('modal', '<div class="cite-modal">' +
+    `<h3>Cite this run — <span class="mono">${esc(r.problem_id)}</span> · ${esc(r.paradigm_short)}</h3>` +
+    `<p class="lead">Pinned to the exact proof bundle: <span class="mono citepin">${esc(c.pin)}</span>. ` +
+    'The citation carries the re-verify command, so citing it means anyone can recheck it — verified by a re-runnable judge, not peer review.</p>' +
+    block('BibTeX', c.bibtex) + block('CSL-JSON', c.csl) + block('Re-verify (offline, numpy only)', c.reverify) +
+    '</div>');
+}
+document.addEventListener('click', (e) => {
+  const copy = e.target.closest('.citecopy');
+  if (copy) {
+    const code = copy.closest('.citeblock').querySelector('code');
+    const done = ok => { copy.textContent = ok ? 'copied ✓' : 'select + copy'; setTimeout(() => { copy.textContent = 'copy'; }, 1600); };
+    if (code && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(() => done(true), () => done(false));
+    else done(false);
+    return;
+  }
+  const btn = e.target.closest('.citebtn');
+  if (!btn) return;
+  const row = btn.closest('.sb-row');
+  if (!row) return;
+  const run = findRun(row.getAttribute('data-pid'), row.getAttribute('data-para'));
+  if (run) openCiteModal(run);
+});
 // structured lineage (entry-declared remix_of): descent chain + ingredient credit
 function lineageTags(r, esc) {
   let h = '';
@@ -438,7 +501,7 @@ document.addEventListener('click', (e) => {
   const filtBtn = e.target.closest('[data-sbfilter]');
   if (filtBtn) { sbFilter = filtBtn.getAttribute('data-sbfilter'); renderScoreboard(); return; }
   const row = e.target.closest('.sb-row');
-  if (row && !e.target.closest('a') && window.QMKnowledge && window.QMRunner) {
+  if (row && !e.target.closest('a') && !e.target.closest('button') && window.QMKnowledge && window.QMRunner) {
     const run = findRun(row.getAttribute('data-pid'), row.getAttribute('data-para'));
     if (run) window.QMRunner.openOverlay('modal', '<div class="pcard-modal">' + window.QMKnowledge.problemCard(run.problem_id, run.quality) + '</div>');
   }

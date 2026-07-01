@@ -300,3 +300,40 @@ test('ledger + changelog viewer wiring: committed history is append-only-labeled
   assert.match(app, /never[^<]*build clock|never by the build clock/i, 'the date-honesty rule is stated in the UI')
   assert.ok(readFileSync(v('style.css'), 'utf8').includes('.chlog'))
 })
+
+/* ------------------------- 3 · cite-this-run ------------------------------ */
+test('bundle_sha256 pins are raw-file-byte hashes of the committed bundles; external bundles are honestly null', async () => {
+  const { createHash } = await import('node:crypto')
+  const d = sbData()
+  for (const r of d.rows) {
+    if (r.bundle_sha256 === null) {
+      // external run-repo bundle: not committed here, so no honest offline hash —
+      // the re-verify command fetches from the run repo instead
+      assert.match(r.reverify, /^curl -sL https:\/\/raw\.githubusercontent\.com\/.+ -o bundle\.json && python3 bench\/quantum-judge\/judge_verify\.py bundle\.json$/)
+      continue
+    }
+    assert.match(r.bundle_sha256, /^[0-9a-f]{64}$/, 'lowercase hex sha256')
+    const path = r.bundleUrl.replace(/^https:\/\/github\.com\/QuantumMytheme\/quantum-harness\/blob\/main\//, '')
+    const want = createHash('sha256').update(readFileSync(join(ROOT, path))).digest('hex')
+    assert.equal(r.bundle_sha256, want, `${r.problem_id} hash matches sha256sum of the committed file bytes (never re-serialized JSON)`)
+    assert.equal(r.reverify, `python3 bench/quantum-judge/judge_verify.py ${path}`)
+  }
+  // both kinds exist in today's corpus, so both paths are exercised
+  assert.ok(d.rows.some(r => r.bundle_sha256), 'seed bundles are hash-pinned')
+  assert.ok(d.rows.some(r => r.bundle_sha256 === null), 'external bundles stay null')
+  for (const r of d.rows) assert.ok(r.verified_at === null || /^\d{4}-\d{2}-\d{2}$/.test(r.verified_at))
+})
+
+test('cite viewer wiring: per-row cite button, BibTeX + CSL-JSON exports, honest hash-unavailable fallback, CSP-clean', () => {
+  const app = readFileSync(v('app.js'), 'utf8')
+  assert.match(app, /citebtn/)
+  assert.match(app, /@misc\{/, 'BibTeX export')
+  assert.match(app, /CSL-JSON/, 'CSL-JSON export')
+  assert.match(app, /citeStrings/)
+  assert.match(app, /hash unavailable — re-verify from the run repo/, 'no fake hashes: the fallback language is exact')
+  assert.match(app, /not peer review/, 'the honest verification framing is baked into every export')
+  assert.match(app, /r\.reverify/, 'the exact re-verify command rides in the citation')
+  assert.doesNotMatch(app, /on(click|mouseover|load)\s*=/i, 'no inline handlers — CSP-clean')
+  const css = readFileSync(v('style.css'), 'utf8')
+  for (const cls of ['.citebtn', '.citeblock', '.citecopy']) assert.ok(css.includes(cls), `style.css styles ${cls}`)
+})

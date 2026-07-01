@@ -316,6 +316,27 @@ file wasn't there to witness.
 
 ---
 
+## (c4) Cite this run — the citation IS the reproduction instructions
+
+Every scoreboard row has a **cite** button exporting **BibTeX** and **CSL-JSON**
+pinned to the proof bundle: the bundle's **sha256** plus the exact offline re-verify
+command (`python3 bench/quantum-judge/judge_verify.py <bundle>`). Citing a number
+here means handing your reader everything needed to recheck it — the exports say
+*"machine-verified by a re-runnable judge, not peer review"* in so many words.
+
+Hash-pinning rules:
+
+- the sha256 is computed by `scoreboard/build.mjs` over the **raw committed file
+  bytes** (`sha256sum` semantics, lowercase hex) — never over re-parsed/re-serialized
+  JSON — so the same bundle hashes identically everywhere (build, `verify.py
+  --attest`, an in-browser `fetch → arrayBuffer → SHA-256`);
+- an **external run-repo bundle is not committed in this repository**, and the build
+  is offline — so its hash cannot be computed honestly at build time. The export
+  says **"hash unavailable — re-verify from the run repo"** (with a fetch-and-judge
+  command) rather than faking a pin.
+
+---
+
 ## (f) Status — honest
 
 **Phase 1 is now partly shipped.** An **aggregator** (`scoreboard/build.mjs`) ranks

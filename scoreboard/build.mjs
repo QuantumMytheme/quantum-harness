@@ -25,6 +25,7 @@
 //   node scoreboard/build.mjs           # regenerate viewer/scoreboard-data.js
 //   node scoreboard/build.mjs --check   # exit 1 if the committed file is stale
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve, basename } from 'node:path'
 
@@ -459,6 +460,31 @@ ${items.join('\n')}
 `
 }
 
+// ---- bundle hash pins (cite-this-run) ----------------------------------------
+// PLATFORM CONTRACT: a bundle's sha256 is always computed over the RAW FILE BYTES
+// exactly as committed/fetched (`sha256sum <file>` semantics, lowercase hex) —
+// never over re-parsed/re-serialized JSON — so the same bundle hashes identically
+// here, in verify.py --attest, and in any in-browser fetch→arrayBuffer→SHA-256.
+// HONESTY: an external run-repo bundle is not committed in this repo and the build
+// is offline, so its hash CANNOT be computed honestly at build time → null, and the
+// viewer says "hash unavailable — re-verify from the run repo" instead of faking one.
+export function bundleHashers(root, harness) {
+  const cache = {}
+  return (e) => {
+    if (e.run_repo !== harness) return null
+    const p = join(root, e.proof_bundle)
+    if (!(p in cache)) {
+      try { cache[p] = createHash('sha256').update(readFileSync(p)).digest('hex') } catch { cache[p] = null }
+    }
+    return cache[p]
+  }
+}
+export function reverifyCommand(e, harness) {
+  if (e.run_repo === harness) return `python3 bench/quantum-judge/judge_verify.py ${e.proof_bundle}`
+  const raw = `${e.run_repo.replace('https://github.com/', 'https://raw.githubusercontent.com/')}/${e.run_branch || 'main'}/${e.proof_bundle}`
+  return `curl -sL ${raw} -o bundle.json && python3 bench/quantum-judge/judge_verify.py bundle.json`
+}
+
 const HISTORY_NOTE = 'Append-only frontier ledger. `events` are NEVER rewritten — build.mjs only appends; `snapshot` is a mutable cache of the last-diffed board state. Event dates come from each entry\'s verified_at; `observed` (when present) is the date the operator ran the build with --now. Genesis-flagged events were backfilled from the board state when the ledger was created.'
 
 // ---- assemble the full payload ----------------------------------------------
@@ -479,6 +505,8 @@ export function buildAll(root = ROOT, opts = {}) {
   for (const e of allEntries) (byProblem[e.problem_id] ||= []).push(e)
   const problems = Object.keys(byProblem)
   const lin = lineage(allEntries)
+  const harness = data.harness_repo || 'https://github.com/QuantumMytheme/quantum-harness'
+  const shaOf = bundleHashers(root, harness)
   const rows = []
   for (const pid of problems) {
     rankGroup(byProblem[pid]).forEach((e, i) => {
@@ -492,6 +520,9 @@ export function buildAll(root = ROOT, opts = {}) {
         costLabel: cost(e), model: e.model,
         quality: quality(e),
         bundleUrl: `${e.run_repo}/blob/main/${e.proof_bundle}`,
+        bundle_sha256: shaOf(e),                    // raw-bytes hash of the committed bundle; null = honestly unavailable
+        reverify: reverifyCommand(e, harness),
+        verified_at: e.verified_at || null,
         why: e.why_it_scores,
         hardware: hr
           ? { backend: hr.backend, metric: hr.metric, value: hr.value, url: hr.report_url, emulated: isEmulatedReport(hr), label: isEmulatedReport(hr) ? 'noisy-sim' : 'hw' }

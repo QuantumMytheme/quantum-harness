@@ -424,3 +424,19 @@ html[data-theme="dark"] .anecbadge { border-color: var(--rule-2); }
 .chdetail { color: var(--ink-2); }
 .chgen { font-family: var(--mono); font-size: 9.5px; color: var(--faint); border: 1px dashed var(--rule-2); border-radius: 4px; padding: 1px 5px; }
 html[data-theme="dark"] .chlog { border-left-color: var(--rule-2); }
+
+/* cite-this-run — hash-pinned citation exports */
+.citebtn { font-family: var(--mono); font-size: 10px; border: 1px solid var(--rule-2); border-radius: 4px; background: transparent; color: var(--ink-2); padding: 1px 7px; cursor: pointer; }
+.citebtn:hover { border-color: var(--accent); color: var(--accent); }
+.cite-modal { max-width: 720px; }
+.cite-modal h3 { margin: 0 0 8px; }
+.cite-modal .lead { font-size: 13px; }
+.citepin { font-size: 11px; word-break: break-all; }
+.citeblock { margin-top: 14px; }
+.citehead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.citehead b { font-size: 12.5px; }
+.citeblock pre { margin: 0; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: auto; max-height: 220px; }
+.citeblock code { font-family: var(--mono); font-size: 11px; line-height: 1.5; white-space: pre; }
+.citecopy { font-family: var(--mono); font-size: 10px; border: 1px solid var(--rule-2); border-radius: 4px; background: transparent; color: var(--ink-2); padding: 2px 8px; cursor: pointer; }
+.citecopy:hover { border-color: var(--accent); color: var(--accent); }
+html[data-theme="dark"] .citeblock pre { background: rgba(10,13,32,0.6); }
