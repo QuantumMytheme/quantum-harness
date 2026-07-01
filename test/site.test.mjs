@@ -122,6 +122,20 @@ test('shared in-browser runner + recipe builder wired on both pages', () => {
   assert.match(js, /Verify a TPU-kernel claim/)
 })
 
+test('anonymous community submission is fail-closed and wired (worker + runner)', () => {
+  const w = readFileSync(v('_worker.js'), 'utf8')
+  assert.match(w, /\/api\/submit-config/)
+  assert.match(w, /\/api\/submit-run/)
+  assert.match(w, /MINT_TOKEN/)                          // server-side least-privilege token (a secret, not in code)
+  assert.match(w, /TURNSTILE_SECRET/)                    // bot protection required
+  assert.match(w, /not enabled on this deployment/)      // fail-closed default
+  assert.match(w, /"community-"|community-/)             // namespaced + moderatable repos
+  const runner = readFileSync(v('runner.js'), 'utf8')
+  assert.match(runner, /anonSubmitWidget/)
+  assert.match(runner, /submit-config/)
+  assert.match(runner, /turnstile/i)
+})
+
 test('every page carries the same top-bar nav (no links drop off across pages)', () => {
   // The canonical link set + order, shared by index / education / lab. Guards against
   // the brandbar diverging per page (the "some links drop off" regression).

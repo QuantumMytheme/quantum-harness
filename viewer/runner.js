@@ -305,6 +305,61 @@
       });
   }
 
+  // ---------- anonymous submit to the org (no GitHub sign-in; Turnstile-gated) ----------
+  var anonState = { recipe: null, name: '', token: null, sitekey: null };
+  function anonSubmitWidget(recipeJson, defaultName) {
+    anonState.recipe = recipeJson; anonState.name = defaultName || 'design';
+    setTimeout(initAnonSubmit, 30);
+    return '<div id="qm-anon"></div>';
+  }
+  function initAnonSubmit() {
+    var box = document.getElementById('qm-anon'); if (!box) return;
+    fetch('/api/submit-config', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (cfg) {
+      if (!cfg || !cfg.enabled) { box.innerHTML = ''; return; }     // fail-closed: hidden unless the deployment enables it
+      anonState.sitekey = cfg.sitekey; anonState.token = null;
+      box.innerHTML = '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--rule)">' +
+        '<p class="eyebrow" style="margin-bottom:6px">…or submit to QuantumMytheme without a GitHub account</p>' +
+        '<p class="mono" style="font-size:10px;color:var(--faint);margin-bottom:8px">Creates a public <span style="color:var(--accent)">community-*</span> repo in the org from this design — human-verified, rate-limited, moderated.</p>' +
+        '<div id="qm-ts"></div>' +
+        '<div class="controls" style="margin-top:8px"><button class="btn primary" id="qm-anon-go" disabled>Submit to QuantumMytheme →</button></div>' +
+        '<div id="qm-anon-result" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>';
+      var go = document.getElementById('qm-anon-go'); if (go) go.addEventListener('click', doAnonSubmit);
+      loadTurnstile(renderTurnstile);
+    }).catch(function () { box.innerHTML = ''; });
+  }
+  function loadTurnstile(cb) {
+    if (window.turnstile) return cb();
+    if (document.getElementById('qm-ts-script')) { var iv = setInterval(function () { if (window.turnstile) { clearInterval(iv); cb(); } }, 120); return; }
+    var s = document.createElement('script'); s.id = 'qm-ts-script'; s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; s.async = true; s.onload = cb; document.head.appendChild(s);
+  }
+  function renderTurnstile() {
+    var el = document.getElementById('qm-ts'); if (!el || !window.turnstile || !anonState.sitekey || el.dataset.rendered) return;
+    el.dataset.rendered = '1';
+    try {
+      window.turnstile.render(el, { sitekey: anonState.sitekey, theme: 'auto',
+        callback: function (t) { anonState.token = t; var b = document.getElementById('qm-anon-go'); if (b) b.disabled = false; },
+        'expired-callback': function () { anonState.token = null; var b = document.getElementById('qm-anon-go'); if (b) b.disabled = true; } });
+    } catch (e) { }
+  }
+  function doAnonSubmit() {
+    var res = document.getElementById('qm-anon-result'), btn = document.getElementById('qm-anon-go');
+    if (!anonState.token) { if (res) res.innerHTML = '<span style="color:var(--reject)">complete the challenge first</span>'; return; }
+    var recipe; try { recipe = JSON.parse(anonState.recipe); } catch (e) { if (res) res.textContent = 'could not parse the RECIPE.json'; return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'submitting…'; }
+    if (res) res.textContent = 'creating community-' + anonState.name + '…';
+    fetch('/api/submit-run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipe: recipe, name: anonState.name, turnstile_token: anonState.token }) })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (o) {
+        if (o.ok && o.b.url) { res.innerHTML = '✓ submitted → <a href="' + o.b.url + '" target="_blank" rel="noopener">' + esc(o.b.repo) + ' ↗</a>' + (o.b.attestable ? ' <span style="color:var(--pass)">· efficiency-attestable</span>' : ''); }
+        else {
+          res.innerHTML = '<span style="color:var(--reject)">' + esc((o.b && o.b.error) || 'submission failed') + '</span>';
+          if (btn) { btn.disabled = false; btn.textContent = 'Submit to QuantumMytheme →'; }
+          if (window.turnstile) { try { window.turnstile.reset(); } catch (e) { } } anonState.token = null;
+        }
+      })
+      .catch(function (e) { if (res) res.innerHTML = '<span style="color:var(--reject)">' + esc(String(e)) + '</span>'; if (btn) { btn.disabled = false; btn.textContent = 'Submit to QuantumMytheme →'; } });
+  }
+
   // ---------- global handlers (work on any page) ----------
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-kjudge],[data-close],[data-copy],[data-ghlogin],[data-ghcreate],[data-ghlogout]'); if (!el) return;
@@ -320,5 +375,5 @@
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
 
-  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, KERNEL_RUNS: KERNEL_RUNS, createRepo: createRepo, runRealJudge: runRealJudge, runRealKernelJudge: runRealKernelJudge, ghWidget: ghWidget };
+  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, KERNEL_RUNS: KERNEL_RUNS, createRepo: createRepo, runRealJudge: runRealJudge, runRealKernelJudge: runRealKernelJudge, ghWidget: ghWidget, anonSubmitWidget: anonSubmitWidget };
 })();

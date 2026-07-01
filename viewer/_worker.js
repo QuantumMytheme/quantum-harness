@@ -26,6 +26,8 @@ export default {
       url.hostname = "quantummytheme.com"; url.protocol = "https:";
       return Response.redirect(url.toString(), 301);
     }
+    if (url.pathname === "/api/submit-config") return submitConfig(env);
+    if (url.pathname === "/api/submit-run" && request.method === "POST") return submitRun(request, env);
     if (url.pathname.startsWith("/api/github/")) return github(request, url, env);
     return env.ASSETS.fetch(request);
   },
@@ -116,4 +118,96 @@ async function github(request, url, env) {
   }
 
   return new Response("Not found", { status: 404 });
+}
+
+// ---- ANONYMOUS submission to the QuantumMytheme org ------------------------------------
+//  Lets a visitor WITHOUT a GitHub sign-in submit a full-stack RECIPE.json as a run repo,
+//  using a SERVER-SIDE least-privilege token (never the operator's OAuth session, never in
+//  code). FAIL-CLOSED and abuse-guarded — off unless the operator provisions BOTH secrets:
+//    - MINT_TOKEN       (encrypted secret): a fine-grained PAT with Administration:write +
+//                        Contents:write scoped to the QuantumMytheme org. Least privilege.
+//    - TURNSTILE_SECRET (encrypted secret) + TURNSTILE_SITEKEY (plaintext): a Cloudflare
+//                        Turnstile widget, so every submission is a human-passed challenge.
+//    - (optional) SUBMIT_RATE: a KV namespace binding for per-IP + global daily caps.
+//  Anonymous repos are named `community-*` and tagged `community-submission` for moderation.
+function submitConfig(env) {
+  const enabled = !!(env.MINT_TOKEN && env.TURNSTILE_SECRET && env.TURNSTILE_SITEKEY);
+  return json({ enabled, sitekey: enabled ? env.TURNSTILE_SITEKEY : null });
+}
+
+async function verifyTurnstile(secret, token, ip) {
+  if (!token) return false;
+  try {
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret, response: token, remoteip: ip || undefined }),
+    });
+    return !!(await r.json()).success;
+  } catch (e) { return false; }
+}
+
+function validateRecipeWorker(r) {
+  const errors = [];
+  if (!r || typeof r !== "object" || Array.isArray(r)) { errors.push("recipe must be a JSON object"); return { ok: false, errors, attestable: false }; }
+  if (!r.hardware || !Array.isArray(r.hardware.chips) || r.hardware.chips.length === 0) errors.push("hardware.chips[] is required — the hardware half");
+  if (!r.target && !Array.isArray(r.ingredients)) errors.push("a software half is required — target or ingredients");
+  const attestable = !!(r.hardware && Array.isArray(r.hardware.chips) && r.hardware.chips.some((c) => c && c.pinned));
+  return { ok: errors.length === 0, errors, attestable };
+}
+
+async function submitRun(request, env) {
+  // fail-closed: anonymous minting is OFF unless a server token AND bot-protection exist.
+  if (!env.MINT_TOKEN || !env.TURNSTILE_SECRET) {
+    return json({ error: "anonymous submission is not enabled on this deployment",
+      how: "The site owner provisions a least-privilege MINT_TOKEN (fine-grained PAT: Administration:write + Contents:write on QuantumMytheme) and a Turnstile TURNSTILE_SECRET/TURNSTILE_SITEKEY as Cloudflare secrets. Until then, sign in with GitHub or use the template link." }, 503);
+  }
+  const ip = request.headers.get("CF-Connecting-IP") || "0";
+  const body = await request.json().catch(() => ({}));
+
+  // 1. bot protection — required
+  if (!(await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstile_token, ip))) {
+    return json({ error: "bot-protection check failed — complete the challenge and retry" }, 403);
+  }
+
+  // 2. rate limit (per-IP + global daily) when a KV namespace is bound
+  const day = new Date().toISOString().slice(0, 10);
+  let ipN = 0, allN = 0;
+  if (env.SUBMIT_RATE) {
+    ipN = parseInt((await env.SUBMIT_RATE.get(`ip:${ip}:${day}`)) || "0", 10);
+    allN = parseInt((await env.SUBMIT_RATE.get(`all:${day}`)) || "0", 10);
+    if (ipN >= 5) return json({ error: "daily submission limit reached for your address — try tomorrow, or sign in with GitHub" }, 429);
+    if (allN >= 300) return json({ error: "the community submission queue is full for today" }, 429);
+  }
+
+  // 3. validate the full-stack RECIPE.json
+  const recipe = body.recipe;
+  const v = validateRecipeWorker(recipe);
+  if (!v.ok) return json({ error: "invalid RECIPE.json", problems: v.errors }, 400);
+
+  const base = String(body.name || ("run-" + (recipe.target || "design"))).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 56) || "design";
+  const name = "community-" + base;
+  const gh = (u, init) => fetch(u, { ...init, headers: { ...GH_HDR(env.MINT_TOKEN), "Content-Type": "application/json", "X-GitHub-Api-Version": "2022-11-28" } });
+
+  // 4. create the repo under the org from the template, write RECIPE.json, tag for discovery
+  const res = await gh(`https://api.github.com/repos/${TEMPLATE}/generate`, {
+    method: "POST",
+    body: JSON.stringify({ owner: "QuantumMytheme", name, description: "community full-stack design · " + name, private: false, include_all_branches: false }),
+  });
+  const repo = await res.json().catch(() => ({}));
+  if (!res.ok) return json({ error: repo.message || ("repo creation failed (HTTP " + res.status + ")") }, res.status === 422 ? 409 : 502);
+
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(recipe, null, 2))));
+  await gh(`https://api.github.com/repos/${repo.full_name}/contents/RECIPE.json`, {
+    method: "PUT", body: JSON.stringify({ message: "Add community full-stack RECIPE.json (hardware + software)", content, branch: repo.default_branch }),
+  }).catch(() => {});
+  await gh(`https://api.github.com/repos/${repo.full_name}/topics`, {
+    method: "PUT", body: JSON.stringify({ names: ["quantum-harness-run", "community-submission"] }),
+  }).catch(() => {});
+
+  if (env.SUBMIT_RATE) {
+    await env.SUBMIT_RATE.put(`ip:${ip}:${day}`, String(ipN + 1), { expirationTtl: 172800 }).catch(() => {});
+    await env.SUBMIT_RATE.put(`all:${day}`, String(allN + 1), { expirationTtl: 172800 }).catch(() => {});
+  }
+
+  return json({ ok: true, repo: repo.full_name, url: repo.html_url, attestable: v.attestable });
 }
