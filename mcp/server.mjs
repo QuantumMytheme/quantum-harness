@@ -33,6 +33,7 @@ const GATE = { 0: 'accept', 2: 'schema', 3: 'structure', 4: 'reproducibility', 5
 // this only enriches it with a readable one-liner. Unknown ids fall back to their task.
 const LABELS = {
   ghz3:       { task: 'state_prep',   label: 'GHZ₃ — prepare the 3-qubit GHZ state under a linear coupling map' },
+  ghz3_he:    { task: 'state_prep',   label: 'GHZ₃ HE — the same GHZ target on the native {rz, rx, cz} set (decompose h/cx yourself)' },
   isingbell2: { task: 'vqe',          label: 'Ising Bell — ground state of H = −X₀X₁ − Z₀Z₁' },
   tfim3:      { task: 'vqe',          label: 'TFIM₃ — transverse-field Ising ground state via QAOA p=2' },
   h2vqe:      { task: 'vqe',          label: 'H₂ — molecular ground-state energy (VQE)' },

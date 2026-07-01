@@ -269,6 +269,20 @@ def main():
     finally:
         os.remove(tmpq)
 
+    # --- HARDWARE-EFFICIENT ANSATZ (ghz3_he): h/cx must be decomposed to {rz,rx,cz} ---
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz3he.json"))
+    record("quantum-proof-ghz3he.json (native rz/rx/cz decomposition) ACCEPTs (exit 0)",
+           code == 0, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz3he-NONNATIVE.json"))
+    record("textbook h/cx circuit on ghz3_he REJECTed at STRUCTURE (exit 3)",
+           code == judge_verify.EXIT_STRUCTURE, f"exit {code}: {out}")
+    he = load("quantum-proof-ghz3he.json")
+    # a single smuggled non-native entangler (cx where cz is required) -> structure reject.
+    b = copy.deepcopy(he)
+    b["circuit"]["ops"][6] = {"gate": "cx", "q": [0, 1]}
+    record("single smuggled cx on ghz3_he REJECTed (exit 3)",
+           verify_code(b) == judge_verify.EXIT_STRUCTURE)
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

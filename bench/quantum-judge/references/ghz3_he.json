@@ -1,0 +1,18 @@
+{
+  "_comment": "HIDDEN GROUND TRUTH for the hardware-efficient ansatz study (IMPROVEMENTS item 1). Same 3-qubit GHZ target as ghz3, but the BRIEF constrains the model to the native set {rz, rx, cz} on the linear [0-1-2] coupling map with a tighter depth budget — so the model must DECOMPOSE h and cx into native gates itself (h = rz(pi/2)*rx(pi/2)*rz(pi/2) up to global phase; cx = (I(x)H)*cz*(I(x)H)), not emit the textbook circuit. Committed here so the public template's judge is exercisable in CI; for a contest hold this directory out via QH_REFERENCES_DIR.",
+  "problem_id": "ghz3_he",
+  "task": "state_prep",
+  "n_qubits": 3,
+  "target_statevector": [
+    [0.7071067811865476, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.7071067811865476, 0.0]
+  ],
+  "thresholds": { "fidelity": 0.99 },
+  "tolerance": { "fidelity_reproduce": 1e-06 }
+}

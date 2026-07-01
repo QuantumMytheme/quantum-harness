@@ -8,16 +8,20 @@
 
 Order ≈ priority. Status: ☐ todo · ◐ in progress · ☑ done.
 
-## ☐ 1. Hardware-efficient ansatz study (state_prep under a real native set)
+## ☑ 1. Hardware-efficient ansatz study (state_prep under a real native set) — ghz3_he is LIVE
 Constrain prep to a fixed hardware-efficient layer pattern (rz/rx/cz only) and ask the model
 to hit the GHZ target through transpilation, not by emitting the textbook h/cx circuit.
-- **Do:** add problem `ghz3_he` (task state_prep): same 3-qubit GHZ target, linear [0-1-2]
-  coupling, but `native_gates:["rz","rx","cz"]` and a tighter `max_depth`; the model must
-  decompose h and cx into the native set itself.
-- **Done =** `judge_verify.py <bundle>` exits 0 on a circuit using ONLY {rz,rx,cz}, fidelity
-  ≥ 0.99 vs the held-out `references/ghz3_he.json`, and STRUCTURE (exit 3) rejects any bundle
-  that emits a non-native gate.
-- Ref: bench/quantum-judge/references/ghz3.json, sim.py native-gate gate set.
+- **Did:** added problem `ghz3_he` (task state_prep): same 3-qubit GHZ target as ghz3, linear
+  [0-1-2] coupling, `native_gates:["rz","rx","cz"]`, `max_depth: 12` (the worked decomposition
+  is depth 11, vs ghz3's 2× slack). The worked bundle derives the transpilation itself:
+  h = rz(π/2)·rx(π/2)·rz(π/2) (= −i·H, a global phase) and cx(c,t) = (I⊗H)·cz·(I⊗H) with each
+  H decomposed likewise — 17 native ops, 2 cz, fidelity 1.0 vs the held-out reference.
+- **Done =** `quantum-proof-ghz3he.json` ACCEPTs (exit 0, fidelity 1.0 ≥ 0.99 vs
+  `references/ghz3_he.json`) and the textbook h/cx circuit answering the same brief is REJECTED
+  at STRUCTURE (exit 3) on the first non-native gate (`quantum-proof-ghz3he-NONNATIVE.json`);
+  `test_judge.py` asserts both plus a single-smuggled-cx variant (41/41, was 38/38).
+- Ref: bench/quantum-judge/references/ghz3_he.json, quantum-proof-ghz3he.json,
+  quantum-proof-ghz3he-NONNATIVE.json.
 
 ## ☐ 2. Error-mitigation-aware design (depth/2q-count is the lever)
 Reward circuits that reach the target with FEWER two-qubit gates, since 2q gates dominate
