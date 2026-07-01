@@ -151,6 +151,8 @@ def main():
         ("R8  mis-declared device_kind REJECTed (exit 3)", "bundle-roofline-BADDEV.json", 3),
         ("R9  unpinned generation REJECTed (exit 2)", "bundle-roofline-UNPINNED.json", 2),
         ("R10 below the %-of-peak floor REJECTed (exit 5)", "bundle-roofline-UNDERPERF.json", 5),
+        ("R11 v6e honest coordinate ACCEPTs (pinned 256-MXU gen)", "bundle-roofline-v6e-OK.json", 0),
+        ("R12 v5p honest coordinate ACCEPTs (pinned gen)", "bundle-roofline-v5p-OK.json", 0),
     ]
     for name, fx, want in roof:
         code, _ = run_cli(fx)

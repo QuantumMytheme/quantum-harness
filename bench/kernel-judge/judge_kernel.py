@@ -76,12 +76,19 @@ EXIT_PERFORMANCE = 5
 EXIT_OVERFIT = 6
 
 # ---- pinned per-generation roofline constants (T1 Roofline Notary) ----
-# Only devices whose numbers are verified are attested; an unknown generation is
-# rejected rather than guessed. v5e figures are the committed Part-V numbers
-# (peak bf16 1.97e14 FLOP/s, HBM 8.2e11 B/s -> ridge ~240 ops/byte, VMEM ~22x HBM,
-# int8 ~2x bf16, 128x128 MXU). Add a generation only with a source.
+# Only generations whose numbers are VERIFIED are attested; an unknown one is rejected
+# (exit 2), never guessed. Cross-checked against Google Cloud's TPU system-architecture
+# docs and the "How to Scale Your Model" scaling-book (jax-ml.github.io/scaling-book):
+#   v5e : 197 TFLOP/s bf16 · int8 2×  · HBM 0.82 TB/s · 128×128 MXU  (ridge ~240 ops/byte)
+#   v5p : 459 TFLOP/s bf16 · int8 918 TOP/s · HBM 2.765 TB/s · 128×128 MXU  (ridge ~166)
+#   v6e : 918 TFLOP/s bf16 · int8 1836 TOP/s · HBM 1.638 TB/s · 256×256 MXU  (ridge ~560)
+# v6e is corroborated by BOTH sources. v5p bf16 + HBM agree in both; its int8 = 2× is the
+# scaling-book figure (Google's public v5p page tabulates FP8, not int8) — using the higher
+# (2×) peak is the safe choice for a referee (it cannot cause a false >100%-of-peak reject).
 PINNED = {
     "TPU v5e": {"peak_bf16": 1.97e14, "peak_int8": 3.94e14, "hbm_bw": 8.2e11, "vmem_bw": 8.2e11 * 22, "mxu": 128},
+    "TPU v5p": {"peak_bf16": 4.59e14, "peak_int8": 9.18e14, "hbm_bw": 2.765e12, "mxu": 128},
+    "TPU v6e": {"peak_bf16": 9.18e14, "peak_int8": 1.836e15, "hbm_bw": 1.638e12, "mxu": 256},
 }
 
 # ---- tolerance model: PLATFORM constants, fixed in the judge (never claimant-set) ----

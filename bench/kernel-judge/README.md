@@ -41,7 +41,8 @@ the physical lower bound** (operands must cross HBM at least once), or an imposs
 **rate above 100 % of peak**; a **mis-declared device** (exit 3) or an **unpinned
 generation** (exit 2, refused rather than guessed); and, when the reference declares
 one, an achieved %-of-peak **below the floor** (exit 5). Only devices with verified
-constants are attested — today that is **TPU v5e**; add a generation only with a
+constants are attested — today those are **TPU v5e, v5p, and v6e** (cross-checked against
+Google Cloud + the JAX scaling-book); an unpinned generation is refused. Add one only with a
 source. The wall-clock samples and measured HBM bytes are the **NEEDS-A-TPU** leg
 (placeholder in the fixtures); the arithmetic and the sanity bounds are HERMETIC-NOW.
 

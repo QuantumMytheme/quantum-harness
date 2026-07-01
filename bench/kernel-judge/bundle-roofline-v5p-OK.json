@@ -1,0 +1,34 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "roofline-attest",
+  "problem_id": "roofline_gemm_v5p",
+  "constraints": {
+    "shape": [
+      1024,
+      1024,
+      1024
+    ],
+    "declared_dtype": "bf16"
+  },
+  "hardware": {
+    "device_kind": "TPU v5p",
+    "wall_clock_s": [
+      9.170082679912853e-06,
+      9.35722722440087e-06,
+      9.544371768888888e-06
+    ],
+    "hbm_bytes": 6291456
+  },
+  "oracle": {
+    "numeric": {
+      "runner": "xprof (measured on silicon; NEEDS-A-TPU)"
+    }
+  },
+  "claim": {
+    "algorithmic_flops": 2147483648,
+    "arithmetic_intensity": 341.3333333333333,
+    "pct_of_peak": 0.5000000000000001,
+    "roofline_regime": "compute-bound"
+  },
+  "meta": {}
+}

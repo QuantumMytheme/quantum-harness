@@ -20,7 +20,8 @@
     'gemm-swapped':  { label: 'bf16 GEMM — swapped output', refId: 'gemm_bf16_tile1', bundle: 'bundle-gemm-bf16-SWAPPED.json', expect: 'REJECT · 4' },
     'gemm-inputfit': { label: 'bf16 GEMM — overfit held-out', refId: 'gemm_bf16_tile1', bundle: 'bundle-gemm-bf16-INPUTFIT.json', expect: 'REJECT · 6' },
     'roofline-ok':   { label: 'roofline — honest coordinate', refId: 'roofline_gemm_v5e', bundle: 'bundle-roofline-OK.json', expect: 'ACCEPT' },
-    'roofline-lie':  { label: 'roofline — inflated %-of-peak', refId: 'roofline_gemm_v5e', bundle: 'bundle-roofline-PEAKLIE.json', expect: 'REJECT · 4' }
+    'roofline-lie':  { label: 'roofline — inflated %-of-peak', refId: 'roofline_gemm_v5e', bundle: 'bundle-roofline-PEAKLIE.json', expect: 'REJECT · 4' },
+    'roofline-v6e':  { label: 'roofline — TPU v6e (Trillium)', refId: 'roofline_gemm_v6e', bundle: 'bundle-roofline-v6e-OK.json', expect: 'ACCEPT' }
   };
 
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
