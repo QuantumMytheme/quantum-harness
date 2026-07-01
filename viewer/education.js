@@ -3678,14 +3678,14 @@
     ctx.fillStyle = reject; ctx.font = '600 13px ' + mono; ctx.textAlign = 'left'; ctx.fillText('→ moving the data costs ' + Math.round(ratio) + '× the math', bx, y0 + 116);
 
     // Wall 2 — Landauer floor (log energy)
-    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.fillText('Wall 2 — the Landauer floor: today’s chips burn ~10⁶× the thermodynamic minimum.', 14, H * 0.62);
+    ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.fillText('Wall 2 — the Landauer floor: even an INT8 MAC burns ~10⁷× the per-bit thermodynamic minimum.', 14, H * 0.62);
     var lx0 = 30, lx1 = W - 24, ly = H * 0.74;
     function E2X(j) { var lo = -22, hi = -10; return lx0 + (Math.max(lo, Math.min(hi, Math.log10(j))) - lo) / (hi - lo) * (lx1 - lx0); }
     ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(lx1, ly); ctx.stroke();
-    [[LAND_J, 'Landauer kT·ln2', pass(K)], [1e-12, 'one logic op (~1 pJ)', acc], [1e-15, 'one INT8 MAC', acc2]].forEach(function (m) {
+    [[LAND_J, 'Landauer kT·ln2', pass(K)], [1e-12, 'one logic op (~1 pJ)', acc], [MAC_pJ * 1e-12, 'one INT8 MAC (0.05 pJ)', acc2]].forEach(function (m) {
       var x = E2X(m[0]); ctx.strokeStyle = faint; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.moveTo(x, ly - 7); ctx.lineTo(x, ly + 7); ctx.stroke(); ctx.globalAlpha = 1;
       ctx.fillStyle = m[2]; ctx.font = '9px ' + mono; ctx.textAlign = 'center'; ctx.fillText(m[1], x, ly - 11); ctx.fillStyle = faint; ctx.fillText(m[0].toExponential(0) + ' J', x, ly + 18); });
-    ctx.fillStyle = reject; ctx.font = '600 11px ' + mono; ctx.textAlign = 'right'; ctx.fillText('~10⁶× gap', lx1, ly - 24);
+    ctx.fillStyle = reject; ctx.font = '600 11px ' + mono; ctx.textAlign = 'right'; ctx.fillText('MAC ~10⁷× above the floor', lx1, ly - 24);
 
     // Wall 3 — Koomey
     ctx.fillStyle = faint; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'left';
@@ -3757,7 +3757,7 @@
     { name: 'Thermodynamic “10,000×” (Extropic)', gates: [1, 0, 0, 0, 1], verdict: 'collapses', honest: 'a per-operation extrapolation from an X0 test chip — unvalidated end-to-end at scale.' },
     { name: 'Near-memory “25×” (NorthPole)', gates: [1, 1, 1, 1, 1], verdict: 'survives', honest: '25× frames/joule vs a 12nm V100, peer-reviewed (Science 2023) — but capped to models that fit on-chip SRAM.' },
     { name: 'Analog “10×” (Mythic)', gates: [1, 0, 0, 1, 1], verdict: 'shrinks', honest: '~8 TOPS/W datasheet; the “10× less power” is a vendor comparison, not an independent at-scale benchmark.' },
-    { name: 'Quantum ML “exponential”', gates: [0, 0, 0, 0, 0], verdict: 'collapses', honest: 'dequantized (Tang) and eaten by the O(N) read-in / O(√N) read-out wall — no end-to-end advantage.' }
+    { name: 'Quantum ML “exponential”', gates: [0, 0, 0, 0, 0], verdict: 'collapses', honest: 'dequantized (Tang) and eaten by the O(N) data read-in plus costly read-out (repeated sampling, up to O(N)) — no end-to-end advantage.' }
   ];
   var ci = 0;
   var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'check a claim'; controls.appendChild(lab);
@@ -3806,7 +3806,7 @@
     ctx.font = '11px ' + mono; ctx.fillStyle = ink2;
     ctx.fillText('claimed speedup:   ~√N or “exponential”', 14, 42);
     ctx.fillStyle = reject; ctx.fillText('read-in cost:      O(N)  — load weights/data', 14, 64);
-    ctx.fillText('read-out cost:     O(√N) — collapse to one answer', 14, 86);
+    ctx.fillText('read-out cost:     repeated sampling — up to O(N)', 14, 86);
     // a little bar: speedup vs overhead
     var bx = 20, bw = splitX - 50, by = 116;
     ctx.fillStyle = acc; ctx.globalAlpha = 0.5; ctx.fillRect(bx, by, bw * 0.3, 14); ctx.globalAlpha = 1; ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.fillText('claimed gain', bx, by - 4);
@@ -3968,7 +3968,7 @@
     // floors footer
     var fy = H - 10;
     ctx.fillStyle = faint; ctx.font = '8.5px ' + mono; ctx.textAlign = 'left';
-    ctx.fillText('the hard floors:  Landauer kT·ln2 ≈ 2.8 zJ/bit  ·  brain ~6 J/word  ·  today’s LLM ~1.8 J/token  ·  CMOS ~10⁶× above Landauer  ·  moving a bit ~50× the math  ·  doubling slowed 1.6→2.6 yr (Koomey)', dx, fy);
+    ctx.fillText('the hard floors:  Landauer kT·ln2 ≈ 2.8 zJ/bit  ·  brain ~6 J/word  ·  today’s LLM ~1.8 J/token  ·  an INT8 MAC ~10⁷× above Landauer  ·  moving a bit ~50× the math  ·  doubling slowed 1.6→2.6 yr (Koomey)', dx, fy);
   }
   function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();

@@ -385,14 +385,18 @@ def _bytes_per_elem(dtype):
 
 
 def verify_roofline_attest(bundle, ref, checks):
-    """Attest a kernel's efficiency COORDINATE without trusting a single claimant
-    number. The judge recomputes the useful FLOPs from the GEMM shape (2·M·N·K),
-    the median wall-clock from the supplied samples, the %-of-peak against a PINNED
-    per-generation peak, the arithmetic intensity against the moved-byte tally, and
-    the compute/memory-bound regime vs the pinned ridge. Any claimant self-reported
-    number that disagrees is rejected (exit 4). Producing the wall-clock samples and
-    the measured HBM bytes is the NEEDS-A-TPU leg; the arithmetic, the physical
-    byte lower bound, and the <=100%-of-peak sanity are all HERMETIC-NOW."""
+    """Attest a kernel's efficiency COORDINATE without trusting any claimant-COMPUTED
+    number. Honest trust boundary: the raw wall-clock samples and the measured HBM
+    bytes ARE claimant-measured attestations (the judge cannot re-time your device);
+    they are cross-checked for self-consistency and physical bounds, not provenance.
+    Every DERIVED number is recomputed: the useful FLOPs from the GEMM shape
+    (2·M·N·K), the median wall-clock from the supplied samples, the %-of-peak against
+    a PINNED per-generation peak, the arithmetic intensity against the moved-byte
+    tally, and the compute/memory-bound regime vs the pinned ridge. Any claimant
+    self-reported number that disagrees is rejected (exit 4). Producing the
+    wall-clock samples and the measured HBM bytes is the NEEDS-A-TPU leg; the
+    arithmetic, the physical byte lower bound, and the <=100%-of-peak sanity are all
+    HERMETIC-NOW."""
     c = bundle.get("constraints") or {}
     shape = c.get("shape")
     if list(shape or []) != list(ref["shape"]):

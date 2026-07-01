@@ -27,9 +27,12 @@ the result.**
 ## T1 — the Roofline Notary (`roofline-attest` task)
 
 Once a kernel is *correct* (the gate above), the second task attests *how fast* it
-ran — again without trusting a single claimant number. For a `roofline-attest`
-bundle the judge recomputes, from the GEMM shape + the supplied measured samples +
-a **pinned per-generation** peak/bandwidth:
+ran — without trusting any claimant-*computed* number. The honest trust boundary:
+the raw timing samples and the measured HBM byte count are claimant-measured
+attestations (the judge cannot re-time your device); they are cross-checked for
+self-consistency and physical bounds, not provenance. Every derived number is
+recomputed. For a `roofline-attest` bundle the judge recomputes, from the GEMM
+shape + the supplied measured samples + a **pinned per-generation** peak/bandwidth:
 
 - **useful FLOPs** = 2·M·N·K (and the padded/MXU-issued FLOPs, so padding waste is disclosed),
 - **median wall-clock** from the raw per-run samples (not a self-reported median),
