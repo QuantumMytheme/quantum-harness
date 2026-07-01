@@ -5,26 +5,79 @@
 // Ranking mirrors SCOREBOARD.md (b): per problem_id, by the primary verified metric
 // (direction per task) with resource-efficiency tie-breaks. No network, no deps.
 //
+// Besides the ranked `rows`, the payload carries two derived structures:
+//   coverage — one record per KNOWN problem (every reference in
+//              bench/quantum-judge/references/ + bench/kernel-judge/references/,
+//              runs or not): which paradigm families have been tried, whether any
+//              model-authored run / classical-baseline row / hardware overlay
+//              exists, and the concrete open gaps with a copyable mint command.
+//              A gap is "untried" — never "impossible", never "easy".
+//   frontier — per problem, every verified run as a point in (metric, primary
+//              resource cost) space with Pareto dominance flags, plus an honest
+//              machine-derived open-gap sentence. Dominated runs stay in the data:
+//              the board is a record, not a highlight reel.
+//
+// Honesty rule for hardware overlays: an emulated/synthetic backend (explicit
+// emulated:true, or a backend named emulated/synthetic/simulat*/local-*) is NEVER
+// presented as hardware. It earns a smaller, separately-labeled 'noisy-sim'
+// robustness credit and the row's hardware block says so.
+//
 //   node scoreboard/build.mjs           # regenerate viewer/scoreboard-data.js
 //   node scoreboard/build.mjs --check   # exit 1 if the committed file is stale
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve, basename } from 'node:path'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const data = JSON.parse(readFileSync(join(ROOT, 'scoreboard', 'entries.json'), 'utf8'))
 
-const DIR = { state_prep: 'higher', vqe: 'lower', populations: 'higher', architecture: 'lower', classify: 'higher' }
-const TIES = {
+export const DIR = { state_prep: 'higher', vqe: 'lower', populations: 'higher', architecture: 'lower', classify: 'higher' }
+export const TIES = {
   state_prep: ['two_qubit_gates', 'depth'], vqe: ['two_qubit_gates', 'depth'],
   populations: ['two_qubit_gates', 'depth'], architecture: ['edges', 'max_degree'],
   classify: ['feature_map_ops', 'n_qubits'],
 }
+const COST_LABEL = { two_qubit_gates: '2q gates', depth: 'depth', edges: 'edges', max_degree: 'max degree', feature_map_ops: 'feature-map ops', n_qubits: 'qubits' }
 const num = x => (x === undefined || x === null ? 0 : Number(x))
 const fmt = x => (Object.is(x, -0) ? '0' : `${x}`)
 
-function metric(e) {
-  const m = e.verified_metric, v = m.value
+// ---- defensive shape validation over discovered/registered entries ---------
+// discover.mjs ingests community scoreboard-entry.json files with only a JSON
+// parse between them and this pipeline. One malformed entry (e.g. {"problem_id":"x"})
+// must be skipped + logged — never allowed to crash the whole board refresh.
+export function validEntry(e) {
+  const errs = []
+  if (!e || typeof e !== 'object' || Array.isArray(e)) return { ok: false, errs: ['not an object'] }
+  if (typeof e.problem_id !== 'string' || !e.problem_id) errs.push('problem_id')
+  if (typeof e.task !== 'string' || !e.task) errs.push('task')
+  if (typeof (e.paradigm_short ?? e.paradigm) !== 'string' || !(e.paradigm_short || e.paradigm)) errs.push('paradigm')
+  if (!e.verified_metric || typeof e.verified_metric !== 'object' || !Number.isFinite(Number(e.verified_metric.value))) errs.push('verified_metric.value')
+  if (!e.resource_costs || typeof e.resource_costs !== 'object') errs.push('resource_costs')
+  if (typeof e.run_repo !== 'string' || !/^https:\/\/github\.com\//.test(e.run_repo)) errs.push('run_repo')
+  if (typeof e.proof_bundle !== 'string' || !e.proof_bundle) errs.push('proof_bundle')
+  return { ok: errs.length === 0, errs }
+}
+export function filterValid(list, label = 'entry') {
+  const kept = []
+  for (const e of list || []) {
+    const v = validEntry(e)
+    if (v.ok) kept.push(e)
+    else console.error(`skipped malformed ${label} (${v.errs.join(', ')}): ${JSON.stringify(e).slice(0, 120)}`)
+  }
+  return kept
+}
+
+// ---- emulated / synthetic hardware-report detection -------------------------
+// A hardware overlay from an emulated or synthetic backend is honest data, but it
+// is not a device run. It must never earn the hardware badge or hardware credit.
+export function isEmulatedReport(hr) {
+  if (!hr || typeof hr !== 'object') return false
+  if (hr.emulated === true) return true
+  const b = String(hr.backend || '').toLowerCase()
+  return /emulat|synthetic|simulat/.test(b) || b.startsWith('local-')
+}
+
+export function metric(e) {
+  const m = e.verified_metric, v = Number(m.value)
   switch (e.task) {
     case 'state_prep': return { name: 'fidelity', value: v.toFixed(3), sub: `≥ ${m.threshold} · base ${m.classical_baseline}` }
     case 'vqe': return { name: 'gap', value: v.toFixed(3), sub: `to E₀=${fmt(m.ground_state_energy)} · base ${fmt(m.classical_baseline)}` }
@@ -40,6 +93,7 @@ function cost(e) {
   if (e.task === 'classify') return `ops ${r.feature_map_ops} · ${r.n_qubits} qubit`
   return `2q ${r.two_qubit_gates} · depth ${r.depth}`
 }
+const paradigmShort = e => e.paradigm_short || String(e.paradigm || '').split(/ \(| — /)[0]
 // ---- holistic 5-axis quality profile (transparent + documented) ------------
 // A run's leaderboard RANK is its single verified primary metric. Its GRADE is a
 // holistic profile, so a leaner / hardware-validated design can out-grade a run
@@ -48,7 +102,7 @@ function cost(e) {
 const clamp01 = x => (x < 0 ? 0 : x > 1 ? 1 : x)
 const QW = { correctness: 0.28, margin: 0.30, efficiency: 0.16, robustness: 0.16, novelty: 0.10 }
 const CLASSIFY_COST_BUDGET = 8                            // feature-map ops + qubits past which efficiency hits 0
-function qualityAxes(e) {
+export function qualityAxes(e) {
   const m = e.verified_metric, r = e.resource_costs || {}, t = e.task
   const correctness = 1                                   // on the board = passed all 4 gates
   let margin = 0.5                                        // how far the result clears the bar toward the ideal
@@ -62,7 +116,10 @@ function qualityAxes(e) {
   else if (t === 'classify') efficiency = clamp01(1 - (num(r.feature_map_ops) + num(r.n_qubits)) / CLASSIFY_COST_BUDGET)
   else { const n = num(r.n_qubits) || 2; efficiency = clamp01(1 - (num(r.two_qubit_gates) + 0.5 * num(r.depth)) / (2.5 * n + 3)) }
   const teeth = (t === 'populations' || t === 'architecture' || t === 'classify') ? 0.40 : 0   // a real held-out gate
-  const hw = (e.hardware_reports && e.hardware_reports[0]) ? 0.35 : 0                            // verified hardware overlay
+  // hardware overlay credit: 0.35 only for a REAL device run. An emulated/synthetic
+  // backend earns a smaller 'noisy-sim' credit (0.15) — emulation is never hardware.
+  const hr = (e.hardware_reports && e.hardware_reports[0]) || null
+  const hw = hr ? (isEmulatedReport(hr) ? 0.15 : 0.35) : 0
   const robustness = clamp01(0.25 + teeth + hw)
   // novelty is a pure function of the row: a reference baseline is the floor, a model-authored run adds new knowledge
   const isRef = String(e.model || '').toLowerCase().includes('reference')
@@ -74,14 +131,14 @@ function gradeOf(s) {
   for (const [th, g] of bands) if (s >= th) return g
   return 'F'
 }
-function quality(e) {
+export function quality(e) {
   const a = qualityAxes(e)
   const score = QW.correctness * a.correctness + QW.margin * a.margin + QW.efficiency * a.efficiency + QW.robustness * a.robustness + QW.novelty * a.novelty
   const rnd = x => Math.round(x * 100) / 100
   return { correctness: rnd(a.correctness), margin: rnd(a.margin), efficiency: rnd(a.efficiency), robustness: rnd(a.robustness), novelty: rnd(a.novelty), score: rnd(score), grade: gradeOf(score) }
 }
 
-function rankGroup(list) {
+export function rankGroup(list) {
   const t = list[0].task, dir = DIR[t] || 'higher', ties = TIES[t] || []
   return [...list].sort((a, b) => {
     const d = dir === 'higher' ? b.verified_metric.value - a.verified_metric.value
@@ -92,50 +149,176 @@ function rankGroup(list) {
   })
 }
 
-// seeds (entries.json) + auto-discovered run-repo entries (discovered.json), deduped
-let discovered = []
-try { discovered = JSON.parse(readFileSync(join(ROOT, 'scoreboard', 'discovered.json'), 'utf8')).entries || [] } catch { /* none yet */ }
-const seen = new Set()
-const allEntries = [...data.entries, ...discovered].filter((e) => {
-  const k = `${e.run_repo}|${e.proof_bundle}|${e.problem_id}`
-  if (seen.has(k)) return false
-  seen.add(k); return true
-})
+// ---- problem catalog: EVERY known problem, with or without runs -------------
+// The wanted board must enumerate the full problem set, not just problems that
+// already have entries — the empty cells are the point.
+export function problemCatalog(root = ROOT) {
+  const out = []
+  const readRefs = (dir) => {
+    try { return readdirSync(join(root, dir)).filter(f => f.endsWith('.json')).sort() } catch { return [] }
+  }
+  for (const f of readRefs('bench/quantum-judge/references')) {
+    try {
+      const ref = JSON.parse(readFileSync(join(root, 'bench/quantum-judge/references', f), 'utf8'))
+      // some references carry problem_id inline; others are keyed by filename
+      const pid = (ref && typeof ref.problem_id === 'string' && ref.problem_id) || basename(f, '.json')
+      out.push({ problem_id: pid, task: (ref && ref.task) || 'unknown', source: 'quantum-judge' })
+    } catch (err) { console.error(`skipped unreadable reference ${f}: ${err.message}`) }
+  }
+  for (const f of readRefs('bench/kernel-judge/references')) {
+    try {
+      const ref = JSON.parse(readFileSync(join(root, 'bench/kernel-judge/references', f), 'utf8'))
+      out.push({ problem_id: basename(f, '.json'), task: (ref && ref.task) || 'kernel', source: 'kernel-judge' })
+    } catch (err) { console.error(`skipped unreadable reference ${f}: ${err.message}`) }
+  }
+  return out
+}
 
-const byProblem = {}
-for (const e of allEntries) (byProblem[e.problem_id] ||= []).push(e)
-const problems = Object.keys(byProblem)
-const rows = []
-for (const pid of problems) {
-  rankGroup(byProblem[pid]).forEach((e, i) => {
-    const m = metric(e)
-    rows.push({
-      problem_id: e.problem_id, task: e.task, rank: i + 1,
-      paradigm_short: e.paradigm_short || e.paradigm.split(/ \(| — /)[0],
-      metricName: m.name, metricValue: m.value, metricSub: m.sub,
-      costLabel: cost(e), model: e.model,
-      quality: quality(e),
-      bundleUrl: `${e.run_repo}/blob/main/${e.proof_bundle}`,
-      why: e.why_it_scores,
-      hardware: (e.hardware_reports && e.hardware_reports[0])
-        ? { backend: e.hardware_reports[0].backend, metric: e.hardware_reports[0].metric, value: e.hardware_reports[0].value, url: e.hardware_reports[0].report_url }
-        : null,
-    })
+// ---- coverage: paradigms tried + honest open gaps per problem ---------------
+// Gap labels state what is UNTRIED — never that a gap is impossible or easy.
+// Mint commands assume bin/new-run.sh defaults to the caller's own GitHub login,
+// so a stranger can paste them as-is (no --org).
+const isClassicalRow = e => /classical-baseline/i.test(`${e.paradigm_short || ''} ${e.paradigm || ''} ${e.model || ''}`)
+const isModelRun = e => !String(e.model || '').toLowerCase().includes('reference')
+export function buildCoverage(catalog, byProblem) {
+  return catalog.map(p => {
+    const list = byProblem[p.problem_id] || []
+    const mint = (suffix) => `bin/new-run.sh run-${p.problem_id}${suffix ? '-' + suffix : ''} --remix ${p.problem_id}`
+    const has_model_run = list.some(isModelRun)
+    const has_classical_baseline = list.some(isClassicalRow)
+    const reports = list.flatMap(e => e.hardware_reports || [])
+    const has_hardware_overlay = reports.some(h => !isEmulatedReport(h))     // real device only
+    const has_noisy_sim_overlay = reports.some(h => isEmulatedReport(h))     // emulated ≠ hardware
+    const gaps = []
+    if (!list.length) {
+      gaps.push({ kind: 'first-run', label: 'untried — no verified design on this board at all; the first ACCEPT opens it', command: mint('') })
+    } else {
+      if (!has_model_run) gaps.push({ kind: 'model-run', label: 'no model-authored run yet — only the hand-authored reference baseline (untried, not settled)', command: mint('') })
+      if (p.source === 'quantum-judge' && !has_classical_baseline) gaps.push({ kind: 'classical-baseline', label: 'no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)', command: mint('classical') })
+      if (p.source === 'quantum-judge' && !has_hardware_overlay) gaps.push({ kind: 'hardware', label: has_noisy_sim_overlay ? 'no REAL-device hardware overlay — only an emulated (noisy-sim) one; a device run is untried' : 'no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)', command: mint('hw') })
+    }
+    return {
+      problem_id: p.problem_id, task: p.task, source: p.source,
+      paradigms_tried: [...new Set(list.map(paradigmShort))],
+      runs: list.length, has_model_run, has_classical_baseline, has_hardware_overlay, has_noisy_sim_overlay,
+      gaps,
+    }
   })
 }
 
-const generated = new Date().toISOString().slice(0, 10)
-const out = `// GENERATED by scoreboard/build.mjs — do not edit. Run \`node scoreboard/build.mjs\`.\n`
-  + `window.SCOREBOARD_DATA = ${JSON.stringify({ generated, count: rows.length, problems, rows }, null, 2)};\n`
-
-const target = join(ROOT, 'viewer', 'scoreboard-data.js')
-if (process.argv.includes('--check')) {
-  let cur = ''
-  try { cur = readFileSync(target, 'utf8') } catch {}
-  // ignore the generated-date line when comparing freshness
-  const strip = s => s.replace(/"generated":\s*"[^"]*",?\n?/, '')
-  if (strip(cur) !== strip(out)) { console.error('STALE: viewer/scoreboard-data.js — run `node scoreboard/build.mjs` and commit.'); process.exit(1) }
-  console.log('fresh: viewer/scoreboard-data.js matches entries.json'); process.exit(0)
+// ---- Pareto frontier: verified metric vs primary resource cost --------------
+// A point is dominated iff another point is at least as good on BOTH axes and
+// strictly better on at least one. Dominated points stay in the data.
+export function paretoFrontier(list, task) {
+  const dir = DIR[task] || 'higher'
+  const costKey = (TIES[task] || ['two_qubit_gates'])[0]
+  const pts = list.map(e => ({
+    paradigm: paradigmShort(e), model: e.model || '', run_repo: e.run_repo,
+    metric: Number(e.verified_metric.value), cost: num((e.resource_costs || {})[costKey]),
+    reference: !isModelRun(e),
+  }))
+  const asGood = (a, b) => dir === 'higher' ? a >= b : a <= b       // metric at least as good
+  const strictly = (a, b) => dir === 'higher' ? a > b : a < b       // metric strictly better
+  for (const p of pts) {
+    p.dominated = pts.some(q => q !== p
+      && asGood(q.metric, p.metric) && q.cost <= p.cost
+      && (strictly(q.metric, p.metric) || q.cost < p.cost))
+  }
+  return { dir, costKey, costLabel: COST_LABEL[costKey] || costKey, points: pts }
 }
-writeFileSync(target, out)
-console.log(`wrote viewer/scoreboard-data.js — ${rows.length} entries across ${problems.length} problems`)
+const sig = v => Number(Number(v).toPrecision(3))
+export function frontierGap(f, metricName) {
+  const front = f.points.filter(p => !p.dominated).sort((a, b) => a.cost - b.cost || a.metric - b.metric)
+  if (f.points.length < 2) {
+    const p = f.points[0]
+    return p ? `Only one verified entry so far (${p.paradigm}, ${metricName} ${sig(p.metric)} at ${p.cost} ${f.costLabel}) — the frontier is a single point. A second paradigm at a different cost is untried.` : 'No verified entries yet — the whole frontier is untried.'
+  }
+  if (front.length === 1) {
+    const p = front[0]
+    return `${p.paradigm} currently dominates every other entry (${metricName} ${sig(p.metric)} at ${p.cost} ${f.costLabel}). Matching it at lower ${f.costLabel} is untried.`
+  }
+  const cheap = front[0], best = front[front.length - 1]
+  return `Open gap: no verified entry below ${cheap.cost} ${f.costLabel}, and ${metricName} ${sig(best.metric)} is only reached at ${best.cost} ${f.costLabel} — a design beating either corner is untried. Untried means nobody has posted one; it says nothing about difficulty.`
+}
+
+// ---- structured lineage (optional remix_of field) ----------------------------
+// Entries MAY declare `remix_of: ["Org/run-repo", ...]` (bin/ingredients.mjs prints
+// the exact field to copy). When present, the board surfaces the descent chain and
+// credits the ingredient with a descendant count. Prose-only lineage stays prose.
+export function lineage(entries) {
+  const key = u => String(u || '').replace(/^https:\/\/github\.com\//, '').replace(/\/+$/, '').toLowerCase()
+  const declared = e => (Array.isArray(e.remix_of) ? e.remix_of : []).filter(x => typeof x === 'string' && x).map(key)
+  const counts = {}
+  for (const e of entries) for (const r of new Set(declared(e))) counts[r] = (counts[r] || 0) + 1
+  return e => ({ remix_of: declared(e), remixed_by: counts[key(e.run_repo)] || 0 })
+}
+
+// ---- assemble the full payload ----------------------------------------------
+export function buildData(root = ROOT) {
+  const data = JSON.parse(readFileSync(join(root, 'scoreboard', 'entries.json'), 'utf8'))
+  // seeds (entries.json) + auto-discovered run-repo entries (discovered.json), deduped
+  let discovered = []
+  try { discovered = JSON.parse(readFileSync(join(root, 'scoreboard', 'discovered.json'), 'utf8')).entries || [] } catch { /* none yet */ }
+  const seen = new Set()
+  const allEntries = [...filterValid(data.entries, 'seed entry'), ...filterValid(discovered, 'discovered entry')].filter((e) => {
+    const k = `${e.run_repo}|${e.proof_bundle}|${e.problem_id}`
+    if (seen.has(k)) return false
+    seen.add(k); return true
+  })
+
+  const byProblem = {}
+  for (const e of allEntries) (byProblem[e.problem_id] ||= []).push(e)
+  const problems = Object.keys(byProblem)
+  const lin = lineage(allEntries)
+  const rows = []
+  for (const pid of problems) {
+    rankGroup(byProblem[pid]).forEach((e, i) => {
+      const m = metric(e)
+      const hr = (e.hardware_reports && e.hardware_reports[0]) || null
+      rows.push({
+        ...lin(e),
+        problem_id: e.problem_id, task: e.task, rank: i + 1,
+        paradigm_short: paradigmShort(e),
+        metricName: m.name, metricValue: m.value, metricSub: m.sub,
+        costLabel: cost(e), model: e.model,
+        quality: quality(e),
+        bundleUrl: `${e.run_repo}/blob/main/${e.proof_bundle}`,
+        why: e.why_it_scores,
+        hardware: hr
+          ? { backend: hr.backend, metric: hr.metric, value: hr.value, url: hr.report_url, emulated: isEmulatedReport(hr), label: isEmulatedReport(hr) ? 'noisy-sim' : 'hw' }
+          : null,
+      })
+    })
+  }
+
+  const catalog = problemCatalog(root)
+  const coverage = buildCoverage(catalog, byProblem)
+  const frontier = {}
+  for (const pid of problems) {
+    const f = paretoFrontier(byProblem[pid], byProblem[pid][0].task)
+    const mName = metric(byProblem[pid][0]).name
+    frontier[pid] = { task: byProblem[pid][0].task, metricName: mName, ...f, gap: frontierGap(f, mName) }
+  }
+
+  const generated = new Date().toISOString().slice(0, 10)
+  return { generated, count: rows.length, problems, rows, coverage, frontier }
+}
+
+function main() {
+  const payload = buildData(ROOT)
+  const out = `// GENERATED by scoreboard/build.mjs — do not edit. Run \`node scoreboard/build.mjs\`.\n`
+    + `window.SCOREBOARD_DATA = ${JSON.stringify(payload, null, 2)};\n`
+
+  const target = join(ROOT, 'viewer', 'scoreboard-data.js')
+  if (process.argv.includes('--check')) {
+    let cur = ''
+    try { cur = readFileSync(target, 'utf8') } catch {}
+    // ignore the generated-date line when comparing freshness
+    const strip = s => s.replace(/"generated":\s*"[^"]*",?\n?/, '')
+    if (strip(cur) !== strip(out)) { console.error('STALE: viewer/scoreboard-data.js — run `node scoreboard/build.mjs` and commit.'); process.exit(1) }
+    console.log('fresh: viewer/scoreboard-data.js matches entries.json'); process.exit(0)
+  }
+  writeFileSync(target, out)
+  console.log(`wrote viewer/scoreboard-data.js — ${payload.count} entries across ${payload.problems.length} problems, ${payload.coverage.length} known problems in coverage`)
+}
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()

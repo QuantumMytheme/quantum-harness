@@ -314,8 +314,19 @@ function findRun(pid, para) {
 }
 function proofLinks(r, esc) {
   let h = `<a href="${esc(r.bundleUrl)}">bundle ↗</a>`;
-  if (r.hardware) h += ` <a class="hwlink" href="${esc(r.hardware.url)}" title="hardware overlay · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">⚛ hw ↗</a>`;
+  // an emulated/synthetic backend is labeled inline as noisy-sim — never presented as hardware
+  if (r.hardware && (r.hardware.emulated || r.hardware.label === 'noisy-sim'))
+    h += ` <a class="hwlink simlink" href="${esc(r.hardware.url)}" title="EMULATED backend — a noisy simulation, not a device run · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">≈ noisy-sim ↗</a>`;
+  else if (r.hardware) h += ` <a class="hwlink" href="${esc(r.hardware.url)}" title="hardware overlay · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">⚛ hw ↗</a>`;
   if (window.QMRunner && window.QMRunner.RUNS[r.problem_id]) h += ` · <a href="#" data-run="${esc(r.problem_id)}" title="re-run this circuit in your browser">▸ run</a>`;
+  return h;
+}
+// structured lineage (entry-declared remix_of): descent chain + ingredient credit
+function lineageTags(r, esc) {
+  let h = '';
+  if (r.remix_of && r.remix_of.length)
+    h += `<span class="lineage" title="declared in the entry's remix_of field">⟲ remix of ${r.remix_of.map(x => `<a href="https://github.com/${esc(x)}">${esc(x.split('/').pop())}</a>`).join(', ')}</span>`;
+  if (r.remixed_by) h += `<span class="lineage" title="verified runs that declare this run as an ingredient">→ remixed by ${r.remixed_by}</span>`;
   return h;
 }
 function renderScoreboard() {
@@ -335,7 +346,7 @@ function renderScoreboard() {
     const q = r.quality, taskCell = K ? K.taskChip(r.task) : r.task;
     return '<tr class="sb-row" data-pid="' + esc(r.problem_id) + '" data-para="' + esc(r.paradigm_short) + '">' +
       `<td><b>${esc(r.problem_id)}</b> ${taskCell}${r.rank > 1 ? ` <span class="dimnum">#${r.rank}</span>` : ''}</td>` +
-      `<td><span class="ptag">${esc(r.paradigm_short)}</span></td>` +
+      `<td><span class="ptag">${esc(r.paradigm_short)}</span>${lineageTags(r, esc)}</td>` +
       `<td class="num">${esc(r.metricName)} <b>${esc(r.metricValue)}</b><span class="sub">${esc(r.metricSub)}</span></td>` +
       `<td>${K && q ? K.profileBadge(q) : ''}</td>` +
       `<td class="num">${esc(r.costLabel)}</td>` +

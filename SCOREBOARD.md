@@ -254,6 +254,14 @@ calibration — trusted-but-labeled, since a device run isn't re-executable by a
 party). A hardware overlay **never outranks** the sim score; it shows *"validated on
 `ibm_torino`, ⟨X₀X₁⟩ = 0.94, 4096 shots."* Full flow + format: **[HARDWARE.md](HARDWARE.md)**.
 
+> **Emulation is never hardware.** An overlay whose backend is emulated or synthetic
+> (an explicit `"emulated": true`, or a backend named `emulated` / `synthetic` /
+> `simulat…` / `local-…`) is honest data, but it is **not a device run**. The
+> aggregator (`scoreboard/build.mjs`) detects it, labels it **`noisy-sim`** inline on
+> the board (not tooltip-only), withholds the hardware robustness credit (a smaller,
+> separately-labeled noisy-sim credit applies instead), and it does **not** satisfy a
+> problem's "hardware overlay" cell on the wanted board. Only a real device run does.
+
 ---
 
 ## (f) Status — honest
@@ -280,7 +288,26 @@ live repo list as a fast path and fallback, shape-validates each entry (invalid 
 skipped and logged), ingests them into `scoreboard/discovered.json`, re-verifies them, and
 rebuilds the board — **no PR needed** (the [PR template](.github/pull_request_template.md)
 still works if you prefer). Seeds live in `entries.json`, discovered runs in `discovered.json`;
-the aggregator merges both.
+the aggregator merges both — **defensively**: a malformed community entry (say,
+`{"problem_id":"x"}` in a tagged repo's `scoreboard-entry.json`) is skipped and logged,
+never allowed to crash a board refresh or the `--remix` ingredients pack.
+
+The aggregator also derives two discovery structures the viewer renders below the board:
+
+- **The wanted board (`coverage`).** One record per **known** problem — every reference
+  in `bench/quantum-judge/references/` *and* the kernel-judge problem set, whether or not
+  anyone has run it — listing the paradigm families tried and whether a model-authored
+  run, a `classical-baseline` row, or a **real-device** hardware overlay exists. Every
+  empty cell renders as an open gap with the exact `bin/new-run.sh` command to claim it
+  (minted under *your own* GitHub login). Honesty rule: a gap is **untried** — the board
+  never claims a gap is impossible, and never that it's easy. A claimed cell lands only
+  through the same fail-closed re-verification gate as every other row.
+- **The frontier atlas (`frontier`).** Per problem, every verified run as a point in
+  (verified metric × primary resource cost) space with Pareto-dominance flags, the
+  stepped frontier through the non-dominated set, and a machine-derived open-gap
+  sentence (e.g. on `tfim3`: QAOA p=2 and the 1-layer hardware-efficient ansatz are a
+  genuine two-point tradeoff — nothing below 2 two-qubit gates, and gap ≈ 1e-4 only at
+  4). Dominated runs stay visible: the board is a record, not a highlight reel.
 
 **Refresh cadence, honestly:** a scheduled workflow (`.github/workflows/discover.yml`,
 every 6 hours) exists, but org CI is not guaranteed to be running; in practice the board

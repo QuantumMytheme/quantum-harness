@@ -13,6 +13,8 @@ window.SCOREBOARD_DATA = {
   ],
   "rows": [
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "ghz3",
       "task": "state_prep",
       "rank": 1,
@@ -36,6 +38,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "isingbell2",
       "task": "vqe",
       "rank": 1,
@@ -59,6 +63,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "bell_pops2",
       "task": "populations",
       "rank": 1,
@@ -82,6 +88,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "aiaccel4",
       "task": "architecture",
       "rank": 1,
@@ -105,6 +113,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "qml_sign1",
       "task": "classify",
       "rank": 1,
@@ -128,6 +138,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "h2vqe",
       "task": "vqe",
       "rank": 1,
@@ -151,6 +163,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "tfim3",
       "task": "vqe",
       "rank": 1,
@@ -174,6 +188,8 @@ window.SCOREBOARD_DATA = {
       "hardware": null
     },
     {
+      "remix_of": [],
+      "remixed_by": 0,
       "problem_id": "tfim3",
       "task": "vqe",
       "rank": 2,
@@ -187,10 +203,10 @@ window.SCOREBOARD_DATA = {
         "correctness": 1,
         "margin": 0.71,
         "efficiency": 0.67,
-        "robustness": 0.6,
+        "robustness": 0.4,
         "novelty": 0.75,
-        "score": 0.77,
-        "grade": "B+"
+        "score": 0.74,
+        "grade": "B"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/quantum-proof-tfim3.json",
       "why": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1.",
@@ -198,8 +214,542 @@ window.SCOREBOARD_DATA = {
         "backend": "local-noisy (emulated)",
         "metric": "energy",
         "value": -2.903418,
-        "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json"
+        "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json",
+        "emulated": true,
+        "label": "noisy-sim"
       }
     }
-  ]
+  ],
+  "coverage": [
+    {
+      "problem_id": "aiaccel4",
+      "task": "architecture",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "ring"
+      ],
+      "runs": 1,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "model-run",
+          "label": "no model-authored run yet — only the hand-authored reference baseline (untried, not settled)",
+          "command": "bin/new-run.sh run-aiaccel4 --remix aiaccel4"
+        },
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-aiaccel4-classical --remix aiaccel4"
+        },
+        {
+          "kind": "hardware",
+          "label": "no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)",
+          "command": "bin/new-run.sh run-aiaccel4-hw --remix aiaccel4"
+        }
+      ]
+    },
+    {
+      "problem_id": "bell_pops2",
+      "task": "populations",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "phase-correct-bell"
+      ],
+      "runs": 1,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "model-run",
+          "label": "no model-authored run yet — only the hand-authored reference baseline (untried, not settled)",
+          "command": "bin/new-run.sh run-bell_pops2 --remix bell_pops2"
+        },
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-bell_pops2-classical --remix bell_pops2"
+        },
+        {
+          "kind": "hardware",
+          "label": "no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)",
+          "command": "bin/new-run.sh run-bell_pops2-hw --remix bell_pops2"
+        }
+      ]
+    },
+    {
+      "problem_id": "bellnoisy2",
+      "task": "state_prep",
+      "source": "quantum-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-bellnoisy2 --remix bellnoisy2"
+        }
+      ]
+    },
+    {
+      "problem_id": "ghz3",
+      "task": "state_prep",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "chain-cascade"
+      ],
+      "runs": 1,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "model-run",
+          "label": "no model-authored run yet — only the hand-authored reference baseline (untried, not settled)",
+          "command": "bin/new-run.sh run-ghz3 --remix ghz3"
+        },
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-ghz3-classical --remix ghz3"
+        },
+        {
+          "kind": "hardware",
+          "label": "no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)",
+          "command": "bin/new-run.sh run-ghz3-hw --remix ghz3"
+        }
+      ]
+    },
+    {
+      "problem_id": "h2vqe",
+      "task": "vqe",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "hardware-efficient-h2"
+      ],
+      "runs": 1,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "model-run",
+          "label": "no model-authored run yet — only the hand-authored reference baseline (untried, not settled)",
+          "command": "bin/new-run.sh run-h2vqe --remix h2vqe"
+        },
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-h2vqe-classical --remix h2vqe"
+        },
+        {
+          "kind": "hardware",
+          "label": "no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)",
+          "command": "bin/new-run.sh run-h2vqe-hw --remix h2vqe"
+        }
+      ]
+    },
+    {
+      "problem_id": "isingbell2",
+      "task": "vqe",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "minimal-bell-ansatz"
+      ],
+      "runs": 1,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "model-run",
+          "label": "no model-authored run yet — only the hand-authored reference baseline (untried, not settled)",
+          "command": "bin/new-run.sh run-isingbell2 --remix isingbell2"
+        },
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-isingbell2-classical --remix isingbell2"
+        },
+        {
+          "kind": "hardware",
+          "label": "no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)",
+          "command": "bin/new-run.sh run-isingbell2-hw --remix isingbell2"
+        }
+      ]
+    },
+    {
+      "problem_id": "qml_sign1",
+      "task": "classify",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "low-frequency-encoding"
+      ],
+      "runs": 1,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "model-run",
+          "label": "no model-authored run yet — only the hand-authored reference baseline (untried, not settled)",
+          "command": "bin/new-run.sh run-qml_sign1 --remix qml_sign1"
+        },
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-qml_sign1-classical --remix qml_sign1"
+        },
+        {
+          "kind": "hardware",
+          "label": "no hardware overlay — no ACCEPTed design here has been run on a device (untried; see HARDWARE.md)",
+          "command": "bin/new-run.sh run-qml_sign1-hw --remix qml_sign1"
+        }
+      ]
+    },
+    {
+      "problem_id": "tfim3",
+      "task": "vqe",
+      "source": "quantum-judge",
+      "paradigms_tried": [
+        "qaoa",
+        "hardware-efficient"
+      ],
+      "runs": 2,
+      "has_model_run": true,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": true,
+      "gaps": [
+        {
+          "kind": "classical-baseline",
+          "label": "no classical-baseline row — the board invites one so the quantum-vs-classical gap is visible (untried)",
+          "command": "bin/new-run.sh run-tfim3-classical --remix tfim3"
+        },
+        {
+          "kind": "hardware",
+          "label": "no REAL-device hardware overlay — only an emulated (noisy-sim) one; a device run is untried",
+          "command": "bin/new-run.sh run-tfim3-hw --remix tfim3"
+        }
+      ]
+    },
+    {
+      "problem_id": "gemm_bf16_tile1",
+      "task": "kernel-correctness-oracle",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-gemm_bf16_tile1 --remix gemm_bf16_tile1"
+        }
+      ]
+    },
+    {
+      "problem_id": "gemm_int8_tile1",
+      "task": "kernel-correctness-oracle",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-gemm_int8_tile1 --remix gemm_int8_tile1"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_8t_bf16",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_8t_bf16 --remix roofline_8t_bf16"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_gemm_8t",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_gemm_8t --remix roofline_gemm_8t"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_gemm_TPU7x",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_gemm_TPU7x --remix roofline_gemm_TPU7x"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_gemm_v5e",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_gemm_v5e --remix roofline_gemm_v5e"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_gemm_v5p",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_gemm_v5p --remix roofline_gemm_v5p"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_gemm_v6e",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_gemm_v6e --remix roofline_gemm_v6e"
+        }
+      ]
+    },
+    {
+      "problem_id": "roofline_unpinned",
+      "task": "roofline-attest",
+      "source": "kernel-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-roofline_unpinned --remix roofline_unpinned"
+        }
+      ]
+    }
+  ],
+  "frontier": {
+    "ghz3": {
+      "task": "state_prep",
+      "metricName": "fidelity",
+      "dir": "higher",
+      "costKey": "two_qubit_gates",
+      "costLabel": "2q gates",
+      "points": [
+        {
+          "paradigm": "chain-cascade",
+          "model": "reference-baseline",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "metric": 1,
+          "cost": 2,
+          "reference": true,
+          "dominated": false
+        }
+      ],
+      "gap": "Only one verified entry so far (chain-cascade, fidelity 1 at 2 2q gates) — the frontier is a single point. A second paradigm at a different cost is untried."
+    },
+    "isingbell2": {
+      "task": "vqe",
+      "metricName": "gap",
+      "dir": "lower",
+      "costKey": "two_qubit_gates",
+      "costLabel": "2q gates",
+      "points": [
+        {
+          "paradigm": "minimal-bell-ansatz",
+          "model": "reference-baseline",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "metric": 0,
+          "cost": 1,
+          "reference": true,
+          "dominated": false
+        }
+      ],
+      "gap": "Only one verified entry so far (minimal-bell-ansatz, gap 0 at 1 2q gates) — the frontier is a single point. A second paradigm at a different cost is untried."
+    },
+    "bell_pops2": {
+      "task": "populations",
+      "metricName": "⟨X0X1⟩",
+      "dir": "higher",
+      "costKey": "two_qubit_gates",
+      "costLabel": "2q gates",
+      "points": [
+        {
+          "paradigm": "phase-correct-bell",
+          "model": "reference-baseline",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "metric": 1,
+          "cost": 1,
+          "reference": true,
+          "dominated": false
+        }
+      ],
+      "gap": "Only one verified entry so far (phase-correct-bell, ⟨X0X1⟩ 1 at 1 2q gates) — the frontier is a single point. A second paradigm at a different cost is untried."
+    },
+    "aiaccel4": {
+      "task": "architecture",
+      "metricName": "routing",
+      "dir": "lower",
+      "costKey": "edges",
+      "costLabel": "edges",
+      "points": [
+        {
+          "paradigm": "ring",
+          "model": "reference-baseline",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "metric": 2,
+          "cost": 4,
+          "reference": true,
+          "dominated": false
+        }
+      ],
+      "gap": "Only one verified entry so far (ring, routing 2 at 4 edges) — the frontier is a single point. A second paradigm at a different cost is untried."
+    },
+    "qml_sign1": {
+      "task": "classify",
+      "metricName": "test",
+      "dir": "higher",
+      "costKey": "feature_map_ops",
+      "costLabel": "feature-map ops",
+      "points": [
+        {
+          "paradigm": "low-frequency-encoding",
+          "model": "reference-baseline",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "metric": 1,
+          "cost": 1,
+          "reference": true,
+          "dominated": false
+        }
+      ],
+      "gap": "Only one verified entry so far (low-frequency-encoding, test 1 at 1 feature-map ops) — the frontier is a single point. A second paradigm at a different cost is untried."
+    },
+    "h2vqe": {
+      "task": "vqe",
+      "metricName": "gap",
+      "dir": "lower",
+      "costKey": "two_qubit_gates",
+      "costLabel": "2q gates",
+      "points": [
+        {
+          "paradigm": "hardware-efficient-h2",
+          "model": "reference-baseline",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "metric": 0.0004047113,
+          "cost": 1,
+          "reference": true,
+          "dominated": false
+        }
+      ],
+      "gap": "Only one verified entry so far (hardware-efficient-h2, gap 0.000405 at 1 2q gates) — the frontier is a single point. A second paradigm at a different cost is untried."
+    },
+    "tfim3": {
+      "task": "vqe",
+      "metricName": "gap",
+      "dir": "lower",
+      "costKey": "two_qubit_gates",
+      "costLabel": "2q gates",
+      "points": [
+        {
+          "paradigm": "qaoa",
+          "model": "opus-4.8",
+          "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+          "metric": 0.00010313849458487567,
+          "cost": 4,
+          "reference": false,
+          "dominated": false
+        },
+        {
+          "paradigm": "hardware-efficient",
+          "model": "opus-4.8",
+          "run_repo": "https://github.com/QuantumMytheme/run-tfim3-hwe",
+          "metric": 0.014258023432029088,
+          "cost": 2,
+          "reference": false,
+          "dominated": false
+        }
+      ],
+      "gap": "Open gap: no verified entry below 2 2q gates, and gap 0.000103 is only reached at 4 2q gates — a design beating either corner is untried. Untried means nobody has posted one; it says nothing about difficulty."
+    }
+  }
 };
