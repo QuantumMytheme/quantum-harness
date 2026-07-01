@@ -99,12 +99,17 @@ the real judge, and mint a run repo — without leaving the chat.
 | `bench/quantum-judge/quantum-proof-arch-OVERFIT.json` | Adversarial fixture — routes the visible workload but blows the held-out workload budget; **must** be rejected at exit 6 |
 | `bench/quantum-judge/quantum-proof-qml-OVERFIT.json` | Adversarial fixture — fits the training set but fails the held-out test set; **must** be rejected at exit 6 |
 | `bench/quantum-judge/quantum-proof-FORGED.json` | Adversarial fixture — claims fidelity 1.0 but truly 0.25; **must** be rejected |
+| `bench/judge.py` | **Unified door** — routes a bundle to the quantum or kernel judge by its `task` |
+| `bench/kernel-judge/` | The **TPU kernel judge** (Oracle-Diff Gate + Roofline Notary) — offline, numpy-only, same exit-code contract; `test_kernel.py` 26/26 + `fuzz_kernel.py` soundness fuzz + a model-facing `BRIEF.md`. See its [README](./bench/kernel-judge/README.md). |
+| `bench/test_router.py` | 9/9 — the router sends each bundle to the right judge |
 | `bin/autonomy-scorecard.mjs` | Parses a session transcript → intervention classification, longest unattended stretch, timeline |
 | `bin/prepare-transcript.mjs` | Secret-scrub pipeline for publishing a transcript |
 | `lib/scorecard.mjs` | Scorecard engine (intervention classification, autonomy scoring) |
 | `lib/prepare-transcript.mjs` | Scrub engine behind the transcript pipeline |
 | `lib/planner-*.mjs` | Planner roster / walkthrough used by the run orchestration |
 | `test/*.test.mjs` | Node test suite — 107 tests (scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector) |
+| `viewer/test-education.mjs` | Headless site smoke test — mounts all 40 education modules + the Scenario Studio logic, asserts no throw / no NaN |
+| `bin/test-all.sh` · `npm run test:all` | Runs **every** suite (both judges + router + soundness fuzz + node + site smoke + MCP selftest) — green = safe to push |
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
 | `GETTING-STARTED.md` | Your first run in three commands — remix the frontier, your model molds it, auto-register |
 | `RUN-FLOW.md` · `bin/new-run.sh` | Mint a fresh public run repo from this template (`--remix <problem>` pre-loads the frontier), run, commit back |
@@ -131,6 +136,13 @@ python3 bench/quantum-judge/test_judge.py
 
 # 4. Build a bundle from your own circuit, using the same simulator the judge uses
 python3 bench/quantum-judge/capture.py <circuit.json> <problem_id> [--task state_prep|vqe|populations]
+
+# 5. The unified door — verify ANY bundle (quantum OR TPU kernel), routed by task
+python3 bench/judge.py bench/kernel-judge/bundle-gemm-bf16-OK.json
+
+# 6. Run EVERYTHING green before a push — both judges + router + soundness fuzz +
+#    node suite + the headless site smoke test + the MCP selftest
+npm run test:all
 ```
 
 The judge runs **four active verification gates** — structure, reproducibility, performance,
@@ -246,6 +258,44 @@ simulation," and nothing more.
 For live contests, point `QH_REFERENCES_DIR` at a private directory of held-out references. The
 public template **commits** its references so CI can run end-to-end; a real contest **holds them
 out** so the answer key never reaches the model.
+
+## The second judge — refereeing efficiency on real silicon (TPU)
+
+The quantum judge referees *correctness*. But the North Star says the real
+machine-intelligence efficiency gains are **classical architectures on real
+silicon** — so the platform must also referee an *efficiency* claim. A second judge,
+[`bench/kernel-judge/`](./bench/kernel-judge/), does exactly that for TPU kernels,
+built in the image of the quantum judge (offline, numpy-only, same exit-code
+contract). Both are reached through one door, [`bench/judge.py`](./bench/judge.py),
+which routes a bundle to the right judge by its `task` — so `verify_bundle` and the
+CLI verify either kind.
+
+- **Oracle-Diff Gate** (`kernel-correctness-oracle`, T0) — a kernel's reduced-precision
+  output vs a judge-recomputed **fp64** reference, within a **dtype-derived** tolerance
+  (bf16 ≈ 2⁻⁸ ulp) + a distribution check; integers must be bit-exact; a held-out input
+  seed guards against overfit. Exploits Pallas's contract that `interpret=True` is a
+  replayable correctness oracle. Spec: [TPU-ORACLE-DIFF-GATE.md](./TPU-ORACLE-DIFF-GATE.md).
+- **Roofline Notary** (`roofline-attest`, T1) — recomputes useful FLOPs from the shape,
+  `%-of-peak` from the measured wall-clock, and the arithmetic-intensity / compute-vs-
+  memory-bound regime against a **pinned per-generation** peak; rejects any self-reported
+  number that disagrees, a byte tally below the physical lower bound, or a rate above
+  100% of peak. Only verified generations are attested (today TPU v5e).
+
+**Honest boundary.** The *correctness* half is HERMETIC-NOW — fully checkable on a
+laptop with numpy. The *"it really ran on a TPU"* half (producing the hardware output,
+the wall-clock, the XProf bytes) is NEEDS-A-TPU and honestly labelled **roadmap, not
+built**. The soundness/property fuzz (`npm run test:fuzz`) pins both judges: honest
+bundles always ACCEPT, forgeries never do.
+
+The design brainstorm behind this track (35 stress-tested TPU-native architecture
+ideas) is [TPU-NATIVE-ARCHITECTURES.md](./TPU-NATIVE-ARCHITECTURES.md); the phased path
+is Track 2 of [PLATFORM-VISION.md](./PLATFORM-VISION.md).
+
+**Scenario Studio.** A companion explorer at [quantummytheme.com/lab#studio](https://quantummytheme.com/lab#studio):
+pick the substrates you have (CPU/GPU/TPU/QPU) and a workload, and it maps each chip to
+the role it is honestly good at — refusing two comfortable fictions: that a transformer
+is the *best* architecture (it is the most-used, not the best) or that a quantum chip
+accelerates your model (it does not; its lever is materials simulation).
 
 ## Provenance
 
