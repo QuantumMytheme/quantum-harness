@@ -119,7 +119,7 @@ test('shared in-browser runner + recipe builder wired on both pages', () => {
 test('every page carries the same top-bar nav (no links drop off across pages)', () => {
   // The canonical link set + order, shared by index / education / lab. Guards against
   // the brandbar diverging per page (the "some links drop off" regression).
-  const CANON = ['Why', 'Platform', 'Bench', 'Learn', 'Scoreboard', 'Run yours', 'Notebook']
+  const CANON = ['Why', 'Platform', 'Bench', 'Learn', 'Scenario', 'Scoreboard', 'Run yours', 'Notebook']
   const indexIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]))
 
   for (const page of ['index.html', 'education.html', 'lab.html']) {
@@ -131,10 +131,15 @@ test('every page carries the same top-bar nav (no links drop off across pages)',
 
     assert.deepEqual(links.map(l => l.label), CANON, `${page} top-bar labels/order`)
 
-    // every cross-page anchor must resolve to a real section id on the homepage
+    // every homepage anchor must resolve to a real homepage section id; a lab.html#tab
+    // link must resolve to a real notebook tab; a bare page link must exist on disk.
+    const validBlock = (readFileSync(v('lab.js'), 'utf8').match(/var VALID = \{([^}]*)\}/) || [, ''])[1]
+    const labTabs = new Set([...validBlock.matchAll(/([a-z0-9-]+):/g)].map(m => m[1]))
     for (const { href } of links) {
-      const anchor = href.match(/(?:index\.html)?#([\w-]+)$/)
-      if (anchor) assert.ok(indexIds.has(anchor[1]), `${page} link #${anchor[1]} resolves on the homepage`)
+      const home = href.match(/^(?:index\.html)?#([\w-]+)$/)
+      const labHash = href.match(/^lab\.html#([\w-]+)$/)
+      if (home) assert.ok(indexIds.has(home[1]), `${page} link #${home[1]} resolves on the homepage`)
+      else if (labHash) assert.ok(labTabs.has(labHash[1]), `${page} link lab.html#${labHash[1]} is a real notebook tab`)
       else if (/\.html$/.test(href)) assert.ok(existsSync(v(href)), `${page} link ${href} exists`)
     }
   }
