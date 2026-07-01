@@ -54,4 +54,7 @@ To turn it off, delete `MINT_TOKEN` (or `TURNSTILE_SECRET`) and redeploy.
 - `POST /api/submit-run` `{ recipe, name, turnstile_token }` → creates
   `QuantumMytheme/community-<name>` from the template, writes `RECIPE.json`, tags it, and
   returns `{ repo, url, attestable }`. Verifies Turnstile, rate-limits, and validates
-  before any write.
+  before any write. If the `RECIPE.json` write itself fails (the design would otherwise
+  be silently lost in an empty shell repo), the just-created repo is **deleted and the
+  request fails with a 502** — no junk `community-*` repos, no false "✓ submitted", and
+  the rate-limit slot is not consumed.
