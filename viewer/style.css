@@ -407,3 +407,7 @@ html[data-theme="dark"] table.results tr.sb-row:hover td { background: rgba(63, 
 .qm-golfbtn:hover{ border-color:var(--accent); color:var(--accent); }
 .qm-golfbtn[disabled]{ opacity:.35; cursor:default; }
 .qm-golfsel{ font-family:var(--mono); font-size:11px; padding:6px 8px; border:1px solid var(--rule); border-radius:5px; background:var(--bg); color:var(--ink); max-width:220px; }
+
+/* ---- appended: Impostor Workshop (Gallery of Traps cards) ---- */
+.lab-trap{ border:1px solid var(--rule); border-radius:var(--r); background:var(--panel); padding:14px 15px 13px; text-align:left; cursor:pointer; color:inherit; font:inherit; display:flex; flex-direction:column; gap:8px; transition:border-color .15s, transform .15s; }
+.lab-trap:hover{ border-color:var(--reject); transform:translateY(-2px); }

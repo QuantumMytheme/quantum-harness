@@ -140,7 +140,28 @@
     }).join('') || '<p class="mono" style="color:var(--faint)">no verified runs on the board yet — scoreboard data unavailable</p>';
     return '<div class="lab-sheet">' + head('§ 04 · Results', 'Catalog of verified circuits', 'Chips · topologies<br>architectures') +
       '<p style="max-width:680px;">Each card is a proof bundle — quantum chips, classical floorplans, and software architectures discovered by pressure-testing patterns. <b>Click a card to re-run the exact simulation the judge ran</b> in your browser and recompute the metric.</p>' +
-      '<div class="controls" style="margin:18px 0;">' + filters + '</div><div class="lab-gal">' + cards + '</div></div>';
+      '<div class="controls" style="margin:18px 0;">' + filters + '</div><div class="lab-gal">' + cards + '</div>' + trapGallery() + '</div>';
+  }
+
+  // ── Impostor Workshop · Gallery of Traps — the committed forgery/overfit fixtures,
+  //    runnable against the REAL judge in-browser. Data lives in runner.js (IMPOSTORS).
+  function trapGallery() {
+    var Q = window.QMRunner || {}, IMP = Q.IMPOSTORS || {}, EX = Q.EXIT_NAMES || {};
+    var keys = Object.keys(IMP);
+    if (!keys.length) return '';
+    var cards = keys.map(function (k) {
+      var T = IMP[k];
+      return '<button class="lab-trap" data-impostor="' + esc(k) + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;"><span class="mono" style="font-size:12.5px;color:var(--ink);font-weight:600;">' + esc(T.label) + '</span><span class="badge-err">exit ' + T.expect + '</span></div>' +
+        '<div style="font-size:13px;color:var(--ink-2);line-height:1.45;">' + esc(T.trap) + '</div>' +
+        '<div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span class="mono" style="font-size:9px;color:var(--faint);">bench/quantum-judge/' + esc(T.file) + '</span><span class="lab-runhint" style="color:var(--reject);">run the judge ▸</span></div>' +
+        '</button>';
+    }).join('');
+    return '<div style="margin-top:34px;border-top:1px solid var(--rule);padding-top:22px;">' +
+      '<div class="lab-head" style="border-bottom:none;padding-bottom:0;margin-bottom:10px;"><div><p class="eyebrow">Impostor Workshop · Gallery of Traps</p><h2 style="font-size:21px;">Designs built to fool the visible spec</h2></div><div class="rmeta">committed forgery fixtures<br>the judge’s own bench</div></div>' +
+      '<p style="max-width:720px;font-size:14px;">Every card is a <b>committed adversarial fixture</b> from the judge’s regression bench, labeled as such — a design that passes every gate you can <em>see</em> and is still wrong. That is the whole lesson: visible checks are not enough, which is why the judge holds out a check the model is never told (the <b>anti-overfit gate, exit 6</b>) and re-simulates every claim (<b>reproduce, exit 4</b>). Click a trap and run the <b>real judge</b> in your browser to watch the exact gate catch it.</p>' +
+      '<div class="lab-gal" style="margin-top:16px;">' + cards + '</div>' +
+      '<p class="mono" style="font-size:10px;color:var(--ink-2);margin-top:12px;">If the judge ever ACCEPTs one of these, that is a genuine judge blind spot — the platform’s highest-value bug report. The gate names map to exits: ' + [3, 4, 5, 6].map(function (x) { return x + '=' + esc(EX[x] || x); }).join(' · ') + '.</p></div>';
   }
 
   function secRegister() {
