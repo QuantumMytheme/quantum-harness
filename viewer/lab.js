@@ -173,7 +173,13 @@
   function recipeHash() { var s = recipe.target + '|' + Object.keys(recipe.ings).sort().map(function (k) { return k + ':' + Math.round(recipe.ings[k]); }).join(',') + '|d' + recipe.params.depth + '|' + recipe.params.entangle + '|' + recipe.params.optimizer + '|n' + recipe.params.novelty + '|' + recipe.params.backend + '|nz' + recipe.params.noise + '|tq' + recipe.params.twoq + '|sh' + recipe.params.shots; var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36).slice(0, 6); }
   function recipeRepo() { return 'run-' + recipe.target + '-mix-' + recipeHash(); }
   function recipeCmd() { var ings = Object.keys(recipe.ings); return 'bin/new-run.sh ' + recipeRepo() + (ings.length ? ' --remix ' + ings.join(',') : ''); }
-  function hardwareSpec() { var K = window.QMKnowledge, out = []; if (K && K.CHIPS) K.CHIPS.forEach(function (c) { if (studio.chips[c.id]) out.push({ id: c.id, name: c.name, cls: c.cls }); }); return { chips: out, workload: studio.workload }; }
+  function hardwareSpec() {
+    var K = window.QMKnowledge, out = [];
+    if (K && K.CHIPS) K.CHIPS.forEach(function (c) { if (studio.chips[c.id]) out.push({ id: c.id, name: c.name, cls: c.cls, pinned: !!c.pinned }); });
+    var h = { chips: out, workload: studio.workload, attestable: out.some(function (c) { return c.pinned; }) };
+    if (studio.pod && K.pod) { var pd = K.pod(studio.pod); if (pd) h.simulated_pod = { id: pd.id, name: pd.name, chips: pd.chips, note: 'what-if scale — not a real run' }; }
+    return h;
+  }
   function hardwareBanner() {
     var K = window.QMKnowledge; if (!K || !K.CHIPS) return '';
     var picked = K.CHIPS.filter(function (c) { return studio.chips[c.id]; });
@@ -181,7 +187,7 @@
     var wl = (K.WORKLOADS[studio.workload] || {}).name || studio.workload;
     return '<div class="panel" style="border-left:3px solid var(--accent);padding:12px 15px;margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><div><span class="eyebrow" style="font-size:9px">Hardware target · from the Studio</span><div style="font-size:12.5px;color:var(--ink-2);margin-top:2px">A <b>full-stack design</b> = these chips running <b>' + esc(wl) + '</b>. The recipe below is the software half; both travel in <span class="mono">RECIPE.json</span>.</div></div><button class="btn" data-goto="studio" style="font-size:11px;padding:6px 11px">Change hardware →</button></div><div class="controls" style="margin-top:9px">' + chips + '</div></div>';
   }
-  function recipeJSON() { var p = predict(); return JSON.stringify({ target: recipe.target, hardware: hardwareSpec(), ingredients: mixList().map(function (m) { return { run: m.id, ratio: +(m.pct / 100).toFixed(2) }; }), ansatz: { depth: recipe.params.depth, entanglement: recipe.params.entangle, optimizer: recipe.params.optimizer, novelty: +(recipe.params.novelty / 100).toFixed(2) }, device: { backend: recipe.params.backend, noise_pct: recipe.params.noise, two_qubit_budget: recipe.params.twoq, shots: recipe.params.shots }, forecast: p ? { metric: p.g.label, predicted: +p.value.toFixed(4), goal: p.g.goal, accept_pct: p.accPct, note: 'heuristic estimate — the judge is the source of truth' } : null }, null, 2); }
+  function recipeJSON() { var p = predict(); return JSON.stringify({ schema: 'quantummytheme/full-stack-recipe@1', target: recipe.target, hardware: hardwareSpec(), ingredients: mixList().map(function (m) { return { run: m.id, ratio: +(m.pct / 100).toFixed(2) }; }), ansatz: { depth: recipe.params.depth, entanglement: recipe.params.entangle, optimizer: recipe.params.optimizer, novelty: +(recipe.params.novelty / 100).toFixed(2) }, device: { backend: recipe.params.backend, noise_pct: recipe.params.noise, two_qubit_budget: recipe.params.twoq, shots: recipe.params.shots }, forecast: p ? { metric: p.g.label, predicted: +p.value.toFixed(4), goal: p.g.goal, accept_pct: p.accPct, note: 'heuristic estimate — the judge is the source of truth' } : null }, null, 2); }
 
   // ── new design variables + a transparent (heuristic) goal/metric forecaster ──
   var BACKENDS = [['ideal', 'Ideal'], ['noisy', 'Noisy-sim'], ['qpu', 'Real-QPU']];
@@ -298,7 +304,7 @@
   function mintRecipe() {
     var repo = recipeRepo();
     var inner = '<p class="eyebrow">Recipe → repository</p><h2 style="font-family:var(--serif);margin:6px 0 4px">' + repo + '</h2>' +
-      '<p style="font-size:14px;color:var(--ink-2)">A unique run blended from ' + Object.keys(recipe.ings).length + ' verified ingredient(s), targeting <b>' + recipe.target + '</b>. The kickoff hands the model your recipe; it molds a new circuit from the mix.</p>' +
+      '<p style="font-size:14px;color:var(--ink-2)">A <b>full-stack design</b> — ' + esc(hardwareSpec().chips.map(function (c) { return c.name; }).join(', ') || 'no hardware chosen') + ' running <b>' + esc((window.QMKnowledge.WORKLOADS[studio.workload] || {}).name || studio.workload) + '</b>, with a software recipe of ' + Object.keys(recipe.ings).length + ' verified ingredient(s) targeting <b>' + recipe.target + '</b>. Minting creates the repo AND writes this RECIPE.json into it (the Desktop <span class="mono">mint_recipe</span> tool does both); a model implements the design and the judge grades the result.' + (hardwareSpec().attestable ? ' The hardware names a <b>referee-pinned</b> generation, so an efficiency claim on it is attestable — not just correctness.' : ' The hardware is not referee-pinned, so only correctness is attestable.') + '</p>' +
       '<p class="eyebrow" style="margin-top:14px">RECIPE.json</p><div class="qm-cmd"><code>' + esc(recipeJSON()) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
       '<p class="eyebrow" style="margin-top:12px">Mint the repo</p>' + cmdBlock('gh repo create QuantumMytheme/' + repo + ' --template QuantumMytheme/quantum-harness --public --clone') + cmdBlock(recipeCmd()) +
       '<p style="margin-top:6px"><a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate" target="_blank" rel="noopener">Use this template ↗</a></p>' + window.QMRunner.ghWidget(repo);

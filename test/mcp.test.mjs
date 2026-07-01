@@ -14,9 +14,9 @@ const readRefs = d => readdirSync(path.join(ROOT, d)).filter(f => f.endsWith('.j
 const refIds = [...new Set([...readRefs('bench/quantum-judge/references'), ...readRefs('bench/kernel-judge/references')])].sort()
 const parse = r => JSON.parse(r.content[0].text)
 
-test('exposes exactly the six harness tools, each with an input schema', () => {
+test('exposes exactly the seven harness tools, each with an input schema', () => {
   assert.deepEqual(TOOLS.map(t => t.name).sort(),
-    ['commit_run', 'get_brief', 'get_kickoff', 'list_problems', 'mint_run', 'verify_bundle'])
+    ['commit_run', 'get_brief', 'get_kickoff', 'list_problems', 'mint_recipe', 'mint_run', 'verify_bundle'])
   for (const t of TOOLS) {
     assert.equal(typeof t.description, 'string')
     assert.equal(t.inputSchema.type, 'object')
@@ -32,7 +32,7 @@ test('JSON-RPC: initialize handshake, notifications, tools/list, unknown method'
   assert.equal(await handleMessage({ jsonrpc: '2.0', method: 'notifications/initialized' }), null)
 
   const list = await handleMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' })
-  assert.equal(list.result.tools.length, 6)
+  assert.equal(list.result.tools.length, 7)
 
   const bad = await handleMessage({ jsonrpc: '2.0', id: 3, method: 'no/such' })
   assert.equal(bad.error.code, -32601)
@@ -77,6 +77,29 @@ test('commit_run refuses without a token instead of failing silently', async () 
   } finally {
     if (saved !== undefined) process.env.GITHUB_TOKEN = saved
     if (savedGh !== undefined) process.env.GH_TOKEN = savedGh
+  }
+})
+
+test('mint_recipe refuses without a token, and validates the full-stack recipe first', async () => {
+  const saved = process.env.GITHUB_TOKEN, savedGh = process.env.GH_TOKEN
+  delete process.env.GITHUB_TOKEN; delete process.env.GH_TOKEN
+  try {
+    const noTok = await callTool('mint_recipe', { name: 'run-fs', recipe: { hardware: { chips: [{ id: 'tpu-8t', pinned: true }] }, target: 'tfim3' } })
+    assert.equal(noTok.isError, true)
+    assert.match(parse(noTok).error, /no GitHub token/)
+  } finally {
+    if (saved !== undefined) process.env.GITHUB_TOKEN = saved
+    if (savedGh !== undefined) process.env.GH_TOKEN = savedGh
+  }
+  // with a token present, an INVALID recipe (no hardware half) is rejected BEFORE any network call
+  const s2 = process.env.GITHUB_TOKEN
+  process.env.GITHUB_TOKEN = 'dummy-token-validation-only'
+  try {
+    const bad = parse(await callTool('mint_recipe', { name: 'run-fs', recipe: { target: 'tfim3' } }))
+    assert.match(bad.error, /invalid RECIPE.json/)
+    assert.ok(bad.problems.some(p => /hardware\.chips/.test(p)), 'flags the missing hardware half')
+  } finally {
+    if (s2 !== undefined) process.env.GITHUB_TOKEN = s2; else delete process.env.GITHUB_TOKEN
   }
 })
 

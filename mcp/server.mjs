@@ -115,6 +115,20 @@ export const TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'mint_recipe',
+    description: 'Mint a FULL-STACK design run repo: create a fresh public repo from the template AND write the RECIPE.json (a hardware + software design from the Scenario Studio) into it, so a model can implement the design and the judge can grade the result. Reports whether the named hardware target is referee-pinned (so an efficiency claim on it is attestable). Needs a GitHub token.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'repo name, e.g. "run-fullstack-tfim3-tpu8t"' },
+        recipe: { type: 'object', description: 'the full-stack RECIPE.json (schema "quantummytheme/full-stack-recipe@1") — a hardware half (hardware.chips[]) + a software half (target or ingredients)' },
+        owner: { type: 'string', description: 'target owner (default: the authenticated user; pass "QuantumMytheme" if you have org access)' },
+        description: { type: 'string', description: 'optional repo description' },
+      },
+      required: ['name', 'recipe'], additionalProperties: false,
+    },
+  },
 ]
 
 // ---- tool implementations ----------------------------------------------------------------
@@ -375,6 +389,70 @@ async function commitRun({ repo, repo_url, bundle, bundle_path, path: filePath, 
   })
 }
 
+// A full-stack RECIPE.json = a HARDWARE half (chips you'd run on) + a SOFTWARE half
+// (the design). `attestable` is true when it names a referee-pinned chip, so an
+// efficiency claim on it can be verified — the judge remains the source of truth.
+function validateRecipe(r) {
+  const errors = []
+  if (!r || typeof r !== 'object' || Array.isArray(r)) { errors.push('recipe must be a JSON object'); return { ok: false, errors, attestable: false } }
+  const hw = r.hardware
+  if (!hw || !Array.isArray(hw.chips) || hw.chips.length === 0) errors.push('hardware.chips[] is required — the hardware half of the full stack')
+  if (!r.target && !Array.isArray(r.ingredients)) errors.push('a software half is required — set `target` or `ingredients`')
+  const attestable = !!(hw && Array.isArray(hw.chips) && hw.chips.some(c => c && c.pinned))
+  return { ok: errors.length === 0, errors, attestable }
+}
+
+async function mintRecipe({ name, recipe, owner, description }) {
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  if (!token) {
+    return json({ error: 'no GitHub token', remediation: 'Set GITHUB_TOKEN (a token with `public_repo` scope) in the connector config / environment, then retry.' }, true)
+  }
+  const v = validateRecipe(recipe)
+  if (!v.ok) {
+    return json({ error: 'invalid RECIPE.json', problems: v.errors, hint: 'A full-stack recipe needs a hardware half (hardware.chips[]) and a software half (target or ingredients).' }, true)
+  }
+  const gh = (url, init = {}) => ghFetch(token, url, init)
+
+  let targetOwner = owner
+  if (!targetOwner) {
+    const me = await gh('https://api.github.com/user')
+    if (!me.ok) return json({ error: `token check failed (HTTP ${me.status})`, remediation: 'Confirm the token is valid and has `public_repo` scope.' }, true)
+    targetOwner = (await me.json()).login
+  }
+
+  const res = await gh(`https://api.github.com/repos/${TEMPLATE.owner}/${TEMPLATE.repo}/generate`, {
+    method: 'POST',
+    body: JSON.stringify({ owner: targetOwner, name, description: description || `full-stack design · ${name}`, private: false, include_all_branches: false }),
+  })
+  if (!res.ok) {
+    const body = await res.text()
+    return json({ error: `repo creation failed (HTTP ${res.status})`, detail: body.slice(0, 400) }, true)
+  }
+  const repo = await res.json()
+
+  // write the RECIPE.json (hardware + software) into the fresh repo
+  const content = Buffer.from(JSON.stringify(recipe, null, 2), 'utf8').toString('base64')
+  const put = await gh(`https://api.github.com/repos/${repo.full_name}/contents/RECIPE.json`, {
+    method: 'PUT',
+    body: JSON.stringify({ message: 'Add full-stack RECIPE.json (hardware + software design)', content, branch: repo.default_branch }),
+  })
+  const wrote = put.ok
+  // tag it so the scoreboard auto-discovers the run
+  await gh(`https://api.github.com/repos/${repo.full_name}/topics`, { method: 'PUT', body: JSON.stringify({ names: ['quantum-harness-run'] }) }).catch(() => {})
+
+  return json({
+    repo: repo.full_name,
+    url: repo.html_url,
+    recipe_path: wrote ? 'RECIPE.json' : null,
+    wrote_recipe: wrote,
+    attestable: v.attestable,
+    next: `Point your model at ${repo.full_name}: implement the RECIPE.json design, verify_bundle until ACCEPT, then commit. ` +
+      (v.attestable
+        ? 'The hardware names a referee-pinned generation, so an efficiency (roofline) claim on it is attestable — not just correctness.'
+        : 'Note: the named hardware is not referee-pinned, so only correctness is attestable, not an efficiency claim.'),
+  })
+}
+
 const IMPL = {
   list_problems: listProblems,
   get_brief: getBrief,
@@ -382,6 +460,7 @@ const IMPL = {
   verify_bundle: verifyBundle,
   mint_run: mintRun,
   commit_run: commitRun,
+  mint_recipe: mintRecipe,
 }
 
 // ---- MCP content helpers -----------------------------------------------------------------

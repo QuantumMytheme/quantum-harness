@@ -25,7 +25,8 @@
     { "name": "get_kickoff", "description": "Read KICKOFF.md — the one-message run contract." },
     { "name": "verify_bundle", "description": "Re-derive a proof bundle through the real four-gate numpy judge." },
     { "name": "mint_run", "description": "Create a fresh public run repository from the template." },
-    { "name": "commit_run", "description": "Commit a proof bundle to a run repo via the GitHub Contents API (no Docker, no git); refuses a REJECT by default." }
+    { "name": "commit_run", "description": "Commit a proof bundle to a run repo via the GitHub Contents API (no Docker, no git); refuses a REJECT by default." },
+    { "name": "mint_recipe", "description": "Mint a FULL-STACK design run repo: create it from the template and write the RECIPE.json (hardware + software) into it; reports whether the hardware target is referee-pinned." }
   ],
   "user_config": {
     "github_token": {
