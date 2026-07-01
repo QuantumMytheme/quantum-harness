@@ -29,6 +29,8 @@ echo
 run "quantum-judge (numpy)"                 python3 bench/quantum-judge/test_judge.py
 run "kernel-judge · Oracle-Diff + Roofline" python3 bench/kernel-judge/test_kernel.py
 run "judge router (both judges, one door)"  python3 bench/test_router.py
+run "kernel-judge soundness fuzz"           python3 bench/kernel-judge/fuzz_kernel.py
+run "quantum-judge soundness fuzz"          python3 bench/quantum-judge/fuzz_judge.py
 run "node suite · site/mcp/planner/scorecard" npm test --silent
 run "education/site smoke (headless canvas)" node viewer/test-education.mjs
 run "mcp connector selftest"                node mcp/selftest.mjs

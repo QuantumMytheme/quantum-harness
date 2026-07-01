@@ -18,6 +18,7 @@
     "test:site": "node viewer/test-education.mjs",
     "test:kernel": "python3 bench/kernel-judge/test_kernel.py",
     "test:router": "python3 bench/test_router.py",
+    "test:fuzz": "python3 bench/kernel-judge/fuzz_kernel.py && python3 bench/quantum-judge/fuzz_judge.py",
     "judge": "python3 bench/judge.py",
     "judge:quantum": "python3 bench/quantum-judge/judge_verify.py",
     "judge:test": "python3 bench/quantum-judge/test_judge.py"
