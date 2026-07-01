@@ -363,6 +363,46 @@ function renderScoreboard() {
   const meta = document.getElementById('sb-meta');
   if (meta) meta.textContent = `· ${d.count} entr${d.count === 1 ? 'y' : 'ies'}, generated ${d.generated}`;
 }
+/* ------------------------- paradigm league ------------------------------- */
+/* Corpus-level (paradigm × task) rollup — SCOREBOARD.md §(c)'s comparative
+   question. HONESTY: any row with n < 3 is greyed and badged "anecdote, not
+   evidence" — small-n must never masquerade as a finding; and rows group by
+   (paradigm × task), so no cross-task ranking is ever shown. */
+function renderLeague() {
+  const d = window.SCOREBOARD_DATA, el = document.getElementById('sb-league'), K = window.QMKnowledge;
+  if (!el || !d || !d.paradigms || !d.paradigms.length) return;
+  const esc = K ? K.esc : (s => String(s));
+  const untestedCell = p => {
+    if (!p.untested_problems.length) return '<span class="dimnum">none — every board of this task entered</span>';
+    return `<span class="league-untested" title="same-task problems this paradigm has not entered — untried, not settled">${p.untested_problems.map(u => `<span class="mono">${esc(u)}</span>`).join(', ')}</span>`;
+  };
+  const rows = d.paradigms.map(p => {
+    const anec = !p.evidence;
+    return `<tr class="league-row${anec ? ' anecdote' : ''}">` +
+      `<td><span class="ptag">${esc(p.paradigm)}</span></td>` +
+      `<td>${K ? K.taskChip(p.task) : esc(p.task)}</td>` +
+      `<td class="num">${p.n}</td>` +
+      `<td class="num">${p.rank1_count}/${p.boards.length} <span class="sub">${p.boards.map(esc).join(', ')}</span></td>` +
+      `<td class="num">${p.mean_margin.toFixed(2)}</td>` +
+      `<td class="num">${p.mean_efficiency.toFixed(2)}</td>` +
+      `<td>${untestedCell(p)}</td>` +
+      `<td>${anec
+        ? `<span class="anecbadge" title="fewer than 3 verified runs — a mean over n=${p.n} is an anecdote, not evidence; the numbers are shown greyed so small-n never masquerades as a finding">n=${p.n} — anecdote, not evidence</span>`
+        : `<span class="evbadge" title="3 or more verified runs — enough to call a pattern worth scrutinizing">n=${p.n}</span>`}</td>` +
+      '</tr>';
+  }).join('');
+  el.innerHTML =
+    '<h3>Paradigm league — which design idea wins where</h3>' +
+    '<p class="lead">Every verified run, rolled up by <b>paradigm family × task</b> (SCOREBOARD.md §c). ' +
+    'Mean margin and mean efficiency reuse the quality axes above. <b>No cross-task ranking is shown</b> — different tasks are different games. ' +
+    'A greyed row means <b>n &lt; 3: an anecdote, not evidence</b>; the untested column is the paradigm’s open cells on the wanted board below.</p>' +
+    '<div class="panel results-wrap"><table class="results league-table">' +
+    '<thead><tr><th>Paradigm</th><th>Task</th><th>Runs</th><th>Rank-1 / boards</th><th>Mean margin</th><th>Mean efficiency</th><th>Untested problems (same task)</th><th>Evidence</th></tr></thead>' +
+    `<tbody>${rows}</tbody></table></div>` +
+    '<p class="figcap"><b>Reading rule.</b> A cell only becomes a finding when a paradigm has n ≥ 3 verified runs on a task — ' +
+    'until then it renders greyed as an anecdote. Fill an untested cell (the wanted board has the exact mint command) and the sample grows.</p>';
+}
+
 // scoreboard interactions: sort / filter / open the problem + quality card
 document.addEventListener('click', (e) => {
   const sortBtn = e.target.closest('[data-sbsort]');
@@ -378,6 +418,6 @@ document.addEventListener('click', (e) => {
 
 /* -------------------------------- boot ----------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
-  setupTheme(); ambient(); pipeline(); blochSection(); topologySection(); classifierSection(); renderScoreboard();
+  setupTheme(); ambient(); pipeline(); blochSection(); topologySection(); classifierSection(); renderScoreboard(); renderLeague();
   const y = document.getElementById('year'); if (y) y.textContent = '2026';
 });

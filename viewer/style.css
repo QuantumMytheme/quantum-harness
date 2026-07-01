@@ -396,3 +396,16 @@ html[data-theme="dark"] table.results tr.sb-row:hover td { background: rgba(63, 
 .sb-axes { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; }
 .sb-axis { font-family: var(--sans); font-size: 12.5px; color: var(--faint); }
 .sb-axis b { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+
+/* paradigm league — corpus-level (paradigm × task) rollup; n<3 = anecdote */
+.sb-league { margin-top: 34px; }
+.sb-league h3 { margin: 0 0 8px; }
+.sb-league .lead { font-size: 13.5px; }
+.league-table td .sub { display: block; font-size: 10.5px; color: var(--faint); font-family: var(--mono); }
+.league-untested { font-size: 11.5px; }
+.league-untested .mono { font-size: 11px; }
+tr.league-row.anecdote td { color: var(--faint); }
+tr.league-row.anecdote td .ptag, tr.league-row.anecdote td .num { opacity: 0.65; }
+.anecbadge { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--faint); border: 1px dashed var(--rule-2); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+.evbadge { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--pass); border: 1px solid var(--pass); border-radius: 4px; padding: 2px 6px; }
+html[data-theme="dark"] .anecbadge { border-color: var(--rule-2); }

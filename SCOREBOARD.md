@@ -264,6 +264,28 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 
 ---
 
+## (c2) The paradigm league — §(c) answered at corpus level, honestly
+
+The aggregator also rolls every verified run up into a **paradigm league**
+(`paradigms` in the generated board data; rendered under the scoreboard): one row per
+**(paradigm family × task)** pair, carrying `n` (verified runs), boards entered,
+rank-1 count, mean margin, mean efficiency (both reusing the quality axes above), and
+the list of same-task problems that paradigm has **not** yet entered — which
+cross-links straight into the wanted board's empty cells.
+
+Two hard honesty rules, enforced in the data and mirrored in the viewer:
+
+1. **n < 3 is an anecdote, not evidence.** Any aggregate with fewer than three
+   verified runs carries `evidence: false` and renders greyed with an explicit
+   *"n=1 — anecdote, not evidence"* badge. Today **every** cell is small-n; the
+   table says so instead of dressing means of one number up as findings.
+2. **No cross-task ranking, ever.** Groups are (paradigm × task) pairs; different
+   tasks are different games, and the league never orders paradigms across them.
+
+An untested cell is **untried** — the league never claims a gap is impossible or easy.
+
+---
+
 ## (f) Status — honest
 
 **Phase 1 is now partly shipped.** An **aggregator** (`scoreboard/build.mjs`) ranks

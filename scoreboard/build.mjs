@@ -253,6 +253,42 @@ export function lineage(entries) {
   return e => ({ remix_of: declared(e), remixed_by: counts[key(e.run_repo)] || 0 })
 }
 
+// ---- paradigm league: corpus-level (paradigm family × task) rollup -----------
+// Answers SCOREBOARD.md §(c)'s comparative question at corpus level: across ALL
+// verified runs, which design idea wins where? Grouping key is the stable `family`
+// tag when an entry declares one, else paradigm_short. HONESTY RULES: (1) an
+// aggregate with n < 3 is an anecdote, not evidence — `evidence:false` and the
+// viewer greys it with an explicit badge; (2) groups are (paradigm × task) pairs,
+// so no cross-task ranking can ever be read off the table (different tasks are
+// different games); (3) untested_problems lists same-task problems the paradigm
+// has NOT entered — untried, never "impossible", never "easy".
+export function buildParadigms(byProblem, catalog) {
+  const groups = {}
+  for (const pid of Object.keys(byProblem)) {
+    rankGroup(byProblem[pid]).forEach((e, i) => {
+      const para = e.family || paradigmShort(e)
+      const key = `${para} ${e.task}`
+      const g = (groups[key] ||= { paradigm: para, task: e.task, n: 0, boards: new Set(), rank1_count: 0, marginSum: 0, effSum: 0 })
+      const ax = qualityAxes(e)
+      g.n++; g.boards.add(pid)
+      if (i === 0) g.rank1_count++
+      g.marginSum += ax.margin; g.effSum += ax.efficiency
+    })
+  }
+  const taskPids = {}
+  for (const p of catalog) (taskPids[p.task] ||= []).push(p.problem_id)
+  const rnd = x => Math.round(x * 1000) / 1000
+  return Object.values(groups).map(g => ({
+    paradigm: g.paradigm, task: g.task, n: g.n,
+    boards: [...g.boards].sort(),
+    rank1_count: g.rank1_count,
+    mean_margin: rnd(g.marginSum / g.n),
+    mean_efficiency: rnd(g.effSum / g.n),
+    untested_problems: (taskPids[g.task] || []).filter(pid => !g.boards.has(pid)).sort(),
+    evidence: g.n >= 3,        // n < 3 is an anecdote, not a finding — never render it as one
+  })).sort((a, b) => a.task.localeCompare(b.task) || b.n - a.n || a.paradigm.localeCompare(b.paradigm))
+}
+
 // ---- assemble the full payload ----------------------------------------------
 export function buildData(root = ROOT) {
   const data = JSON.parse(readFileSync(join(root, 'scoreboard', 'entries.json'), 'utf8'))
@@ -300,8 +336,10 @@ export function buildData(root = ROOT) {
     frontier[pid] = { task: byProblem[pid][0].task, metricName: mName, ...f, gap: frontierGap(f, mName) }
   }
 
+  const paradigms = buildParadigms(byProblem, catalog)
+
   const generated = new Date().toISOString().slice(0, 10)
-  return { generated, count: rows.length, problems, rows, coverage, frontier }
+  return { generated, count: rows.length, problems, rows, coverage, frontier, paradigms }
 }
 
 function main() {

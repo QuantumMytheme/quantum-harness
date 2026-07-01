@@ -787,5 +787,127 @@ window.SCOREBOARD_DATA = {
       ],
       "gap": "Open gap: no verified entry below 2 2q gates, and gap 0.000103 is only reached at 4 2q gates — a design beating either corner is untried. Untried means nobody has posted one; it says nothing about difficulty."
     }
-  }
+  },
+  "paradigms": [
+    {
+      "paradigm": "ring",
+      "task": "architecture",
+      "n": 1,
+      "boards": [
+        "aiaccel4"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [],
+      "evidence": false
+    },
+    {
+      "paradigm": "low-frequency-encoding",
+      "task": "classify",
+      "n": 1,
+      "boards": [
+        "qml_sign1"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [],
+      "evidence": false
+    },
+    {
+      "paradigm": "phase-correct-bell",
+      "task": "populations",
+      "n": 1,
+      "boards": [
+        "bell_pops2"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [],
+      "evidence": false
+    },
+    {
+      "paradigm": "chain-cascade",
+      "task": "state_prep",
+      "n": 1,
+      "boards": [
+        "ghz3"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.667,
+      "untested_problems": [
+        "bellnoisy2",
+        "ghz3_he",
+        "ghz5_line"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "hardware-efficient",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "tfim3"
+      ],
+      "rank1_count": 0,
+      "mean_margin": 0.715,
+      "mean_efficiency": 0.667,
+      "untested_problems": [
+        "h2vqe",
+        "isingbell2"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "hardware-efficient-h2",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "h2vqe"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 0.919,
+      "mean_efficiency": 0.688,
+      "untested_problems": [
+        "isingbell2",
+        "tfim3"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "minimal-bell-ansatz",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "isingbell2"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [
+        "h2vqe",
+        "tfim3"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "qaoa",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "tfim3"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 0.998,
+      "mean_efficiency": 0.286,
+      "untested_problems": [
+        "h2vqe",
+        "isingbell2"
+      ],
+      "evidence": false
+    }
+  ]
 };
