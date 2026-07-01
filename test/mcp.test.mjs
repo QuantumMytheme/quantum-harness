@@ -130,6 +130,31 @@ test('verify_bundle re-derives ACCEPT and REJECT through the real judge', async 
   assert.equal(bad.failed_gate, 'reproducibility')
 })
 
+test('verify_bundle temp files are per-call nonces — concurrent calls cannot cross-talk', async t => {
+  // Regression: the temp name used TOOLS.length (a constant), so every inline-bundle
+  // call in a process wrote the SAME path — an overlapping call could overwrite the
+  // file before the judge read it (wrong verdict for the wrong bundle) or unlink it
+  // mid-read. The stdio loop dispatches without awaiting, so overlap is real.
+  const src = readFileSync(path.join(ROOT, 'mcp/server.mjs'), 'utf8')
+  assert.doesNotMatch(src, /TOOLS\.length/, 'temp name must not use the constant TOOLS.length')
+  assert.match(src, /Date\.now\(\).*Math\.random\(\)|Math\.random\(\).*Date\.now\(\)/s, 'temp name carries a real nonce')
+  assert.doesNotMatch(src, /qh-commit-\$\{process\.pid\}\.json/, 'commit_run temp name is nonce-based too')
+
+  // behavioral: two overlapping inline-bundle verifies each get THEIR OWN verdict
+  const honest = JSON.parse(readFileSync(path.join(ROOT, 'bench/quantum-judge/quantum-proof-h2.json'), 'utf8'))
+  const forged = JSON.parse(readFileSync(path.join(ROOT, 'bench/quantum-judge/quantum-proof-FORGED.json'), 'utf8'))
+  const [a, b] = await Promise.all([
+    callTool('verify_bundle', { bundle: honest }),
+    callTool('verify_bundle', { bundle: forged }),
+  ])
+  const ra = parse(a), rb = parse(b)
+  if ((ra.error && /python3|numpy/.test(ra.reason || '')) || (rb.error && /python3|numpy/.test(rb.reason || ''))) {
+    t.skip('python3 + numpy not available'); return
+  }
+  assert.equal(ra.verdict, 'ACCEPT', 'the honest bundle judged as itself')
+  assert.equal(rb.verdict, 'REJECT', 'the forged bundle judged as itself')
+})
+
 test('Desktop Extension manifest is valid and matches the served tools', () => {
   const m = JSON.parse(readFileSync(path.join(ROOT, 'mcp/manifest.json'), 'utf8'))
   assert.equal(m.name, 'quantum-harness')
