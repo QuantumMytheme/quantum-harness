@@ -71,8 +71,8 @@ Three reasons, in plain terms:
    it hill-climb: loop until the judge ACCEPTs, then try to beat the current best verified score.
 
 **New here? → [GETTING-STARTED.md](./GETTING-STARTED.md) — your first run in three commands** (remix
-the current frontier, your model molds it, it auto-registers). Then **[RUN-FLOW.md](./RUN-FLOW.md)** is
-the full lifecycle, **[SCOREBOARD.md](./SCOREBOARD.md)** is where runs are ranked, and
+the current frontier, your model molds it, it auto-registers), with the full five-step lifecycle
+detailed in the same doc. **[SCOREBOARD.md](./SCOREBOARD.md)** is where runs are ranked, and
 **[ACCESS.md](./ACCESS.md)** shows how to validate on a real (or rented) quantum chip.
 
 **Want to run it inside Claude?** **[CLAUDE-DESKTOP.md](./CLAUDE-DESKTOP.md)** covers both surfaces:
@@ -112,12 +112,15 @@ the real judge, and mint a run repo — without leaving the chat.
 | `bin/test-all.sh` · `npm run test:all` | Runs **every** suite (both judges + router + soundness fuzz + node + site smoke + MCP selftest) — green = safe to push |
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
 | `GETTING-STARTED.md` | Your first run in three commands — remix the frontier, your model molds it, auto-register |
-| `RUN-FLOW.md` · `bin/new-run.sh` | Mint a fresh public run repo from this template (`--remix <problem>` pre-loads the frontier), run, commit back |
+| `bin/new-run.sh` | Mint a fresh public run repo from this template (`--remix <problem>` pre-loads the frontier), run, commit back — full lifecycle in `GETTING-STARTED.md` |
 | `mcp/server.mjs` · `mcp/manifest.json` | Dependency-free MCP connector for the **Claude Desktop app** — `list_problems` / `get_brief` / `get_kickoff` / `verify_bundle` (real judge) / `mint_run` |
 | `CLAUDE-DESKTOP.md` | Run the harness inside Claude — Claude Code (autonomous loop) or the Desktop-app connector |
 | `bin/ingredients.mjs` | Assemble prior verified designs for a problem into a remix pack — how runs **compound** |
 | `ACCESS.md` | Get or rent a quantum chip (often free / under $1) and overlay a real-hardware result |
 | `HARDWARE.md` · `bench/quantum-judge/hardware_report.py` | Run a sim-verified design on a **real QPU** and report back — a labeled, partly-re-verifiable hardware overlay (sim score stays canonical) |
+| `RERUN.md` | Reuse the harness — point it at a NEW problem tomorrow, or mint templated runs |
+| `docs/design/CLAUDE-USAGE-DESIGN.md` | Design essay — how an autonomous model is used here + how its autonomy is measured |
+| `docs/roadmap/` | Roadmap essays, not built — `PLATFORM-VISION.md`, `TPU-NATIVE-ARCHITECTURES.md`, `TPU-ORACLE-DIFF-GATE.md` (its hermetic half IS built: `bench/kernel-judge/`) |
 | `LICENSE` | MIT |
 
 ## Quickstart
@@ -274,7 +277,7 @@ CLI verify either kind.
   output vs a judge-recomputed **fp64** reference, within a **dtype-derived** tolerance
   (bf16 ≈ 2⁻⁸ ulp) + a distribution check; integers must be bit-exact; a held-out input
   seed guards against overfit. Exploits Pallas's contract that `interpret=True` is a
-  replayable correctness oracle. Spec: [TPU-ORACLE-DIFF-GATE.md](./TPU-ORACLE-DIFF-GATE.md).
+  replayable correctness oracle. Spec: [docs/roadmap/TPU-ORACLE-DIFF-GATE.md](./docs/roadmap/TPU-ORACLE-DIFF-GATE.md).
 - **Roofline Notary** (`roofline-attest`, T1) — recomputes useful FLOPs from the shape,
   `%-of-peak` from the measured wall-clock, and the arithmetic-intensity / compute-vs-
   memory-bound regime against a **pinned per-generation** peak; rejects any self-reported
@@ -288,8 +291,8 @@ built**. The soundness/property fuzz (`npm run test:fuzz`) pins both judges: hon
 bundles always ACCEPT, forgeries never do.
 
 The design brainstorm behind this track (35 stress-tested TPU-native architecture
-ideas) is [TPU-NATIVE-ARCHITECTURES.md](./TPU-NATIVE-ARCHITECTURES.md); the phased path
-is Track 2 of [PLATFORM-VISION.md](./PLATFORM-VISION.md).
+ideas) is [docs/roadmap/TPU-NATIVE-ARCHITECTURES.md](./docs/roadmap/TPU-NATIVE-ARCHITECTURES.md); the phased path
+is Track 2 of [docs/roadmap/PLATFORM-VISION.md](./docs/roadmap/PLATFORM-VISION.md).
 
 **Scenario Studio.** A companion explorer at [quantummytheme.com/lab#studio](https://quantummytheme.com/lab#studio):
 pick the substrates you have (CPU/GPU/TPU/QPU) and a workload, and it maps each chip to
@@ -311,7 +314,7 @@ inherited through commits.
 The worked problems are a seed, not the ceiling. The longer arc — a growing problem set,
 held-out contest references, and the path from "verify a quantum claim" to a general
 **verifiable-efficiency referee** for machine intelligence — is laid out in
-**[PLATFORM-VISION.md](./PLATFORM-VISION.md)**, and the honest, source-backed map of where
+**[docs/roadmap/PLATFORM-VISION.md](./docs/roadmap/PLATFORM-VISION.md)**, and the honest, source-backed map of where
 efficiency actually comes from is Part V of the [curriculum](https://quantummytheme.com/education).
 
 ## License

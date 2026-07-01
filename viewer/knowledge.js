@@ -241,7 +241,7 @@
       src: 'Shor 1994 · Gidney–Ekerå 2021 · NIST PQC 2024' },
     { key: 'randomness', name: 'Certified / verifiable randomness', maturity: 'a demonstrated near-term niche',
       what: 'Random-circuit sampling yields entropy a third party can certify was genuinely quantum — a randomness beacon no classical box can fake.',
-      demonstrates: 'The TPU XEB-Referee (TPU-NATIVE-ARCHITECTURES.md) is the classical verifier for exactly this.',
+      demonstrates: 'The TPU XEB-Referee (docs/roadmap/TPU-NATIVE-ARCHITECTURES.md) is the classical verifier for exactly this.',
       src: 'Aaronson certified randomness · Google RCS 2023/2025' },
     { key: 'optimization', name: 'Optimization & sampling', maturity: 'caveat — no broadly-proven advantage',
       what: 'QAOA / annealing for combinatorial problems, and quantum-advantage sampling as a benchmark of raw quantum power. Treat any speedup claim as unproven until it clears a referee at iso-quality.',

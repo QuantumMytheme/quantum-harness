@@ -17,7 +17,7 @@ only root dependency is **numpy**.
 
 This document is the contribution mechanics. The bigger picture of where contributions go — a
 public, searchable, re-runnable directory at `quantummytheme.com` — lives in
-[PLATFORM-VISION.md](./PLATFORM-VISION.md) (that platform is a roadmap, not yet built).
+[docs/roadmap/PLATFORM-VISION.md](./docs/roadmap/PLATFORM-VISION.md) (that platform is a roadmap, not yet built).
 
 ---
 

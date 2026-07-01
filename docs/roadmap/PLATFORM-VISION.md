@@ -89,7 +89,7 @@ is accepted into the directory iff the judge ACCEPTs it and the regression suite
 (`node --test`). No maintainer has to evaluate whether a circuit is "good" — the judge decides
 correctness, the hidden reference decides honesty. This is the property that lets the directory
 grow without a human bottleneck. (Contribution mechanics live in
-[CONTRIBUTING.md](./CONTRIBUTING.md).)
+[CONTRIBUTING.md](../../CONTRIBUTING.md).)
 
 ### The education layer
 
@@ -118,7 +118,7 @@ gets more efficient — and where quantum does and doesn't fit — built around 
 explorer and five verify-it-yourself lessons, before the page hands the learner the loop: prove a
 design in simulation with a classical model, then run it on real silicon. The whole curriculum —
 and how a learner ends up pointing their own Claude subscription or API credits at a BRIEF — is
-designed in [EDUCATION.md](./EDUCATION.md).
+designed in [EDUCATION.md](../../EDUCATION.md).
 
 ### The subscription model
 
@@ -190,7 +190,7 @@ Concretely, this "directory" **is a scoreboard**: per problem and per paradigm (
 topology / feature map, plus the classical baseline), the judge-ACCEPTED runs are ranked by their
 verified metric, and every entry is re-verifiable — anyone can re-run the judge and reproduce the
 ranking. The leading entry per problem is the current frontier, held honest by the same gates.
-The format and current standings live in [SCOREBOARD.md](./SCOREBOARD.md).
+The format and current standings live in [SCOREBOARD.md](../../SCOREBOARD.md).
 
 ### Phase 2 — interactive in-browser circuit runner
 

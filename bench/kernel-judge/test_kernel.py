@@ -8,7 +8,7 @@ REJECTED with the right exit code. If this suite is green, the correctness notar
 is sound — no swapped array, claimant-chosen tolerance, degraded fast path, or
 overfit kernel can clear the gate, and every check runs offline with numpy alone.
 
-Checks are labelled K1–K12 to match the VERIFIER-MAP in ../../TPU-ORACLE-DIFF-GATE.md.
+Checks are labelled K1–K12 to match the VERIFIER-MAP in ../../docs/roadmap/TPU-ORACLE-DIFF-GATE.md.
 
 Run:  python3 test_kernel.py   (exit 0 = all pass)
 """
