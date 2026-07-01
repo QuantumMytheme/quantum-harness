@@ -42,6 +42,36 @@
       dark: dark,
       reduced: reduced,
       onTheme: onTheme,
+      // frame(sync): fit now + refit-and-redraw on theme change. Calls
+      // sync({ctx,w,h}, redraw) once immediately (redraw=false) so the module can
+      // bind its closure ctx/W/H, and again on every theme change (redraw=true).
+      frame: function (sync) {
+        sync(fit(), false);
+        onTheme(function () { sync(fit(), true); });
+      },
+      // pal(): the shared palette every module used to re-derive inline.
+      pal: function () {
+        return {
+          ink: cssVar('--ink'), ink2: cssVar('--ink-2'), faint: cssVar('--faint'),
+          rule: cssVar('--rule-2'), acc: cssVar('--accent'), acc2: cssVar('--accent-2'),
+          pass: cssVar('--pass'), reject: cssVar('--reject'),
+          mono: cssVar('--mono') || 'monospace', sans: cssVar('--sans') || 'sans-serif'
+        };
+      },
+      // wrap(): the canonical left-aligned word-wrap (was copy-pasted into 15+ modules).
+      wrap: function (ctx, text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); },
+      // chip/btn/slider: the standard control widgets (were hand-rolled per module).
+      chip: function (parent, text) { var s = document.createElement('span'); s.className = 'chip'; s.textContent = text; parent.appendChild(s); return s; },
+      btn: function (parent, label, onClick, opts) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label;
+        if (opts && opts.pressed !== undefined) b.setAttribute('aria-pressed', opts.pressed);
+        b.addEventListener('click', onClick); parent.appendChild(b); return b;
+      },
+      slider: function (parent, label, o, onInput) {
+        var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = label;
+        var r = document.createElement('input'); r.type = 'range'; r.min = String(o.min); r.max = String(o.max); r.step = String(o.step); r.value = String(o.value); r.style.marginLeft = '6px';
+        r.addEventListener('input', onInput); lab.appendChild(r); parent.appendChild(lab); return r;
+      },
       C: function (re, im) { return { re: re, im: im || 0 }; },
       cadd: function (a, b) { return { re: a.re + b.re, im: a.im + b.im }; },
       cmul: function (a, b) { return { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }; },
