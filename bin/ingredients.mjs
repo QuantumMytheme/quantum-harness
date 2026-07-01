@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { filterValid } from '../scoreboard/build.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const pid = process.argv[2]
@@ -23,9 +24,11 @@ if (!pid || pid.startsWith('--')) {
 }
 
 const load = (p) => { try { return JSON.parse(readFileSync(join(ROOT, p), 'utf8')) } catch { return null } }
-const seeds = load('scoreboard/entries.json')?.entries || []
-const disc = load('scoreboard/discovered.json')?.entries || []
-const entries = [...seeds, ...disc].filter((e) => e.problem_id === pid)
+// filterValid skips + logs malformed community entries (a shapeless discovered
+// entry must not crash the remix pack — the --remix path for everyone).
+const seeds = filterValid(load('scoreboard/entries.json')?.entries || [], 'seed entry')
+const disc = filterValid(load('scoreboard/discovered.json')?.entries || [], 'discovered entry')
+const entries = [...seeds, ...disc].filter((e) => e && e.problem_id === pid)
 
 const DIR = { state_prep: 'higher', vqe: 'lower', populations: 'higher', architecture: 'lower', classify: 'higher' }
 entries.sort((a, b) => ((DIR[a.task] === 'lower' ? 1 : -1) * (a.verified_metric.value - b.verified_metric.value)))
@@ -67,6 +70,12 @@ items.forEach((e, i) => {
   L.push('')
 })
 L.push('---')
+if (items.length) {
+  const repos = [...new Set(items.map(e => String(e.run_repo).replace('https://github.com/', '')))]
+  L.push(`**Declare your lineage.** If your design builds on these ingredients, add the structured field to your`)
+  L.push(`\`scoreboard-entry.json\` so the board can render the descent chain and credit the ingredients:`)
+  L.push('```json', `"remix_of": ${JSON.stringify(repos)}`, '```', '')
+}
 L.push(`Beat rank 1, or tie its metric more cheaply (the tie-breaks reward fewer gates / lower depth / a sparser map).`)
 L.push(`Then commit your bundle to a public run repo, tag it \`quantum-harness-run\`, drop a \`scoreboard-entry.json\`,`)
 L.push(`and it auto-registers on the board. Have a quantum chip (or rent one)? Overlay a real-hardware result — see ACCESS.md.`)
