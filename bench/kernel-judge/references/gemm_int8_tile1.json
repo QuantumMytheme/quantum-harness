@@ -1,0 +1,17 @@
+{
+  "task": "kernel-correctness-oracle",
+  "contract": "gemm",
+  "shape": [
+    16,
+    128,
+    128
+  ],
+  "declared_dtype": "int8",
+  "accum_dtype": "int32",
+  "inputs": {
+    "seed": 2468
+  },
+  "holdout": {
+    "seed": 13579
+  }
+}

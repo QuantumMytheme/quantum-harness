@@ -4,6 +4,8 @@
 
 > **Status: roadmap, not built.** This document specifies a task type the harness does **not** ship today. The existing engine (`bench/quantum-judge/judge_verify.py`, the five committed task types, the `mint_run`/`verify_bundle` MCP flow) is real and runs on a laptop. The `kernel-correctness-oracle` task described here **extends** that engine; the parts that can be graded by the offline numpy/JS judge are marked **HERMETIC-NOW**, and the parts that require a TPU VM are marked **NEEDS-A-TPU** and are explicitly *hoped-on-hardware, not measured-in-harness*. Nothing below changes the trust model of the existing four gates; it reuses them.
 
+> **Build update (2026-06-30): the HERMETIC-NOW half is implemented** in [`bench/kernel-judge/`](./bench/kernel-judge/) — a self-contained, offline, numpy-only, exit-code judge (`judge_kernel.py`) that runs STRUCTURE (exit 3) / REPRODUCIBILITY (exit 4, incl. sealed-hash integrity + dtype-derived tolerance + distribution + bit-exact integers) / ANTI-OVERFIT (exit 6), with the K1–K12 forgery fixtures and a green regression suite (`test_kernel.py`, 16/16). It is built as a **parallel module** in the image of `bench/quantum-judge/` (so the 38/38 quantum suite is untouched); folding it into `judge_verify.py`'s `TASKS` dispatch and the `verify_bundle` MCP route (§6) is a follow-up. The **NEEDS-A-TPU** legs — producing `hardware.output` on real silicon, the fp32 `interpret=True` diff, and the roofline/bytes-per-token speed gates it enables — remain roadmap, not built.
+
 ---
 
 ## 1. What the gate is, and why `interpret=True` is a legitimate notary
