@@ -257,8 +257,8 @@
     { id: 'tpu-v5p', name: 'Google TPU v5p', cls: 'tpu', spec: '459 TFLOP/s bf16 · HBM ~2.77 TB/s · 128×128 MXU · ridge ~166', note: 'high-end training TPU — pinned in the referee', src: 'Google Cloud · scaling-book', pinned: true },
     { id: 'tpu-v6e', name: 'Google TPU v6e (Trillium)', cls: 'tpu', spec: '918 TFLOP/s bf16 · HBM ~1.64 TB/s · 256×256 MXU · ridge ~560', note: 'current-gen TPU — pinned in the referee', src: 'Google Cloud · scaling-book', pinned: true },
     { id: 'ironwood', name: 'Google Ironwood (TPU v7 / TPU7x)', cls: 'tpu', spec: '~2.3 PFLOP/s bf16 · int8 4.6 EOP/s · HBM 192GB ~7.4 TB/s · 256×256 MXU · ridge ~311', note: '7th-gen — pinned in the referee', src: 'scaling-book · Google · Ironwood', pinned: true },
-    { id: 'tpu-8t', name: 'Google TPU 8t (8th-gen · training)', cls: 'tpu', spec: 'superpod 9,600 chips · 121 ExaFLOPS/pod · 2 PB HBM/pod · ~2× perf/W vs Ironwood', note: 'announced 2025 — per-chip roofline specs NOT yet published → the referee does NOT pin it', src: 'Google blog · agentic-era' },
-    { id: 'tpu-8i', name: 'Google TPU 8i (8th-gen · inference)', cls: 'tpu', spec: '288 GB HBM + 384 MB SRAM/chip · ICI 19.2 Tb/s · ~2× perf/W vs Ironwood', note: 'announced 2025 — per-chip roofline specs NOT yet published → not pinned', src: 'Google blog · agentic-era' },
+    { id: 'tpu-8t', name: 'Google TPU 8t (8th-gen · training)', cls: 'tpu', spec: '12.6 PFLOP/s FP4 · HBM 216GB ~6.53 TB/s · 128 MB VMEM · SparseCore + LLM-Decoder', note: '8th-gen “agentic era” — pinned for FP4 (bf16 peak + MXU not disclosed)', src: 'Google Cloud deep-dive 2025', pinned: true },
+    { id: 'tpu-8i', name: 'Google TPU 8i (8th-gen · inference)', cls: 'tpu', spec: '10.1 PFLOP/s FP4 · HBM 288GB ~8.6 TB/s · 384 MB VMEM · Collectives-Accel Engine', note: '8th-gen inference — pinned for FP4 (bf16 peak + MXU not disclosed)', src: 'Google Cloud deep-dive 2025', pinned: true },
     { id: 'willow', name: 'Google Willow', cls: 'qpu', spec: '105 superconducting qubits · below-threshold QEC', note: 'error-correction milestone (2024)', src: 'Google 2024' },
     { id: 'ibm-heron', name: 'IBM Heron r2', cls: 'qpu', spec: '156 superconducting qubits', note: 'utility-scale superconducting', src: 'IBM 2024' },
     { id: 'quantinuum-h2', name: 'Quantinuum H2', cls: 'qpu', spec: '56 trapped-ion qubits · very high fidelity', note: 'trapped-ion, all-to-all', src: 'Quantinuum 2024' },
@@ -268,7 +268,8 @@
   // Real TPU pods — for the "pretend you have Google's largest chip farm" what-if. Aspirational,
   // NOT something a visitor actually has; ExaFLOPS are vendor peak (mixed precision).
   var PODS = [
-    { id: '8t-superpod', name: 'TPU 8t superpod', cls: 'tpu', chips: 9600, exaflops: 121, hbm: '2 PB', note: 'Google’s LARGEST — the 8th-gen “agentic era” training pod', src: 'Google blog 2025', pinned: false },
+    { id: '8t-virgo', name: 'TPU 8t · Virgo cluster', cls: 'tpu', chips: 134000, exaflops: 1700, hbm: '~28 PB', note: 'Google’s LARGEST — the Virgo network links 134,000+ 8t chips (47 Pb/s bisectional), scaling toward 1M+ in a single cluster', src: 'Google Cloud deep-dive 2025', pinned: true },
+    { id: '8t-superpod', name: 'TPU 8t superpod', cls: 'tpu', chips: 9600, exaflops: 121, hbm: '2 PB', note: 'a single 8th-gen “agentic era” training superpod', src: 'Google Cloud deep-dive 2025', pinned: true },
     { id: 'ironwood-pod', name: 'Ironwood (v7) superpod', cls: 'tpu', chips: 9216, exaflops: 42.5, hbm: '~1.77 PB', note: '7th-gen superpod (per-chip pinned in the referee)', src: 'Google 2025', pinned: true },
     { id: 'v5p-pod', name: 'TPU v5p pod', cls: 'tpu', chips: 8960, exaflops: 4.1, hbm: '~840 TB', note: '8,960-chip v5p pod (bf16 peak)', src: 'Google', pinned: true }
   ];

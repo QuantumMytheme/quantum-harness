@@ -1,0 +1,34 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "roofline-attest",
+  "problem_id": "roofline_gemm_8t",
+  "constraints": {
+    "shape": [
+      4096,
+      4096,
+      4096
+    ],
+    "declared_dtype": "fp4"
+  },
+  "hardware": {
+    "device_kind": "TPU 8t",
+    "wall_clock_s": [
+      2.137939276231111e-05,
+      2.181570690031746e-05,
+      2.225202103832381e-05
+    ],
+    "hbm_bytes": 25165824.0
+  },
+  "oracle": {
+    "numeric": {
+      "runner": "xprof (measured on silicon; NEEDS-A-TPU)"
+    }
+  },
+  "claim": {
+    "algorithmic_flops": 137438953472,
+    "arithmetic_intensity": 5461.333333333333,
+    "pct_of_peak": 0.5,
+    "roofline_regime": "compute-bound"
+  },
+  "meta": {}
+}

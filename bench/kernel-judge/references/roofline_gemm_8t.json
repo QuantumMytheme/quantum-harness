@@ -1,0 +1,11 @@
+{
+  "task": "roofline-attest",
+  "contract": "gemm",
+  "shape": [
+    4096,
+    4096,
+    4096
+  ],
+  "declared_dtype": "fp4",
+  "device_kind": "TPU 8t"
+}

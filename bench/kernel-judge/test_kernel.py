@@ -154,6 +154,8 @@ def main():
         ("R11 v6e honest coordinate ACCEPTs (pinned 256-MXU gen)", "bundle-roofline-v6e-OK.json", 0),
         ("R12 v5p honest coordinate ACCEPTs (pinned gen)", "bundle-roofline-v5p-OK.json", 0),
         ("R13 TPU7x/Ironwood honest coordinate ACCEPTs (pinned v7)", "bundle-roofline-TPU7x-OK.json", 0),
+        ("R14 8t FP4 honest coordinate ACCEPTs (pinned for its published precision)", "bundle-roofline-8t-OK.json", 0),
+        ("R15 8t bf16 claim REFUSED — bf16 peak unpublished (exit 2)", "bundle-roofline-8t-bf16-REFUSED.json", 2),
     ]
     for name, fx, want in roof:
         code, _ = run_cli(fx)

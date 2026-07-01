@@ -69,14 +69,15 @@ def write_ref(problem_id, device, threshold=None):
         json.dump(ref, f, indent=2)
 
 
-def honest_for(device, shape, pid):
-    """An honest roofline coordinate for any PINNED generation (proves the pin attests)."""
+def honest_for(device, shape, pid, dtype="bf16"):
+    """An honest roofline coordinate for any PINNED generation/precision (proves the pin attests)."""
     m, n, k = shape
     pin = jk.PINNED[device]
-    peak, hbm = pin["peak_bf16"], pin["hbm_bw"]
+    peak = pin.get("peak_fp4") if dtype in ("fp4", "fp4_e2m1") else (pin.get("peak_int8") if dtype in jk.INT_DTYPES else pin.get("peak_bf16"))
+    hbm = pin["hbm_bw"]
     ridge = peak / hbm
     useful = 2 * m * n * k
-    lb = jk._bytes_per_elem(DTYPE) * (m * k + k * n + m * n)
+    lb = jk._bytes_per_elem(dtype) * (m * k + k * n + m * n)
     intensity = useful / lb
     med = useful / (0.5 * peak)
     s = [med * 0.98, med, med * 1.02]
@@ -84,10 +85,10 @@ def honest_for(device, shape, pid):
     regime = "compute-bound" if intensity >= ridge else "memory-bound"
     os.makedirs(REFS, exist_ok=True)
     with open(os.path.join(REFS, pid + ".json"), "w") as f:
-        json.dump({"task": "roofline-attest", "contract": "gemm", "shape": list(shape), "declared_dtype": DTYPE, "device_kind": device}, f, indent=2)
+        json.dump({"task": "roofline-attest", "contract": "gemm", "shape": list(shape), "declared_dtype": dtype, "device_kind": device}, f, indent=2)
     name = "bundle-roofline-" + device.split()[-1] + "-OK.json"
     write(name, {"schema": jk.SCHEMA, "task": "roofline-attest", "problem_id": pid,
-                 "constraints": {"shape": list(shape), "declared_dtype": DTYPE},
+                 "constraints": {"shape": list(shape), "declared_dtype": dtype},
                  "hardware": {"device_kind": device, "wall_clock_s": s, "hbm_bytes": lb},
                  "oracle": {"numeric": {"runner": "xprof (measured on silicon; NEEDS-A-TPU)"}},
                  "claim": {"algorithmic_flops": useful, "arithmetic_intensity": intensity, "pct_of_peak": pct, "roofline_regime": regime},
@@ -132,9 +133,17 @@ def main():
     write("bundle-roofline-UNDERPERF.json", b); fixtures.append(("bundle-roofline-UNDERPERF.json", 5, "achieved below the reference's %-of-peak floor"))
 
     # newly-pinned generations: an honest coordinate on each must ACCEPT (proves the pin attests)
-    for dev, shape in [("TPU v6e", [2048, 2048, 2048]), ("TPU v5p", [1024, 1024, 1024]), ("TPU7x", [2048, 2048, 2048])]:
-        nm, rg = honest_for(dev, shape, "roofline_gemm_" + dev.split()[-1])
-        fixtures.append((nm, 0, "honest " + dev + " coordinate (" + rg + ")"))
+    for dev, shape, dt in [("TPU v6e", [2048, 2048, 2048], "bf16"), ("TPU v5p", [1024, 1024, 1024], "bf16"),
+                           ("TPU7x", [2048, 2048, 2048], "bf16"), ("TPU 8t", [4096, 4096, 4096], "fp4")]:
+        nm, rg = honest_for(dev, shape, "roofline_gemm_" + dev.split()[-1], dt)
+        fixtures.append((nm, 0, "honest " + dev + " " + dt + " coordinate (" + rg + ")"))
+    # 8t is pinned for FP4 ONLY — a bf16 claim on it is refused (bf16 peak undisclosed)
+    with open(os.path.join(REFS, "roofline_8t_bf16.json"), "w") as f:
+        json.dump({"task": "roofline-attest", "contract": "gemm", "shape": [1024, 1024, 1024], "declared_dtype": "bf16", "device_kind": "TPU 8t"}, f, indent=2)
+    write("bundle-roofline-8t-bf16-REFUSED.json", {"schema": jk.SCHEMA, "task": "roofline-attest", "problem_id": "roofline_8t_bf16",
+          "constraints": {"shape": [1024, 1024, 1024], "declared_dtype": "bf16"},
+          "hardware": {"device_kind": "TPU 8t", "wall_clock_s": [1e-4], "hbm_bytes": 6291456}, "claim": {}})
+    fixtures.append(("bundle-roofline-8t-bf16-REFUSED.json", 2, "8t bf16 claim refused — bf16 peak not published"))
 
     print("Roofline Notary — fixture self-verification\n")
     ok_all = True

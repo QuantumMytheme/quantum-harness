@@ -87,18 +87,24 @@ EXIT_OVERFIT = 6
 # scaling-book figure (Google's public v5p page tabulates FP8, not int8) — using the higher
 # (2×) peak is the safe choice for a referee (it cannot cause a false >100%-of-peak reject).
 # TPU7x (Ironwood) from the scaling-book, MXU 256 per Google docs, corroborated by the Ironwood
-# FP8 ~4614 TFLOP/s + 7.37 TB/s HBM announcement. The 8th-gen (TPU 8t/8i, "agentic era", 2025)
-# is NOT pinned: only pod-level numbers are published — no per-chip bf16/HBM — so it is refused.
+# FP8 ~4614 TFLOP/s + 7.37 TB/s HBM announcement.
+#   8t : 12.6 PFLOP/s FP4 · HBM 6.528 TB/s · VMEM 128MB  |  8i : 10.1 PFLOP/s FP4 · HBM 8.601 TB/s
+# 8th-gen TPU 8t/8i ("agentic era" technical deep-dive, 2025): FP4 peak + HBM bandwidth ARE
+# published, so they are pinned for FP4 attestation only. bf16/int8 peak + MXU size are NOT
+# disclosed, so a bf16/int8 roofline claim on them is refused, and the 256×256 MXU is an
+# ASSUMPTION (same-era) that affects only the secondary padding-waste disclosure, not the verdict.
 PINNED = {
     "TPU v5e": {"peak_bf16": 1.97e14, "peak_int8": 3.94e14, "hbm_bw": 8.2e11, "vmem_bw": 8.2e11 * 22, "mxu": 128},
     "TPU v5p": {"peak_bf16": 4.59e14, "peak_int8": 9.18e14, "hbm_bw": 2.765e12, "mxu": 128},
     "TPU v6e": {"peak_bf16": 9.18e14, "peak_int8": 1.836e15, "hbm_bw": 1.638e12, "mxu": 256},
     "TPU7x": {"peak_bf16": 2.30e15, "peak_int8": 4.61e15, "hbm_bw": 7.4e12, "mxu": 256},
+    "TPU 8t": {"peak_fp4": 12.6e15, "hbm_bw": 6.528e12, "mxu": 256},   # FP4 only; bf16/MXU undisclosed
+    "TPU 8i": {"peak_fp4": 10.1e15, "hbm_bw": 8.601e12, "mxu": 256},
 }
 
 # ---- tolerance model: PLATFORM constants, fixed in the judge (never claimant-set) ----
 # ulp = unit-in-last-place from the dtype's mantissa bits.
-ULP = {"bf16": 2 ** -8, "fp16": 2 ** -11, "fp8_e4m3": 2 ** -3, "fp8_e5m2": 2 ** -2, "fp32": 2 ** -23}
+ULP = {"bf16": 2 ** -8, "fp16": 2 ** -11, "fp8_e4m3": 2 ** -3, "fp8_e5m2": 2 ** -2, "fp4_e2m1": 2 ** -1, "fp4": 2 ** -1, "fp32": 2 ** -23}
 INT_DTYPES = {"int8", "int4", "int16"}
 KNOWN_DTYPES = set(ULP) | INT_DTYPES
 
@@ -374,8 +380,8 @@ def _pad(x, m):
 
 def _bytes_per_elem(dtype):
     if dtype in INT_DTYPES:
-        return 1 if dtype in ("int8", "int4") else 2
-    return {"bf16": 2, "fp16": 2, "fp8_e4m3": 1, "fp8_e5m2": 1, "fp32": 4}[dtype]
+        return 0.5 if dtype == "int4" else (1 if dtype == "int8" else 2)
+    return {"bf16": 2, "fp16": 2, "fp8_e4m3": 1, "fp8_e5m2": 1, "fp4_e2m1": 0.5, "fp4": 0.5, "fp32": 4}[dtype]
 
 
 def verify_roofline_attest(bundle, ref, checks):
@@ -407,7 +413,15 @@ def verify_roofline_attest(bundle, ref, checks):
     if not pin:
         raise Reject(EXIT_SCHEMA, f"no pinned roofline constants for device {dev!r}; this generation is not "
                                   f"attestable until its peak/bandwidth are verified and pinned")
-    peak = pin["peak_int8"] if dtype in INT_DTYPES else pin["peak_bf16"]
+    if dtype in ("fp4", "fp4_e2m1"):
+        peak = pin.get("peak_fp4")
+    elif dtype in INT_DTYPES:
+        peak = pin.get("peak_int8")
+    else:
+        peak = pin.get("peak_bf16")
+    if peak is None:
+        raise Reject(EXIT_SCHEMA, f"no verified {dtype} peak is pinned for {dev} — that precision's per-chip peak "
+                                  f"is not published for this generation, so the referee will not attest it")
     hbm_bw = pin["hbm_bw"]
     ridge = peak / hbm_bw
 

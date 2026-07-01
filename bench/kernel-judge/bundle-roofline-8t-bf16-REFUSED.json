@@ -1,0 +1,21 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "roofline-attest",
+  "problem_id": "roofline_8t_bf16",
+  "constraints": {
+    "shape": [
+      1024,
+      1024,
+      1024
+    ],
+    "declared_dtype": "bf16"
+  },
+  "hardware": {
+    "device_kind": "TPU 8t",
+    "wall_clock_s": [
+      0.0001
+    ],
+    "hbm_bytes": 6291456
+  },
+  "claim": {}
+}

@@ -74,13 +74,13 @@ test('the Studio offers real, known chips mapped to substrate classes', () => {
 
 test('the "pretend you have a superpod" what-if is present and honestly labelled', () => {
   assert.ok(Array.isArray(K.PODS) && K.PODS.length >= 2, 'PODS catalog')
-  const largest = K.PODS.find(p => p.id === '8t-superpod')
-  assert.ok(largest && largest.chips >= 9000, "Google's largest (8t superpod) is offered")
-  assert.equal(largest.pinned, false, '8th-gen superpod is NOT referee-pinned (only pod-level specs published)')
-  assert.ok(K.PODS.find(p => p.pinned), 'a pinned pod exists too (per-chip verified)')
-  // catalog honesty: Ironwood (v7) is pinned; the 8th-gen 8t/8i are listed but NOT pinned
+  const largest = K.PODS.reduce((a, b) => (b.chips > a.chips ? b : a))
+  assert.ok(largest.chips >= 9600 && /8t/.test(largest.id), "Google's largest TPU farm (8th-gen 8t) is offered")
+  // honesty: some hardware is referee-pinned (attestable), some is only listed — list ≠ attest
+  assert.ok(K.CHIPS.some(c => c.pinned) && K.CHIPS.some(c => !c.pinned), 'some chips pinned, some only listed')
   assert.ok(K.CHIPS.find(c => c.id === 'ironwood' && c.pinned), 'Ironwood (v7 / TPU7x) is pinned')
-  assert.ok(K.CHIPS.find(c => c.id === 'tpu-8t' && !c.pinned), 'TPU 8t is listed but NOT pinned (list ≠ attest)')
+  // 8t is pinned for FP4 (its published precision); a bf16 claim on it is refused — see kernel R14/R15
+  assert.ok(K.CHIPS.find(c => c.id === 'tpu-8t' && c.pinned), 'TPU 8t is pinned for FP4')
 })
 
 test('transformer inference is flagged as most-used, not best, with real alternatives', () => {
