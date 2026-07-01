@@ -130,20 +130,28 @@ async function listProblems() {
   return json({ problems, count: problems.length, note: 'Pick one, then call get_brief(problem_id). Quantum problems design a circuit; kernel-correctness-oracle problems attest a TPU kernel bundle.' })
 }
 
+const KERNEL_TASKS = new Set(['kernel-correctness-oracle', 'roofline-attest'])
+
 async function getBrief({ problem_id }) {
   const meta = LABELS[problem_id]
   if (!meta) {
     const known = Object.keys(LABELS).join(', ')
     return json({ error: `unknown problem_id ${JSON.stringify(problem_id)}`, known }, true)
   }
-  const brief = await readFile(path.join(ROOT, 'BRIEF.md'), 'utf8')
+  const isKernel = KERNEL_TASKS.has(meta.task)
+  const briefFile = isKernel ? path.join(ROOT, 'bench', 'kernel-judge', 'BRIEF.md') : path.join(ROOT, 'BRIEF.md')
+  const brief = await readFile(briefFile, 'utf8')
+  const intro = isKernel
+    ? `You know the target *conceptually* from the line above. The exact input seeds, the held-out ` +
+      `seed, and the pinned roofline constants live host-side with the judge and are NOT revealed — ` +
+      `design a correct/efficient kernel bundle and let verify_bundle confirm.`
+    : `You know the target *conceptually* from the line above. The exact target statevector / ` +
+      `Hamiltonian / numeric thresholds live host-side with the judge and are NOT revealed — ` +
+      `design to the concept and let verify_bundle confirm.`
   const head =
     `# BRIEF — ${problem_id}\n\n` +
     `**Concept:** ${meta.label}\n` +
-    `**Task type:** ${meta.task}\n\n` +
-    `You know the target *conceptually* from the line above. The exact target statevector / ` +
-    `Hamiltonian / numeric thresholds live host-side with the judge and are NOT revealed — ` +
-    `design to the concept and let verify_bundle confirm.\n\n---\n\n`
+    `**Task type:** ${meta.task}\n\n` + intro + `\n\n---\n\n`
   return text(head + brief)
 }
 
