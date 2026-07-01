@@ -1,0 +1,207 @@
+{
+  "schema": "quantummytheme/frontier-history@1",
+  "note": "Append-only frontier ledger. `events` are NEVER rewritten — build.mjs only appends; `snapshot` is a mutable cache of the last-diffed board state. Event dates come from each entry's verified_at; `observed` (when present) is the date the operator ran the build with --now. Genesis-flagged events were backfilled from the board state when the ledger was created.",
+  "snapshot": {
+    "problems": {
+      "aiaccel4": {
+        "task": "architecture",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-arch.json",
+          "paradigm": "ring",
+          "metric": 2,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-arch.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-arch.json"
+        ]
+      },
+      "bell_pops2": {
+        "task": "populations",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-pops.json",
+          "paradigm": "phase-correct-bell",
+          "metric": 1,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-pops.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-pops.json"
+        ]
+      },
+      "ghz3": {
+        "task": "state_prep",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-poc.json",
+          "paradigm": "chain-cascade",
+          "metric": 1,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-poc.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-poc.json"
+        ]
+      },
+      "h2vqe": {
+        "task": "vqe",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-h2.json",
+          "paradigm": "hardware-efficient-h2",
+          "metric": 0.0004047113,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-h2.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-h2.json"
+        ]
+      },
+      "isingbell2": {
+        "task": "vqe",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-vqe.json",
+          "paradigm": "minimal-bell-ansatz",
+          "metric": 0,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-vqe.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-vqe.json"
+        ]
+      },
+      "qml_sign1": {
+        "task": "classify",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-qml.json",
+          "paradigm": "low-frequency-encoding",
+          "metric": 1,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-qml.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-qml.json"
+        ]
+      },
+      "tfim3": {
+        "task": "vqe",
+        "entries": 2,
+        "leader": {
+          "key": "https://github.com/QuantumMytheme/run-tfim3-qaoa|quantum-proof-tfim3.json",
+          "paradigm": "qaoa",
+          "metric": 0.00010313849458487567,
+          "verified_at": "2026-06-16",
+          "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+          "proof_bundle": "quantum-proof-tfim3.json"
+        },
+        "frontier": [
+          "https://github.com/QuantumMytheme/run-tfim3-hwe|quantum-proof-tfim3.json",
+          "https://github.com/QuantumMytheme/run-tfim3-qaoa|quantum-proof-tfim3.json"
+        ],
+        "runner_up_gap": 0.014154884937444212
+      }
+    },
+    "paradigms": [
+      "chain-cascade",
+      "hardware-efficient",
+      "hardware-efficient-h2",
+      "low-frequency-encoding",
+      "minimal-bell-ansatz",
+      "phase-correct-bell",
+      "qaoa",
+      "ring"
+    ]
+  },
+  "events": [
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "aiaccel4",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: ring (metric 2); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-arch.json",
+      "genesis": true,
+      "seq": 1
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "bell_pops2",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: phase-correct-bell (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-pops.json",
+      "genesis": true,
+      "seq": 2
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "ghz3",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: chain-cascade (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-poc.json",
+      "genesis": true,
+      "seq": 3
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "h2vqe",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: hardware-efficient-h2 (metric 0.000404711); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-h2.json",
+      "genesis": true,
+      "seq": 4
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "isingbell2",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: minimal-bell-ansatz (metric 0); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-vqe.json",
+      "genesis": true,
+      "seq": 5
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "qml_sign1",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: low-frequency-encoding (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-qml.json",
+      "genesis": true,
+      "seq": 6
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "tfim3",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: qaoa (metric 0.000103138); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "genesis": true,
+      "seq": 7
+    },
+    {
+      "type": "NEW_LEADER",
+      "problem_id": "tfim3",
+      "date": "2026-06-16",
+      "detail": "qaoa holds rank 1 of 2 verified designs (metric 0.000103138); backfilled at genesis — the dethrone order predates this ledger",
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "genesis": true,
+      "seq": 8
+    }
+  ]
+}

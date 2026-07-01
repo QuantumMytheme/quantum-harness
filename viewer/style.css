@@ -415,3 +415,50 @@ html[data-theme="dark"] table.results tr.sb-row:hover td { background: rgba(63, 
 /* ---- appended: Landscape Explorer (local-only sweep progress) ---- */
 .qm-landbar{ position:relative; height:9px; border:1px solid var(--rule); border-radius:5px; background:var(--panel); overflow:hidden; margin:6px 0 4px; }
 .qm-landbar i{ position:absolute; left:0; top:0; bottom:0; background:var(--accent); opacity:.75; transition:width .12s linear; }
+
+/* paradigm league — corpus-level (paradigm × task) rollup; n<3 = anecdote */
+.sb-league { margin-top: 34px; }
+.sb-league h3 { margin: 0 0 8px; }
+.sb-league .lead { font-size: 13.5px; }
+.league-table td .sub { display: block; font-size: 10.5px; color: var(--faint); font-family: var(--mono); }
+.league-untested { font-size: 11.5px; }
+.league-untested .mono { font-size: 11px; }
+tr.league-row.anecdote td { color: var(--faint); }
+tr.league-row.anecdote td .ptag, tr.league-row.anecdote td .num { opacity: 0.65; }
+.anecbadge { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--faint); border: 1px dashed var(--rule-2); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+.evbadge { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--pass); border: 1px solid var(--pass); border-radius: 4px; padding: 2px 6px; }
+html[data-theme="dark"] .anecbadge { border-color: var(--rule-2); }
+
+/* frontier changelog — append-only ledger timeline + Atom feed */
+.sb-changelog { margin-top: 34px; }
+.sb-changelog h3 { margin: 0 0 8px; }
+.sb-changelog .lead { font-size: 13.5px; }
+.chlog { list-style: none; margin: 12px 0 0; padding: 0; border-left: 2px solid var(--rule); }
+.chlog-item { position: relative; padding: 6px 0 6px 18px; font-size: 13px; }
+.chlog-item::before { content: ''; position: absolute; left: -5px; top: 13px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.chdate { font-size: 11px; color: var(--faint); margin-right: 8px; }
+.chtype { display: inline-block; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid var(--rule-2); border-radius: 4px; padding: 1px 6px; margin-right: 6px; color: var(--ink-2); }
+.chtype-newleader { border-color: var(--accent); color: var(--accent); }
+.chtype-paretoexpansion { border-color: var(--pass); color: var(--pass); }
+.chdetail { color: var(--ink-2); }
+.chgen { font-family: var(--mono); font-size: 9.5px; color: var(--faint); border: 1px dashed var(--rule-2); border-radius: 4px; padding: 1px 5px; }
+html[data-theme="dark"] .chlog { border-left-color: var(--rule-2); }
+
+/* cite-this-run — hash-pinned citation exports */
+.citebtn { font-family: var(--mono); font-size: 10px; border: 1px solid var(--rule-2); border-radius: 4px; background: transparent; color: var(--ink-2); padding: 1px 7px; cursor: pointer; }
+.citebtn:hover { border-color: var(--accent); color: var(--accent); }
+.cite-modal { max-width: 720px; }
+.cite-modal h3 { margin: 0 0 8px; }
+.cite-modal .lead { font-size: 13px; }
+.citepin { font-size: 11px; word-break: break-all; }
+.citeblock { margin-top: 14px; }
+.citehead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.citehead b { font-size: 12.5px; }
+.citeblock pre { margin: 0; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); overflow: auto; max-height: 220px; }
+.citeblock code { font-family: var(--mono); font-size: 11px; line-height: 1.5; white-space: pre; }
+.citecopy { font-family: var(--mono); font-size: 10px; border: 1px solid var(--rule-2); border-radius: 4px; background: transparent; color: var(--ink-2); padding: 2px 8px; cursor: pointer; }
+.citecopy:hover { border-color: var(--accent); color: var(--accent); }
+html[data-theme="dark"] .citeblock pre { background: rgba(10,13,32,0.6); }
+
+/* reproduced ×N — attestation badge (credibility display, never rank) */
+.repro { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--pass); border: 1px solid var(--pass); border-radius: 4px; padding: 1px 6px; white-space: nowrap; cursor: help; }

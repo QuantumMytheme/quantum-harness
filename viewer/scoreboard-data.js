@@ -34,8 +34,16 @@ window.SCOREBOARD_DATA = {
         "grade": "B+"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-poc.json",
+      "bundle_sha256": "2c38fa2b36d17ffeae5b94003a640158c0ddcd7d63f9c983cf59c98e5ba88791",
+      "reverify": "python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-poc.json",
+      "verified_at": "2026-06-16",
       "why": "Perfect fidelity (1.000) at the minimal cost for a 3-qubit GHZ state on the [0-1-2] coupling map: depth 3, two CX. No design reaches the target with fewer entangling gates, so this is the optimum — only a tie at lower cost could outrank it.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 1,
+      "reproduced_by": [
+        "quantum-harness-ci"
+      ]
     },
     {
       "remix_of": [],
@@ -59,8 +67,14 @@ window.SCOREBOARD_DATA = {
         "grade": "B+"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-vqe.json",
+      "bundle_sha256": "75ddf8b5d3245351f5cd3d7020d9705c69fa66d9f230b8728e3d47892f152ae0",
+      "reverify": "python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-vqe.json",
+      "verified_at": "2026-06-16",
       "why": "Reaches the EXACT ground state (gap 0.000 to E0 = -2) at depth 2 with a single CX. The Bell state is the true ground state of H = -X0X1 - Z0Z1, and entangling beats the best product-state baseline (-1). You cannot improve on a zero gap — only a tie at lower cost competes.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 0,
+      "reproduced_by": []
     },
     {
       "remix_of": [],
@@ -84,8 +98,14 @@ window.SCOREBOARD_DATA = {
         "grade": "A"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-pops.json",
+      "bundle_sha256": "140bee3e1fc0389a6b8d09d6a86e5e39c8a21dbfa9391c62232c165a09f25d8f",
+      "reverify": "python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-pops.json",
+      "verified_at": "2026-06-16",
       "why": "Matches the visible 50/50 populations AND the HIDDEN held-out ⟨X0X1⟩ = +1 — the genuine |Φ+>, not a phase-flipped impostor that games only the visible spec. It clears the anti-overfit gate (exit 6) that the OVERFIT fixture fails, at depth 2 with one CX.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 0,
+      "reproduced_by": []
     },
     {
       "remix_of": [],
@@ -109,8 +129,14 @@ window.SCOREBOARD_DATA = {
         "grade": "A"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-arch.json",
+      "bundle_sha256": "b05c4afb12077728dd5b93089997b702f74b5f3852d6e290936a06d3e52b5483",
+      "reverify": "python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-arch.json",
+      "verified_at": "2026-06-16",
       "why": "A ring routes BOTH the visible and the held-out workload at cost 2 within the degree-2 budget, beating the linear-chain baseline (4). It generalizes — the overfit path that aces the visible pairs blows the held-out budget and is rejected at exit 6. Only a sparser map at equal cost could outrank it.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 0,
+      "reproduced_by": []
     },
     {
       "remix_of": [],
@@ -134,8 +160,14 @@ window.SCOREBOARD_DATA = {
         "grade": "A"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-qml.json",
+      "bundle_sha256": "e4420e955d0172b6211e0025f3893f61d7daba88d3d7be6472879a18fd3b0379",
+      "reverify": "python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-qml.json",
+      "verified_at": "2026-06-16",
       "why": "100% train AND 100% held-out test accuracy with a single rotation. A high-frequency Ry(7x) map also nails training but fails the held-out test (exit 6); this low-frequency map generalizes — the headline metric. One op on one qubit: nothing simpler generalizes.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 0,
+      "reproduced_by": []
     },
     {
       "remix_of": [],
@@ -159,8 +191,14 @@ window.SCOREBOARD_DATA = {
         "grade": "B+"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-h2.json",
+      "bundle_sha256": "ce73ff388c7a5d7f70890658d2156b10e0e5b7e924c9ad42eeb8dbd86137e88b",
+      "reverify": "python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-h2.json",
+      "verified_at": "2026-06-16",
       "why": "Reaches within 4e-4 Ha of the exact electronic ground energy of the reduced 2-qubit H₂ Hamiltonian (E0 = -1.8512 Ha, STO-3G; nuclear repulsion excluded) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 0,
+      "reproduced_by": []
     },
     {
       "remix_of": [],
@@ -184,8 +222,14 @@ window.SCOREBOARD_DATA = {
         "grade": "B"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/run-tfim3-qaoa/blob/main/quantum-proof-tfim3.json",
+      "bundle_sha256": null,
+      "reverify": "curl -sL https://raw.githubusercontent.com/QuantumMytheme/run-tfim3-qaoa/main/quantum-proof-tfim3.json -o bundle.json && python3 bench/quantum-judge/judge_verify.py bundle.json",
+      "verified_at": "2026-06-16",
       "why": "Remix that takes rank 1 on tfim3: a problem-specific QAOA p=2 ansatz (rzz couplers matching the Ising bonds + an rx mixer) reaches gap 0.000103 to E0 — 138x closer than the hardware-efficient ingredient (0.0143) — at the same 4 two-qubit gates. The frontier moves when a run builds on prior ingredients.",
-      "hardware": null
+      "hardware": null,
+      "hardware_reports": [],
+      "reproduced": 0,
+      "reproduced_by": []
     },
     {
       "remix_of": [],
@@ -209,15 +253,38 @@ window.SCOREBOARD_DATA = {
         "grade": "B"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/quantum-proof-tfim3.json",
+      "bundle_sha256": null,
+      "reverify": "curl -sL https://raw.githubusercontent.com/QuantumMytheme/run-tfim3-hwe/main/quantum-proof-tfim3.json -o bundle.json && python3 bench/quantum-judge/judge_verify.py bundle.json",
+      "verified_at": "2026-06-16",
       "why": "First verified design for tfim3: a hardware-efficient ansatz (Ry layer + open-chain CX, 2 CX) reaches energy -2.9948 (gap 0.0143 to E0=-3.0090), beating the product-state baseline -2.72. Headroom remains — a richer ansatz can push the gap toward zero and take rank 1.",
       "hardware": {
         "backend": "local-noisy (emulated)",
         "metric": "energy",
         "value": -2.903418,
         "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json",
+        "shots": 8192,
         "emulated": true,
-        "label": "noisy-sim"
-      }
+        "label": "noisy-sim",
+        "sim_value": -2.9947640963492943,
+        "delta": 0.0913461,
+        "delta_pct": 3.05
+      },
+      "hardware_reports": [
+        {
+          "backend": "local-noisy (emulated)",
+          "metric": "energy",
+          "value": -2.903418,
+          "url": "https://github.com/QuantumMytheme/run-tfim3-hwe/blob/main/hardware-report-tfim3.json",
+          "shots": 8192,
+          "emulated": true,
+          "label": "noisy-sim",
+          "sim_value": -2.9947640963492943,
+          "delta": 0.0913461,
+          "delta_pct": 3.05
+        }
+      ],
+      "reproduced": 0,
+      "reproduced_by": []
     }
   ],
   "coverage": [
@@ -787,5 +854,209 @@ window.SCOREBOARD_DATA = {
       ],
       "gap": "Open gap: no verified entry below 2 2q gates, and gap 0.000103 is only reached at 4 2q gates — a design beating either corner is untried. Untried means nobody has posted one; it says nothing about difficulty."
     }
-  }
+  },
+  "paradigms": [
+    {
+      "paradigm": "ring",
+      "task": "architecture",
+      "n": 1,
+      "boards": [
+        "aiaccel4"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [],
+      "evidence": false
+    },
+    {
+      "paradigm": "low-frequency-encoding",
+      "task": "classify",
+      "n": 1,
+      "boards": [
+        "qml_sign1"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [],
+      "evidence": false
+    },
+    {
+      "paradigm": "phase-correct-bell",
+      "task": "populations",
+      "n": 1,
+      "boards": [
+        "bell_pops2"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [],
+      "evidence": false
+    },
+    {
+      "paradigm": "chain-cascade",
+      "task": "state_prep",
+      "n": 1,
+      "boards": [
+        "ghz3"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.667,
+      "untested_problems": [
+        "bellnoisy2",
+        "ghz3_he",
+        "ghz5_line"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "hardware-efficient",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "tfim3"
+      ],
+      "rank1_count": 0,
+      "mean_margin": 0.715,
+      "mean_efficiency": 0.667,
+      "untested_problems": [
+        "h2vqe",
+        "isingbell2"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "hardware-efficient-h2",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "h2vqe"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 0.919,
+      "mean_efficiency": 0.688,
+      "untested_problems": [
+        "isingbell2",
+        "tfim3"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "minimal-bell-ansatz",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "isingbell2"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 1,
+      "mean_efficiency": 0.75,
+      "untested_problems": [
+        "h2vqe",
+        "tfim3"
+      ],
+      "evidence": false
+    },
+    {
+      "paradigm": "qaoa",
+      "task": "vqe",
+      "n": 1,
+      "boards": [
+        "tfim3"
+      ],
+      "rank1_count": 1,
+      "mean_margin": 0.998,
+      "mean_efficiency": 0.286,
+      "untested_problems": [
+        "h2vqe",
+        "isingbell2"
+      ],
+      "evidence": false
+    }
+  ],
+  "changelog": [
+    {
+      "type": "NEW_LEADER",
+      "problem_id": "tfim3",
+      "date": "2026-06-16",
+      "detail": "qaoa holds rank 1 of 2 verified designs (metric 0.000103138); backfilled at genesis — the dethrone order predates this ledger",
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "genesis": true,
+      "seq": 8
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "tfim3",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: qaoa (metric 0.000103138); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "genesis": true,
+      "seq": 7
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "qml_sign1",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: low-frequency-encoding (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-qml.json",
+      "genesis": true,
+      "seq": 6
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "isingbell2",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: minimal-bell-ansatz (metric 0); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-vqe.json",
+      "genesis": true,
+      "seq": 5
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "h2vqe",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: hardware-efficient-h2 (metric 0.000404711); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-h2.json",
+      "genesis": true,
+      "seq": 4
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "ghz3",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: chain-cascade (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-poc.json",
+      "genesis": true,
+      "seq": 3
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "bell_pops2",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: phase-correct-bell (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-pops.json",
+      "genesis": true,
+      "seq": 2
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "aiaccel4",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: ring (metric 2); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-arch.json",
+      "genesis": true,
+      "seq": 1
+    }
+  ]
 };

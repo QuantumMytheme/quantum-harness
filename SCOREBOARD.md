@@ -262,6 +262,122 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 > separately-labeled noisy-sim credit applies instead), and it does **not** satisfy a
 > problem's "hardware overlay" cell on the wanted board. Only a real device run does.
 
+**All reports, with deltas.** `hardware_reports` is an array and the board emits
+**every** report (never just the first), each with a computed **sim-vs-hw delta**
+(measured − sim, plus a percent) wherever the report's metric is comparable to a
+sim-side number — shown inline per row. Multi-backend reports on the same design are
+the raw material for an honest per-backend noise landscape; when no comparable sim
+number exists the delta stays `null` rather than being guessed.
+
+---
+
+## (c2) The paradigm league — §(c) answered at corpus level, honestly
+
+The aggregator also rolls every verified run up into a **paradigm league**
+(`paradigms` in the generated board data; rendered under the scoreboard): one row per
+**(paradigm family × task)** pair, carrying `n` (verified runs), boards entered,
+rank-1 count, mean margin, mean efficiency (both reusing the quality axes above), and
+the list of same-task problems that paradigm has **not** yet entered — which
+cross-links straight into the wanted board's empty cells.
+
+Two hard honesty rules, enforced in the data and mirrored in the viewer:
+
+1. **n < 3 is an anecdote, not evidence.** Any aggregate with fewer than three
+   verified runs carries `evidence: false` and renders greyed with an explicit
+   *"n=1 — anecdote, not evidence"* badge. Today **every** cell is small-n; the
+   table says so instead of dressing means of one number up as findings.
+2. **No cross-task ranking, ever.** Groups are (paradigm × task) pairs; different
+   tasks are different games, and the league never orders paradigms across them.
+
+An untested cell is **untried** — the league never claims a gap is impossible or easy.
+
+---
+
+## (c3) The frontier ledger — an append-only log of "the frontier moved"
+
+Every rebuild diffs the freshly-computed board against the committed
+[`scoreboard/frontier-history.json`](scoreboard/frontier-history.json) and **appends**
+typed events — `NEW_LEADER` (a rank-1 dethroned), `PARETO_EXPANSION` (a new
+non-dominated point), `NEW_PARADIGM` (a design family's first appearance, when no
+other event already names it), `NEW_PROBLEM` (a board opened), `GAP_NARROWED` (the
+runner-up closed on the leader). Three surfaces, all generated from the same ledger:
+
+- **the history file** — append-only (`events` are never rewritten; the `snapshot`
+  is just the cache the next diff runs against), committed alongside the board;
+- **[`viewer/feed.xml`](https://quantummytheme.com/feed.xml)** — an Atom feed of the
+  last ~50 events, so "check the site weekly" becomes "subscribe once". Every event
+  body carries the judge-emitted numbers and the exact re-verify command
+  (`python3 bench/quantum-judge/judge_verify.py <bundle>`) — an alert is a claim a
+  stranger can recheck;
+- **the "Frontier changelog" timeline** under the scoreboard (last ~10 events).
+
+**Dates, honestly.** An event's `date` is the triggering entry's `verified_at` (the
+submitter's last judge re-run) — the build **never** stamps events with its own
+clock, so a no-event rebuild is byte-stable under the `--check` staleness gate. If
+the operator wants a "when observed" stamp they pass `--now YYYY-MM-DD`, which is
+stored as `observed` only on genuinely-appended events; by default the field is
+omitted. The first ledger entries were **backfilled at genesis** from the
+then-current board state and are flagged `genesis: true` — the true opening order
+predates the ledger, and the events say so rather than pretending to a history the
+file wasn't there to witness.
+
+---
+
+## (c4) Cite this run — the citation IS the reproduction instructions
+
+Every scoreboard row has a **cite** button exporting **BibTeX** and **CSL-JSON**
+pinned to the proof bundle: the bundle's **sha256** plus the exact offline re-verify
+command (`python3 bench/quantum-judge/judge_verify.py <bundle>`). Citing a number
+here means handing your reader everything needed to recheck it — the exports say
+*"machine-verified by a re-runnable judge, not peer review"* in so many words.
+
+Hash-pinning rules:
+
+- the sha256 is computed by `scoreboard/build.mjs` over the **raw committed file
+  bytes** (`sha256sum` semantics, lowercase hex) — never over re-parsed/re-serialized
+  JSON — so the same bundle hashes identically everywhere (build, `verify.py
+  --attest`, an in-browser `fetch → arrayBuffer → SHA-256`);
+- an **external run-repo bundle is not committed in this repository**, and the build
+  is offline — so its hash cannot be computed honestly at build time. The export
+  says **"hash unavailable — re-verify from the run repo"** (with a fetch-and-judge
+  command) rather than faking a pin.
+
+---
+
+## (c5) Reproduced ×N — third-party re-verification attestations
+
+Re-running the judge is the platform's core invitation; attestations make it leave a
+public trace. The flow (**PR-only** — zero new attack surface):
+
+1. **Re-verify a row yourself**, and mint the attestation in one step:
+
+   ```bash
+   python3 scoreboard/verify.py --attest ghz3 --handle your-github-handle
+   # ambiguous board? disambiguate:  --attest tfim3:qaoa
+   # or point straight at a bundle:  --attest path/to/bundle.json
+   ```
+
+   This re-runs the **full merge gate** (judge ACCEPT + entry↔bundle binding +
+   metric/resource recompute) and, **only on ACCEPT**, writes a one-line attestation
+   JSON — `{bundle_sha256, problem_id, handle, judge_exit, date}` — under
+   [`scoreboard/attestations/`](scoreboard/attestations/). A REJECT is refused; there
+   is nothing to attest.
+2. **Commit that file on a branch and open a PR.** The regular merge gate re-runs the
+   suites; nothing else changes.
+3. **The board counts it.** `build.mjs` tallies attestations per **bundle sha256**
+   (raw committed file bytes, lowercase hex — the same hash the cite button pins) and
+   the row grows a **reproduced ×N** badge.
+
+Honesty rules: an attestation whose hash matches **no committed bundle is skipped and
+logged**, never counted. `N` counts **distinct handles** — re-attesting doesn't
+inflate it. The handle is **self-declared** (attested, trusted-but-labeled — the same
+vocabulary as HARDWARE.md provenance), and the badge **never changes rank**; the row
+still says *re-run it yourself*. The first attestation on the board is the
+maintainer's own labeled re-run (`quantum-harness-ci`) — seeded to prove the flow,
+not to be mistaken for independent replication. A design-hash "auto-reproduced" badge
+was considered and **rejected**: independently re-running the judge is reproduction;
+copying a design file is not.
+
 ---
 
 ## (f) Status — honest

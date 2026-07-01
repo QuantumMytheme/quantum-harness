@@ -1,0 +1,1 @@
+{"schema": "quantummytheme/attestation@1", "bundle_sha256": "2c38fa2b36d17ffeae5b94003a640158c0ddcd7d63f9c983cf59c98e5ba88791", "problem_id": "ghz3", "handle": "quantum-harness-ci", "judge_exit": 0, "date": "2026-07-01", "note": "maintainer's own re-run of the committed seed bundle on the harness CI environment \u2014 not an independent third party"}

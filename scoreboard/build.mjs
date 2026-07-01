@@ -25,6 +25,7 @@
 //   node scoreboard/build.mjs           # regenerate viewer/scoreboard-data.js
 //   node scoreboard/build.mjs --check   # exit 1 if the committed file is stale
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve, basename } from 'node:path'
 
@@ -74,6 +75,31 @@ export function isEmulatedReport(hr) {
   if (hr.emulated === true) return true
   const b = String(hr.backend || '').toLowerCase()
   return /emulat|synthetic|simulat/.test(b) || b.startsWith('local-')
+}
+
+// ---- hardware overlays: ALL reports + a computed sim-vs-hw delta -------------
+// The schema is an array; the board used to truncate to [0], silently dropping
+// multi-backend reports (audit finding). Every report is emitted, each with the
+// honest emulated/noisy-sim labeling and — where the report's metric is comparable
+// to a sim-side number — a computed delta (measured − sim), the raw material for a
+// real per-backend noise landscape. No comparable sim number → delta stays null.
+export function hardwareViews(e) {
+  const vm = e.verified_metric || {}
+  return (e.hardware_reports || []).map(hr => {
+    const emu = isEmulatedReport(hr)
+    let sim = null
+    if (e.task === 'vqe' && hr.metric === 'energy' && Number.isFinite(Number(vm.energy))) sim = Number(vm.energy)
+    else if (hr.metric && hr.metric === vm.name && Number.isFinite(Number(vm.value))) sim = Number(vm.value)
+    const val = Number(hr.value)
+    const delta = sim !== null && Number.isFinite(val) ? Number((val - sim).toPrecision(6)) : null
+    return {
+      backend: hr.backend, metric: hr.metric, value: hr.value, url: hr.report_url,
+      shots: hr.shots ?? null,
+      emulated: emu, label: emu ? 'noisy-sim' : 'hw',
+      sim_value: sim, delta,
+      delta_pct: delta !== null && sim ? Number(Math.abs(100 * delta / sim).toPrecision(3)) : null,
+    }
+  })
 }
 
 export function metric(e) {
@@ -253,8 +279,278 @@ export function lineage(entries) {
   return e => ({ remix_of: declared(e), remixed_by: counts[key(e.run_repo)] || 0 })
 }
 
+// ---- paradigm league: corpus-level (paradigm family × task) rollup -----------
+// Answers SCOREBOARD.md §(c)'s comparative question at corpus level: across ALL
+// verified runs, which design idea wins where? Grouping key is the stable `family`
+// tag when an entry declares one, else paradigm_short. HONESTY RULES: (1) an
+// aggregate with n < 3 is an anecdote, not evidence — `evidence:false` and the
+// viewer greys it with an explicit badge; (2) groups are (paradigm × task) pairs,
+// so no cross-task ranking can ever be read off the table (different tasks are
+// different games); (3) untested_problems lists same-task problems the paradigm
+// has NOT entered — untried, never "impossible", never "easy".
+export function buildParadigms(byProblem, catalog) {
+  const groups = {}
+  for (const pid of Object.keys(byProblem)) {
+    rankGroup(byProblem[pid]).forEach((e, i) => {
+      const para = e.family || paradigmShort(e)
+      const key = `${para} ${e.task}`
+      const g = (groups[key] ||= { paradigm: para, task: e.task, n: 0, boards: new Set(), rank1_count: 0, marginSum: 0, effSum: 0 })
+      const ax = qualityAxes(e)
+      g.n++; g.boards.add(pid)
+      if (i === 0) g.rank1_count++
+      g.marginSum += ax.margin; g.effSum += ax.efficiency
+    })
+  }
+  const taskPids = {}
+  for (const p of catalog) (taskPids[p.task] ||= []).push(p.problem_id)
+  const rnd = x => Math.round(x * 1000) / 1000
+  return Object.values(groups).map(g => ({
+    paradigm: g.paradigm, task: g.task, n: g.n,
+    boards: [...g.boards].sort(),
+    rank1_count: g.rank1_count,
+    mean_margin: rnd(g.marginSum / g.n),
+    mean_efficiency: rnd(g.effSum / g.n),
+    untested_problems: (taskPids[g.task] || []).filter(pid => !g.boards.has(pid)).sort(),
+    evidence: g.n >= 3,        // n < 3 is an anecdote, not a finding — never render it as one
+  })).sort((a, b) => a.task.localeCompare(b.task) || b.n - a.n || a.paradigm.localeCompare(b.paradigm))
+}
+
+// ---- frontier ledger: append-only history + typed events ---------------------
+// Every rebuild diffs the freshly-computed board against the committed
+// scoreboard/frontier-history.json and appends typed events: NEW_LEADER,
+// PARETO_EXPANSION, NEW_PARADIGM, NEW_PROBLEM, GAP_NARROWED. Honesty + stability:
+//   - events are APPEND-ONLY (never rewritten); the snapshot is a mutable cache
+//     of the last-seen state used only to compute the next diff.
+//   - event `date` comes from the triggering entry's verified_at (the submitter's
+//     last judge re-run) — NEVER a build-time clock read, so a no-event rebuild is
+//     byte-stable under the --check staleness gate. If the operator wants a "when
+//     observed" stamp, they pass `--now YYYY-MM-DD` and it is stored as `observed`
+//     ONLY on genuinely-appended events; by default the field is omitted.
+//   - genesis: when no history file exists, the current board state is backfilled
+//     as genesis-flagged events (the true opening order predates the ledger and
+//     the events say so).
+const entryKey = e => `${e.run_repo}|${e.proof_bundle}`
+const sig6 = v => Number(Number(v).toPrecision(6))
+export function frontierSnapshot(byProblem) {
+  const problems = {}
+  const paradigms = new Set()
+  for (const pid of Object.keys(byProblem).sort()) {
+    const list = byProblem[pid]
+    const ranked = rankGroup(list)
+    for (const e of list) paradigms.add(paradigmShort(e))
+    const f = paretoFrontier(list, ranked[0].task)
+    const frontierKeys = f.points
+      .map((p, i) => ({ p, e: list[i] }))
+      .filter(x => !x.p.dominated)
+      .map(x => entryKey(x.e))
+      .sort()
+    const lead = ranked[0]
+    const rec = {
+      task: ranked[0].task, entries: ranked.length,
+      leader: {
+        key: entryKey(lead), paradigm: paradigmShort(lead),
+        metric: Number(lead.verified_metric.value),
+        verified_at: lead.verified_at || null, run_repo: lead.run_repo, proof_bundle: lead.proof_bundle,
+      },
+      frontier: frontierKeys,
+    }
+    if (ranked.length >= 2) rec.runner_up_gap = Math.abs(Number(ranked[0].verified_metric.value) - Number(ranked[1].verified_metric.value))
+    problems[pid] = rec
+  }
+  return { problems, paradigms: [...paradigms].sort() }
+}
+
+const earliestDate = list => (list || []).map(e => e.verified_at).filter(Boolean).sort()[0] || null
+const withDate = d => (d ? { date: d } : {})   // omit rather than invent
+export function genesisEvents(snapshot, byProblem) {
+  const events = []
+  for (const pid of Object.keys(snapshot.problems)) {
+    const c = snapshot.problems[pid]
+    events.push({
+      type: 'NEW_PROBLEM', problem_id: pid, ...withDate(earliestDate(byProblem[pid])),
+      detail: `board opened — leading design: ${c.leader.paradigm} (metric ${sig6(c.leader.metric)}); backfilled at genesis from the current board state`,
+      run_repo: c.leader.run_repo, proof_bundle: c.leader.proof_bundle, genesis: true,
+    })
+    if (c.entries >= 2) events.push({
+      type: 'NEW_LEADER', problem_id: pid, ...withDate(c.leader.verified_at),
+      detail: `${c.leader.paradigm} holds rank 1 of ${c.entries} verified designs (metric ${sig6(c.leader.metric)}); backfilled at genesis — the dethrone order predates this ledger`,
+      run_repo: c.leader.run_repo, proof_bundle: c.leader.proof_bundle, genesis: true,
+    })
+  }
+  const ord = { NEW_PROBLEM: 0, NEW_LEADER: 1 }
+  return events.sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))
+    || a.problem_id.localeCompare(b.problem_id) || ord[a.type] - ord[b.type])
+}
+
+export function diffFrontier(prev, cur, byProblem) {
+  const events = []
+  const prevProblems = (prev && prev.problems) || {}
+  const prevParadigms = new Set((prev && prev.paradigms) || [])
+  // paradigms already named by another event this diff — NEW_PARADIGM only fires
+  // for a design idea that entered the corpus WITHOUT otherwise making noise
+  const announced = new Set()
+  const findEntry = (pid, key) => (byProblem[pid] || []).find(e => entryKey(e) === key) || null
+  for (const pid of Object.keys(cur.problems)) {
+    const c = cur.problems[pid], p = prevProblems[pid]
+    if (!p) {
+      for (const e of byProblem[pid] || []) announced.add(paradigmShort(e))
+      events.push({
+        type: 'NEW_PROBLEM', problem_id: pid, ...withDate(earliestDate(byProblem[pid])),
+        detail: `board opened — first verified design: ${c.leader.paradigm} (metric ${sig6(c.leader.metric)})`,
+        run_repo: c.leader.run_repo, proof_bundle: c.leader.proof_bundle,
+      })
+      continue
+    }
+    let leaderChanged = false
+    if (p.leader.key !== c.leader.key) {
+      leaderChanged = true
+      announced.add(c.leader.paradigm)
+      events.push({
+        type: 'NEW_LEADER', problem_id: pid, ...withDate(c.leader.verified_at),
+        detail: `${c.leader.paradigm} took rank 1 from ${p.leader.paradigm} — metric ${sig6(p.leader.metric)} → ${sig6(c.leader.metric)}`,
+        run_repo: c.leader.run_repo, proof_bundle: c.leader.proof_bundle,
+      })
+    }
+    const prevFront = new Set(p.frontier)
+    for (const k of c.frontier) {
+      if (prevFront.has(k)) continue
+      if (leaderChanged && k === c.leader.key) continue   // the NEW_LEADER event already covers it
+      const e = findEntry(pid, k)
+      if (e) announced.add(paradigmShort(e))
+      events.push({
+        type: 'PARETO_EXPANSION', problem_id: pid, ...withDate(e && e.verified_at),
+        detail: `the Pareto frontier gained a non-dominated point: ${e ? `${paradigmShort(e)} (metric ${sig6(e.verified_metric.value)})` : k}`,
+        ...(e ? { run_repo: e.run_repo, proof_bundle: e.proof_bundle } : {}),
+      })
+    }
+    if (!leaderChanged && p.runner_up_gap !== undefined && c.runner_up_gap !== undefined
+        && c.runner_up_gap < p.runner_up_gap - 1e-12) {
+      const runnerUp = rankGroup(byProblem[pid] || [])[1]
+      if (runnerUp) announced.add(paradigmShort(runnerUp))
+      events.push({
+        type: 'GAP_NARROWED', problem_id: pid,
+        detail: `the runner-up closed on the leader: metric gap ${sig6(p.runner_up_gap)} → ${sig6(c.runner_up_gap)} (${c.leader.paradigm} still leads)`,
+      })
+    }
+  }
+  // NEW_PARADIGM: a family seen for the first time — but only when no other event
+  // this diff already names it (a paradigm arriving as a new leader / Pareto point /
+  // closing runner-up / on a brand-new board is already announced there).
+  const paraBoards = {}
+  for (const pid of Object.keys(byProblem)) for (const e of byProblem[pid]) (paraBoards[paradigmShort(e)] ||= new Set()).add(pid)
+  for (const para of cur.paradigms) {
+    if (prevParadigms.has(para) || announced.has(para)) continue
+    const boards = [...(paraBoards[para] || [])].sort()
+    const its = boards.flatMap(b => (byProblem[b] || []).filter(e => paradigmShort(e) === para))
+    events.push({
+      type: 'NEW_PARADIGM', ...withDate(earliestDate(its)),
+      detail: `a new design paradigm entered the corpus: ${para} (boards: ${boards.join(', ') || 'unknown'})`,
+      paradigm: para,
+    })
+  }
+  return events
+}
+
+// ---- Atom feed (viewer/feed.xml) — generated purely from the history ---------
+export function atomFeed(history, site = 'https://quantummytheme.com') {
+  const X = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  const events = (history.events || []).slice(-50).reverse()   // newest first, last ~50
+  const iso = d => `${d}T00:00:00Z`
+  const dates = (history.events || []).map(e => e.date || e.observed).filter(Boolean).sort()
+  const updated = iso(dates[dates.length - 1] || '1970-01-01')
+  const content = e => {
+    let s = e.detail
+    if (e.run_repo) s += ` · run repo: ${e.run_repo}`
+    if (e.proof_bundle) s += ` · re-verify: python3 bench/quantum-judge/judge_verify.py ${e.proof_bundle}` + (e.run_repo && !e.run_repo.endsWith('/quantum-harness') ? ` (bundle from ${e.run_repo})` : '')
+    return s
+  }
+  const items = events.map(e => `  <entry>
+    <title>${X(`${e.type}${e.problem_id ? ' · ' + e.problem_id : ''}${e.genesis ? ' (genesis backfill)' : ''}`)}</title>
+    <id>${site}/feed.xml#e${e.seq}</id>
+    <link href="${site}/#frontier" rel="alternate" type="text/html"/>
+    <updated>${iso(e.date || e.observed || '1970-01-01')}</updated>
+    <content type="text">${X(content(e))}</content>
+  </entry>`)
+  return `<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>QuantumMytheme — frontier ledger</title>
+  <subtitle>Typed events appended by scoreboard/build.mjs whenever the verified frontier moves. Every number is judge-emitted; event dates are each entry's verified_at (the submitter's last judge re-run), never a build-time clock read.</subtitle>
+  <id>${site}/feed.xml</id>
+  <link href="${site}/feed.xml" rel="self" type="application/atom+xml"/>
+  <link href="${site}/#frontier" rel="alternate" type="text/html"/>
+  <updated>${updated}</updated>
+  <author><name>QuantumMytheme scoreboard build</name></author>
+${items.join('\n')}
+</feed>
+`
+}
+
+// ---- bundle hash pins (cite-this-run) ----------------------------------------
+// PLATFORM CONTRACT: a bundle's sha256 is always computed over the RAW FILE BYTES
+// exactly as committed/fetched (`sha256sum <file>` semantics, lowercase hex) —
+// never over re-parsed/re-serialized JSON — so the same bundle hashes identically
+// here, in verify.py --attest, and in any in-browser fetch→arrayBuffer→SHA-256.
+// HONESTY: an external run-repo bundle is not committed in this repo and the build
+// is offline, so its hash CANNOT be computed honestly at build time → null, and the
+// viewer says "hash unavailable — re-verify from the run repo" instead of faking one.
+export function bundleHashers(root, harness) {
+  const cache = {}
+  return (e) => {
+    if (e.run_repo !== harness) return null
+    const p = join(root, e.proof_bundle)
+    if (!(p in cache)) {
+      try { cache[p] = createHash('sha256').update(readFileSync(p)).digest('hex') } catch { cache[p] = null }
+    }
+    return cache[p]
+  }
+}
+export function reverifyCommand(e, harness) {
+  if (e.run_repo === harness) return `python3 bench/quantum-judge/judge_verify.py ${e.proof_bundle}`
+  const raw = `${e.run_repo.replace('https://github.com/', 'https://raw.githubusercontent.com/')}/${e.run_branch || 'main'}/${e.proof_bundle}`
+  return `curl -sL ${raw} -o bundle.json && python3 bench/quantum-judge/judge_verify.py bundle.json`
+}
+
+// ---- reproduced ×N: third-party re-verification attestations -----------------
+// scoreboard/attestations/*.json — one-line records emitted by
+// `python3 scoreboard/verify.py --attest <ref> --handle <who>` and committed via PR
+// (PR-only: zero new attack surface). Counting rules, honestly:
+//   - an attestation binds to a bundle by sha256 of the RAW COMMITTED BYTES; one
+//     whose hash matches no known bundle is SKIPPED + LOGGED, never counted;
+//   - N = DISTINCT handles per bundle (re-attesting twice doesn't inflate the badge);
+//   - the badge is credibility display only — it NEVER changes rank (the same
+//     attested/trusted-but-labeled vocabulary as HARDWARE.md).
+export function loadAttestations(root, knownHashes) {
+  const byHash = {}   // sha256 -> Set of handles
+  let files = []
+  try { files = readdirSync(join(root, 'scoreboard', 'attestations')).filter(f => f.endsWith('.json')).sort() } catch { return byHash }
+  for (const f of files) {
+    let a
+    try { a = JSON.parse(readFileSync(join(root, 'scoreboard', 'attestations', f), 'utf8')) } catch (err) {
+      console.error(`skipped unreadable attestation ${f}: ${err.message}`); continue
+    }
+    const errs = []
+    if (!a || typeof a !== 'object' || Array.isArray(a)) errs.push('not an object')
+    else {
+      if (!/^[0-9a-f]{64}$/.test(String(a.bundle_sha256 || ''))) errs.push('bundle_sha256')
+      if (typeof a.handle !== 'string' || !a.handle) errs.push('handle')
+      if (a.judge_exit !== 0) errs.push('judge_exit must be 0')
+      if (typeof a.problem_id !== 'string' || !a.problem_id) errs.push('problem_id')
+    }
+    if (errs.length) { console.error(`skipped malformed attestation ${f} (${errs.join(', ')})`); continue }
+    if (!knownHashes.has(a.bundle_sha256)) {
+      console.error(`skipped attestation ${f}: bundle sha256 ${a.bundle_sha256.slice(0, 12)}… matches no committed bundle`)
+      continue
+    }
+    ;(byHash[a.bundle_sha256] ||= new Set()).add(a.handle)
+  }
+  return byHash
+}
+
+const HISTORY_NOTE = 'Append-only frontier ledger. `events` are NEVER rewritten — build.mjs only appends; `snapshot` is a mutable cache of the last-diffed board state. Event dates come from each entry\'s verified_at; `observed` (when present) is the date the operator ran the build with --now. Genesis-flagged events were backfilled from the board state when the ledger was created.'
+
 // ---- assemble the full payload ----------------------------------------------
-export function buildData(root = ROOT) {
+export function buildData(root = ROOT) { return buildAll(root).payload }
+export function buildAll(root = ROOT, opts = {}) {
   const data = JSON.parse(readFileSync(join(root, 'scoreboard', 'entries.json'), 'utf8'))
   // seeds (entries.json) + auto-discovered run-repo entries (discovered.json), deduped
   let discovered = []
@@ -270,11 +566,13 @@ export function buildData(root = ROOT) {
   for (const e of allEntries) (byProblem[e.problem_id] ||= []).push(e)
   const problems = Object.keys(byProblem)
   const lin = lineage(allEntries)
+  const harness = data.harness_repo || 'https://github.com/QuantumMytheme/quantum-harness'
+  const shaOf = bundleHashers(root, harness)
   const rows = []
   for (const pid of problems) {
     rankGroup(byProblem[pid]).forEach((e, i) => {
       const m = metric(e)
-      const hr = (e.hardware_reports && e.hardware_reports[0]) || null
+      const hwViews = hardwareViews(e)
       rows.push({
         ...lin(e),
         problem_id: e.problem_id, task: e.task, rank: i + 1,
@@ -283,12 +581,23 @@ export function buildData(root = ROOT) {
         costLabel: cost(e), model: e.model,
         quality: quality(e),
         bundleUrl: `${e.run_repo}/blob/main/${e.proof_bundle}`,
+        bundle_sha256: shaOf(e),                    // raw-bytes hash of the committed bundle; null = honestly unavailable
+        reverify: reverifyCommand(e, harness),
+        verified_at: e.verified_at || null,
         why: e.why_it_scores,
-        hardware: hr
-          ? { backend: hr.backend, metric: hr.metric, value: hr.value, url: hr.report_url, emulated: isEmulatedReport(hr), label: isEmulatedReport(hr) ? 'noisy-sim' : 'hw' }
-          : null,
+        hardware: hwViews[0] || null,        // back-compat convenience: first report
+        hardware_reports: hwViews,           // ALL reports, each with sim-vs-hw delta
       })
     })
+  }
+
+  // reproduced ×N — count PR-committed attestations per bundle hash (display only, never rank)
+  const knownHashes = new Set(rows.map(r => r.bundle_sha256).filter(Boolean))
+  const atts = loadAttestations(root, knownHashes)
+  for (const r of rows) {
+    const s = r.bundle_sha256 ? atts[r.bundle_sha256] : null
+    r.reproduced = s ? s.size : 0
+    r.reproduced_by = s ? [...s].sort() : []
   }
 
   const catalog = problemCatalog(root)
@@ -300,25 +609,64 @@ export function buildData(root = ROOT) {
     frontier[pid] = { task: byProblem[pid][0].task, metricName: mName, ...f, gap: frontierGap(f, mName) }
   }
 
+  const paradigms = buildParadigms(byProblem, catalog)
+
+  // frontier ledger: diff the fresh board against the committed history
+  const snapshot = frontierSnapshot(byProblem)
+  let committed = null
+  try { committed = JSON.parse(readFileSync(join(root, 'scoreboard', 'frontier-history.json'), 'utf8')) } catch { /* genesis */ }
+  const pendingEvents = committed
+    ? diffFrontier(committed.snapshot, snapshot, byProblem)
+    : genesisEvents(snapshot, byProblem)
+  const baseSeq = (committed && committed.events && committed.events.length) || 0
+  pendingEvents.forEach((e, i) => {
+    e.seq = baseSeq + i + 1
+    if (opts.now) e.observed = opts.now   // only genuinely-appended events, only when the operator says when
+  })
+  const history = {
+    schema: 'quantummytheme/frontier-history@1',
+    note: HISTORY_NOTE,
+    snapshot,
+    events: [...((committed && committed.events) || []), ...pendingEvents],
+  }
+  const feedXml = atomFeed(history)
+  const changelog = history.events.slice(-10).reverse()   // newest first
+
   const generated = new Date().toISOString().slice(0, 10)
-  return { generated, count: rows.length, problems, rows, coverage, frontier }
+  const payload = { generated, count: rows.length, problems, rows, coverage, frontier, paradigms, changelog }
+  return { payload, history, pendingEvents, feedXml }
 }
 
 function main() {
-  const payload = buildData(ROOT)
+  const nowIdx = process.argv.indexOf('--now')
+  const now = nowIdx > -1 ? process.argv[nowIdx + 1] : null
+  const { payload, history, pendingEvents, feedXml } = buildAll(ROOT, { now })
   const out = `// GENERATED by scoreboard/build.mjs — do not edit. Run \`node scoreboard/build.mjs\`.\n`
     + `window.SCOREBOARD_DATA = ${JSON.stringify(payload, null, 2)};\n`
+  const histOut = JSON.stringify(history, null, 2) + '\n'
 
-  const target = join(ROOT, 'viewer', 'scoreboard-data.js')
+  // ignore the generated-date line when comparing freshness
+  const strip = s => s.replace(/"generated":\s*"[^"]*",?\n?/, '')
+  const same = s => s
+  const targets = [
+    [join(ROOT, 'viewer', 'scoreboard-data.js'), out, strip],
+    [join(ROOT, 'scoreboard', 'frontier-history.json'), histOut, same],
+    [join(ROOT, 'viewer', 'feed.xml'), feedXml, same],
+  ]
   if (process.argv.includes('--check')) {
-    let cur = ''
-    try { cur = readFileSync(target, 'utf8') } catch {}
-    // ignore the generated-date line when comparing freshness
-    const strip = s => s.replace(/"generated":\s*"[^"]*",?\n?/, '')
-    if (strip(cur) !== strip(out)) { console.error('STALE: viewer/scoreboard-data.js — run `node scoreboard/build.mjs` and commit.'); process.exit(1) }
-    console.log('fresh: viewer/scoreboard-data.js matches entries.json'); process.exit(0)
+    let stale = false
+    for (const [target, want, norm] of targets) {
+      let cur = ''
+      try { cur = readFileSync(target, 'utf8') } catch {}
+      if (norm(cur) !== norm(want)) { stale = true; console.error(`STALE: ${target.slice(ROOT.length + 1)} — run \`node scoreboard/build.mjs\` and commit.`) }
+    }
+    if (stale) process.exit(1)
+    console.log('fresh: scoreboard-data.js, frontier-history.json and feed.xml all match entries.json'); process.exit(0)
   }
-  writeFileSync(target, out)
+  for (const [target, want] of targets) writeFileSync(target, want)
   console.log(`wrote viewer/scoreboard-data.js — ${payload.count} entries across ${payload.problems.length} problems, ${payload.coverage.length} known problems in coverage`)
+  console.log(pendingEvents.length
+    ? `frontier ledger: appended ${pendingEvents.length} event${pendingEvents.length === 1 ? '' : 's'} (${pendingEvents.map(e => e.type).join(', ')}) — commit scoreboard/frontier-history.json + viewer/feed.xml`
+    : 'frontier ledger: no new events — history and feed unchanged')
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main()
