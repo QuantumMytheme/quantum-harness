@@ -468,6 +468,8 @@ TASKS = {TASK: verify_kernel_oracle, "roofline-attest": verify_roofline_attest}
 
 def verify(bundle):
     checks = {}
+    if not isinstance(bundle, dict):
+        raise Reject(EXIT_SCHEMA, "bundle must be a JSON object")
     if bundle.get("schema") != SCHEMA:
         raise Reject(EXIT_SCHEMA, f"schema must be {SCHEMA!r}, got {bundle.get('schema')!r}")
     task = bundle.get("task")
@@ -478,7 +480,14 @@ def verify(bundle):
     ref = load_reference(bundle["problem_id"])
     if ref.get("task") != task:
         raise Reject(EXIT_SCHEMA, f"reference task {ref.get('task')!r} != bundle task {task!r}")
-    TASKS[task](bundle, ref, checks)
+    # Backstop: never crash on a hostile bundle — an unanticipated exception is a
+    # malformed bundle (exit 2), not a traceback. Specific gate exits fire first.
+    try:
+        TASKS[task](bundle, ref, checks)
+    except Reject:
+        raise
+    except Exception as e:
+        raise Reject(EXIT_SCHEMA, f"malformed bundle: {type(e).__name__}")
     return checks
 
 

@@ -467,11 +467,15 @@ TASKS = {
 
 def verify(bundle):
     checks = {}
+    if not isinstance(bundle, dict):
+        raise Reject(EXIT_SCHEMA, "bundle must be a JSON object")
     if bundle.get("schema") != SCHEMA:
         raise Reject(EXIT_SCHEMA, f"schema must be {SCHEMA!r}, got {bundle.get('schema')!r}")
     task = bundle.get("task")
     if task not in TASKS:
         raise Reject(EXIT_SCHEMA, f"unknown task {task!r}")
+    if "problem_id" not in bundle:
+        raise Reject(EXIT_SCHEMA, "missing problem_id")
 
     ref = load_reference(bundle["problem_id"])
     if ref.get("task") != task:
@@ -479,7 +483,15 @@ def verify(bundle):
 
     # Each task verifier runs its own STRUCTURE check first (circuit / topology /
     # feature-map shapes differ), then reproducibility, performance, anti-overfit.
-    TASKS[task](bundle, ref, checks)
+    # Backstop: a referee must never crash on a hostile bundle — any exception the
+    # specific gates did not anticipate is a malformed bundle (schema, exit 2), not a
+    # traceback. The gate-specific Reject codes (3/4/5/6) still fire first.
+    try:
+        TASKS[task](bundle, ref, checks)
+    except Reject:
+        raise
+    except Exception as e:
+        raise Reject(EXIT_SCHEMA, f"malformed bundle: {type(e).__name__}")
     return checks
 
 

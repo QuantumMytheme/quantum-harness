@@ -44,8 +44,9 @@ def route(task):
 
 def verify(bundle):
     """Route + verify in-process. Returns (module, checks) on ACCEPT; the module's
-    own Reject propagates on REJECT (its .code is the exit code)."""
-    mod = route(bundle.get("task"))
+    own Reject propagates on REJECT (its .code is the exit code). A non-dict bundle
+    routes to the quantum judge, which rejects it cleanly (never a crash)."""
+    mod = route(bundle.get("task") if isinstance(bundle, dict) else None)
     return mod, mod.verify(bundle)
 
 
@@ -62,7 +63,7 @@ def main(argv):
         print(f"REJECT [schema]: cannot read bundle: {e}", file=sys.stderr)
         return EXIT_SCHEMA
 
-    mod = route(bundle.get("task"))
+    mod = route(bundle.get("task") if isinstance(bundle, dict) else None)
     try:
         checks = mod.verify(bundle)
     except mod.Reject as r:

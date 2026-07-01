@@ -92,10 +92,44 @@ def main():
                 if verify(b) == 0:
                     struct_fail += 1; ok = False
 
+    # ROBUSTNESS — a referee must never CRASH on a hostile bundle; malformed input
+    # is a clean reject (any exit code), a traceback is a bug (safe() returns -1).
+    def safe(b):
+        try:
+            jv.verify(b); return 0
+        except jv.Reject as r:
+            return r.code
+        except Exception:
+            return -1
+    malformed = [
+        lambda b: b["claim"].pop(next(iter(b["claim"]), None), None),
+        lambda b: b.__setitem__("claim", "not-a-dict"),
+        lambda b: b.__setitem__("circuit", {"n_qubits": "three", "ops": "xyz"}),
+        lambda b: b.__setitem__("constraints", "not-a-dict"),
+        lambda b: (b.get("circuit", {}).get("ops") or []).append({"q": [0]}),   # op missing 'gate'
+        lambda b: b.get("claim", {}).__setitem__(next(iter(b.get("claim", {"x": 0})), "x"), "nan-ish"),
+    ]
+    robust_trials = robust_crash = 0
+    for _ in range(N):
+        for name, _key in BUNDLES:
+            b = copy.deepcopy(load(name))
+            try:
+                RNG.choice(malformed)(b)
+            except Exception:
+                pass
+            robust_trials += 1
+            if safe(b) < 0:
+                robust_crash += 1; ok = False
+    for weird in [[1, 2, 3], "string-bundle", 42, None]:   # non-object bundles
+        robust_trials += 1
+        if safe(weird) < 0:
+            robust_crash += 1; ok = False
+
     print("quantum-judge property / soundness fuzz\n")
     print(f"  SOUNDNESS · claim tamper    {claim_trials} trials → never ACCEPT   · {claim_fail} accepted")
     print(f"  SOUNDNESS · unknown gate    {struct_trials} trials → never ACCEPT   · {struct_fail} accepted")
-    print(f"\n{'SOUNDNESS HELD on every trial' if ok else 'SOUNDNESS VIOLATED — a forgery scored'}")
+    print(f"  ROBUSTNESS · malformed      {robust_trials} trials → clean reject   · {robust_crash} crash(es)")
+    print(f"\n{'SOUNDNESS + ROBUSTNESS HELD on every trial' if ok else 'PROPERTY VIOLATED — a forgery scored or the judge crashed'}")
     return 0 if ok else 1
 
 
