@@ -29,6 +29,12 @@ const SERVER = { name: 'quantum-harness', version: '0.1.0' }
 // exit code -> the gate that fired (mirrors judge_verify.py's contract).
 const GATE = { 0: 'accept', 2: 'schema', 3: 'structure', 4: 'reproducibility', 5: 'performance', 6: 'anti-overfit' }
 
+// Unique-per-call temp path. The stdio loop dispatches tool calls without awaiting, so
+// two concurrent verify/commit calls can overlap — a constant name would make one call
+// judge (or unlink) the other's bundle. pid + timestamp + random = a real nonce.
+const tmpPath = (prefix) =>
+  path.join(tmpdir(), `${prefix}-${process.pid}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}.json`)
+
 // Human labels for the committed problems. The canonical list is the reference directory;
 // this only enriches it with a readable one-liner. Unknown ids fall back to their task.
 const LABELS = {
@@ -208,7 +214,7 @@ async function verifyBundle({ bundle, bundle_path }) {
     if (!bundle || typeof bundle !== 'object') {
       return json({ error: 'pass either `bundle` (a JSON object) or `bundle_path` (a file path)' }, true)
     }
-    tmp = path.join(tmpdir(), `qh-bundle-${process.pid}-${TOOLS.length}.json`)
+    tmp = tmpPath('qh-bundle')
     await writeFile(tmp, JSON.stringify(bundle))
     bundlePath = tmp
   }
@@ -346,7 +352,7 @@ async function commitRun({ repo, repo_url, bundle, bundle_path, path: filePath, 
 
   // The exit code is the truth: by default re-derive the bundle and refuse to commit a REJECT.
   if (verify) {
-    const tmp = path.join(tmpdir(), `qh-commit-${process.pid}.json`)
+    const tmp = tmpPath('qh-commit')
     await writeFile(tmp, bundleText)
     try {
       const r = await runJudge(tmp)

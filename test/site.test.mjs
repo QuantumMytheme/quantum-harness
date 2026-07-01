@@ -157,6 +157,55 @@ test('anonymous community submission is fail-closed and wired (worker + runner)'
   assert.match(runner, /anonSubmitWidget/)
   assert.match(runner, /submit-config/)
   assert.match(runner, /turnstile/i)
+  // the RECIPE.json write is checked, not swallowed: a failed write rolls the repo
+  // back and 502s instead of returning ok:true for an empty shell repo.
+  assert.match(w, /!put \|\| !put\.ok/, 'submitRun must check the RECIPE.json PUT result')
+  assert.match(w, /method: "DELETE"/, 'a failed recipe write deletes the just-minted repo')
+  assert.match(w, /rolled back/, 'and reports the rollback honestly')
+})
+
+test('mint flow works for strangers: own-account defaults, honest OAuth probe, real commands', () => {
+  // bin/new-run.sh: owner defaults to the CALLER's login; the org is a member opt-in;
+  // the template stays the canonical org repo; every mint is topic-tagged for discovery.
+  const sh = readFileSync(new URL('../bin/new-run.sh', import.meta.url), 'utf8')
+  assert.match(sh, /gh api user -q \.login/, 'default owner = the authenticated user')
+  assert.match(sh, /--org QuantumMytheme/, 'org minting stays available as an opt-in')
+  assert.match(sh, /TEMPLATE="QuantumMytheme\/quantum-harness"/, 'template is always the org repo')
+  assert.doesNotMatch(sh, /ORG="QuantumMytheme"/, 'no hardcoded org default')
+  assert.match(sh, /--add-topic quantum-harness-run/, 'every minted repo is tagged for discovery')
+
+  // docs teach the real tag-and-crawl registration (topic + scoreboard-entry.json),
+  // and say org membership is NOT required.
+  const gs = readFileSync(new URL('../GETTING-STARTED.md', import.meta.url), 'utf8')
+  assert.match(gs, /quantum-harness-run/)
+  assert.match(gs, /scoreboard-entry\.json/)
+  assert.match(gs, /"problem_id"/, 'a minimal scoreboard-entry.json example is inline')
+  assert.match(gs, /org membership NOT required/i)
+  const rf = readFileSync(new URL('../RUN-FLOW.md', import.meta.url), 'utf8')
+  assert.match(rf, /quantum-harness-run/)
+  assert.match(rf, /scoreboard-entry\.json/)
+  assert.match(rf, /org membership NOT required/i)
+  assert.doesNotMatch(rf, /owner \*\*QuantumMytheme\*\*/, 'the template-UI path no longer defaults to the org')
+
+  // lab.js copy: no fake `claude --kickoff` flag, no frozen repo-name date, no
+  // org-owned `gh repo create QuantumMytheme/...` commands for strangers.
+  const js = readFileSync(v('lab.js'), 'utf8')
+  assert.doesNotMatch(js, /--kickoff/)
+  assert.doesNotMatch(js, /2026-06-16/)
+  assert.doesNotMatch(js, /gh repo create QuantumMytheme\//)
+  assert.match(js, /toISOString\(\)\.slice\(0, 10\)/, 'repo-name date is derived, not frozen')
+
+  // gallery/logbook/stats render from the generated scoreboard — one source of truth
+  assert.match(js, /window\.SCOREBOARD_DATA/)
+  const lab = readFileSync(v('lab.html'), 'utf8')
+  assert.match(lab, /<script src="scoreboard-data\.js">/, 'lab.html loads the generated board data')
+
+  // OAuth availability is probed before the "Sign in with GitHub" button is offered
+  const w = readFileSync(v('_worker.js'), 'utf8')
+  assert.match(w, /oauthConfigured/, 'status endpoint reports whether OAuth is configured')
+  const runner = readFileSync(v('runner.js'), 'utf8')
+  assert.match(runner, /oauthConfigured === false/, 'runner renders the token path as primary when OAuth is off')
+  assert.doesNotMatch(runner, /\|\| 'QuantumMytheme'/, 'widget owner no longer force-defaults to the org')
 })
 
 test('every page carries the same top-bar nav (no links drop off across pages)', () => {

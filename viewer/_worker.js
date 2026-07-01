@@ -84,14 +84,18 @@ async function github(request, url, env) {
   }
 
   if (path === "/api/github/status") {
+    // oauthConfigured lets the UI probe availability BEFORE offering "Sign in with
+    // GitHub" — when the OAuth app isn't set up, the token path is shown as primary
+    // instead of a button that dead-ends in the /login 503.
+    const oauthConfigured = !!clientId;
     const ck = readCookies(request);
-    if (!ck.gh_token) return json({ signedIn: false });
+    if (!ck.gh_token) return json({ signedIn: false, oauthConfigured });
     try {
       const r = await fetch("https://api.github.com/user", { headers: GH_HDR(ck.gh_token) });
-      if (!r.ok) return json({ signedIn: false }, 200, { "Set-Cookie": cookie("gh_token", "", 0) });
+      if (!r.ok) return json({ signedIn: false, oauthConfigured }, 200, { "Set-Cookie": cookie("gh_token", "", 0) });
       const u = await r.json();
-      return json({ signedIn: true, login: u.login });
-    } catch (e) { return json({ signedIn: false }); }
+      return json({ signedIn: true, login: u.login, oauthConfigured });
+    } catch (e) { return json({ signedIn: false, oauthConfigured }); }
   }
 
   if (path === "/api/github/logout") return json({ ok: true }, 200, { "Set-Cookie": cookie("gh_token", "", 0) });
@@ -103,8 +107,9 @@ async function github(request, url, env) {
     const name = String(body.name || "").replace(/[^A-Za-z0-9._-]/g, "");
     if (!name) return json({ error: "missing repo name" }, 400);
     const payload = { name, description: "QuantumMytheme run · " + name, private: !!body.private, include_all_branches: false };
-    // default new runs to the QuantumMytheme org so results are easy to source
-    payload.owner = body.owner ? String(body.owner) : "QuantumMytheme";
+    // no owner → GitHub creates the repo under the signed-in user's own account, which
+    // works for everyone; org members opt in by typing QuantumMytheme in the owner field.
+    if (body.owner) payload.owner = String(body.owner);
     try {
       const r = await fetch(`https://api.github.com/repos/${TEMPLATE}/generate`, {
         method: "POST",
@@ -196,10 +201,17 @@ async function submitRun(request, env) {
   const repo = await res.json().catch(() => ({}));
   if (!res.ok) return json({ error: repo.message || ("repo creation failed (HTTP " + res.status + ")") }, res.status === 422 ? 409 : 502);
 
+  // The RECIPE.json IS the submission — an anonymous submitter can't repair an empty
+  // repo, so a failed write means the design would be silently lost. Check the PUT
+  // (fetch does not throw on 4xx/5xx), and on failure roll the repo back + fail honestly.
   const content = btoa(unescape(encodeURIComponent(JSON.stringify(recipe, null, 2))));
-  await gh(`https://api.github.com/repos/${repo.full_name}/contents/RECIPE.json`, {
+  const put = await gh(`https://api.github.com/repos/${repo.full_name}/contents/RECIPE.json`, {
     method: "PUT", body: JSON.stringify({ message: "Add community full-stack RECIPE.json (hardware + software)", content, branch: repo.default_branch }),
-  }).catch(() => {});
+  }).catch(() => null);
+  if (!put || !put.ok) {
+    await gh(`https://api.github.com/repos/${repo.full_name}`, { method: "DELETE" }).catch(() => {}); // MINT_TOKEN has Administration:write
+    return json({ error: "could not write RECIPE.json into the new repo (HTTP " + (put ? put.status : "network") + ") — the submission was rolled back, nothing was kept. Please retry." }, 502);
+  }
   await gh(`https://api.github.com/repos/${repo.full_name}/topics`, {
     method: "PUT", body: JSON.stringify({ names: ["quantum-harness-run", "community-submission"] }),
   }).catch(() => {});
