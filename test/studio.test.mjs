@@ -72,6 +72,17 @@ test('the Studio offers real, known chips mapped to substrate classes', () => {
   assert.equal(a.roles.find(r => r.substrate === 'tpu').role, 'matmul-dense', 'a TPU chip is the dense engine')
 })
 
+test('the "pretend you have a superpod" what-if is present and honestly labelled', () => {
+  assert.ok(Array.isArray(K.PODS) && K.PODS.length >= 2, 'PODS catalog')
+  const largest = K.PODS.find(p => p.id === '8t-superpod')
+  assert.ok(largest && largest.chips >= 9000, "Google's largest (8t superpod) is offered")
+  assert.equal(largest.pinned, false, '8th-gen superpod is NOT referee-pinned (only pod-level specs published)')
+  assert.ok(K.PODS.find(p => p.pinned), 'a pinned pod exists too (per-chip verified)')
+  // catalog honesty: Ironwood (v7) is pinned; the 8th-gen 8t/8i are listed but NOT pinned
+  assert.ok(K.CHIPS.find(c => c.id === 'ironwood' && c.pinned), 'Ironwood (v7 / TPU7x) is pinned')
+  assert.ok(K.CHIPS.find(c => c.id === 'tpu-8t' && !c.pinned), 'TPU 8t is listed but NOT pinned (list ≠ attest)')
+})
+
 test('transformer inference is flagged as most-used, not best, with real alternatives', () => {
   const a = K.allocate({ cpu: true, tpu: true }, 'transformer-infer')
   assert.ok(K.WORKLOADS['transformer-infer'].dominant, 'transformer-infer is the dominant workload')

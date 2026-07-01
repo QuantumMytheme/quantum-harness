@@ -132,7 +132,7 @@ def main():
     write("bundle-roofline-UNDERPERF.json", b); fixtures.append(("bundle-roofline-UNDERPERF.json", 5, "achieved below the reference's %-of-peak floor"))
 
     # newly-pinned generations: an honest coordinate on each must ACCEPT (proves the pin attests)
-    for dev, shape in [("TPU v6e", [2048, 2048, 2048]), ("TPU v5p", [1024, 1024, 1024])]:
+    for dev, shape in [("TPU v6e", [2048, 2048, 2048]), ("TPU v5p", [1024, 1024, 1024]), ("TPU7x", [2048, 2048, 2048])]:
         nm, rg = honest_for(dev, shape, "roofline_gemm_" + dev.split()[-1])
         fixtures.append((nm, 0, "honest " + dev + " coordinate (" + rg + ")"))
 

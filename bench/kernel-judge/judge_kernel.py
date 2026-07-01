@@ -82,13 +82,18 @@ EXIT_OVERFIT = 6
 #   v5e : 197 TFLOP/s bf16 · int8 2×  · HBM 0.82 TB/s · 128×128 MXU  (ridge ~240 ops/byte)
 #   v5p : 459 TFLOP/s bf16 · int8 918 TOP/s · HBM 2.765 TB/s · 128×128 MXU  (ridge ~166)
 #   v6e : 918 TFLOP/s bf16 · int8 1836 TOP/s · HBM 1.638 TB/s · 256×256 MXU  (ridge ~560)
+#   v7  : 2.30 PFLOP/s bf16 · int8 4.61e15 · HBM 7.4 TB/s · 256×256 MXU  (ridge ~311)  "Ironwood"/TPU7x
 # v6e is corroborated by BOTH sources. v5p bf16 + HBM agree in both; its int8 = 2× is the
 # scaling-book figure (Google's public v5p page tabulates FP8, not int8) — using the higher
 # (2×) peak is the safe choice for a referee (it cannot cause a false >100%-of-peak reject).
+# TPU7x (Ironwood) from the scaling-book, MXU 256 per Google docs, corroborated by the Ironwood
+# FP8 ~4614 TFLOP/s + 7.37 TB/s HBM announcement. The 8th-gen (TPU 8t/8i, "agentic era", 2025)
+# is NOT pinned: only pod-level numbers are published — no per-chip bf16/HBM — so it is refused.
 PINNED = {
     "TPU v5e": {"peak_bf16": 1.97e14, "peak_int8": 3.94e14, "hbm_bw": 8.2e11, "vmem_bw": 8.2e11 * 22, "mxu": 128},
     "TPU v5p": {"peak_bf16": 4.59e14, "peak_int8": 9.18e14, "hbm_bw": 2.765e12, "mxu": 128},
     "TPU v6e": {"peak_bf16": 9.18e14, "peak_int8": 1.836e15, "hbm_bw": 1.638e12, "mxu": 256},
+    "TPU7x": {"peak_bf16": 2.30e15, "peak_int8": 4.61e15, "hbm_bw": 7.4e12, "mxu": 256},
 }
 
 # ---- tolerance model: PLATFORM constants, fixed in the judge (never claimant-set) ----

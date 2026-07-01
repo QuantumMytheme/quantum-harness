@@ -153,7 +153,7 @@
   }
 
   // ─────────────────────────── RECIPE BUILDER (§07) ───────────────────────────
-  var studio = { chips: { 'tpu-v5e': true, 'h100': true, 'epyc': true, 'willow': true }, workload: 'transformer-infer' };
+  var studio = { chips: { 'tpu-v5e': true, 'h100': true, 'epyc': true, 'willow': true }, workload: 'transformer-infer', pod: null };
   var recipe = { ings: { tfim3: 65, h2vqe: 40 }, target: 'tfim3', hi: null, params: { depth: 2, entangle: 'linear', optimizer: 'qaoa', novelty: 45, backend: 'noisy', noise: 0.5, twoq: 6, shots: 2048 } };
   var INGREDIENTS = [
     ['ghz3', 'GHZ₃', 'linear entanglement ladder', 'state_prep'],
@@ -308,6 +308,7 @@
   // ─────────────────────────── SCENARIO STUDIO (§08) ───────────────────────────
   function toggleChip(id) { if (studio.chips[id]) delete studio.chips[id]; else studio.chips[id] = true; render(); }
   function setWorkload(id) { studio.workload = id; render(); }
+  function setPod(id) { studio.pod = (id === '__none' || studio.pod === id) ? null : id; render(); }
   function secStudio() {
     var K = window.QMKnowledge;
     if (!K || !K.allocate) return '<div class="lab-sheet">' + head('§ 08 · Studio', 'Scenario Studio', '') + '<p>knowledge base unavailable.</p></div>';
@@ -322,6 +323,19 @@
       }).join('');
       return '<div style="margin-bottom:11px"><div class="mono" style="font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">' + esc(clsMeta[cls][0]) + ' · ' + esc(clsMeta[cls][1]) + '</div><div class="controls">' + cards + '</div></div>';
     }).join('');
+    if (studio.pod) { var pd0 = K.pod(studio.pod); if (pd0) have[pd0.cls] = true; }
+    var podPicker = '<p class="eyebrow" style="margin:14px 0 8px">…or simulate at scale  <span class="mono" style="font-size:9px;color:var(--faint)">pretend you have a full pod — a what-if</span></p><div class="controls">' +
+      '<button class="chip" data-pod="__none" style="cursor:pointer;' + (!studio.pod ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">single chips</button>' +
+      K.PODS.map(function (p) { return '<button class="chip" data-pod="' + p.id + '" style="cursor:pointer;' + (studio.pod === p.id ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + esc(p.name) + '</button>'; }).join('') + '</div>';
+    var whatIfBanner = '';
+    if (studio.pod) {
+      var pd = K.pod(studio.pod);
+      if (pd) whatIfBanner = '<div class="panel" style="border-left:3px solid var(--reject);padding:12px 15px;margin:16px 0">' +
+        '<span class="mono" style="font-size:9px;color:var(--reject);text-transform:uppercase;letter-spacing:.08em">what-if · you don’t actually have this</span>' +
+        '<div style="font-size:14px;font-weight:700;color:var(--ink);margin:3px 0 8px">Pretending you have a ' + esc(pd.name) + '</div>' +
+        '<div class="controls"><span class="chip">' + pd.chips.toLocaleString() + ' chips</span><span class="chip">' + esc(String(pd.exaflops)) + ' ExaFLOPS peak</span><span class="chip">' + esc(pd.hbm) + ' HBM</span>' + (pd.pinned ? '<span class="chip" style="border-color:var(--pass);color:var(--pass)">per-chip pinned ✦</span>' : '<span class="chip" style="border-color:var(--reject);color:var(--reject)">per-chip specs unpinned</span>') + '</div>' +
+        '<div style="font-size:12.5px;color:var(--ink-2);line-height:1.45;margin-top:9px">A <b>simulation / thought-experiment</b> at Google-datacenter scale — experiment freely, but the <b>referee attests only real, reproducible runs</b> on hardware you can actually measure. ' + (pd.pinned ? 'This generation’s per-chip roofline IS pinned, so a single-chip kernel claim on it is attestable.' : 'This generation’s per-chip roofline is not yet published, so the referee would refuse a kernel claim on it.') + ' <span class="mono" style="font-size:9px;color:var(--faint)">' + esc(pd.src) + '</span></div></div>';
+    }
     var wlChips = Object.keys(K.WORKLOADS).map(function (id) {
       var w = K.WORKLOADS[id], on = studio.workload === id;
       return '<button class="chip" data-workload="' + id + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + esc(w.name) + (w.dominant ? ' ★' : '') + '</button>';
@@ -358,8 +372,8 @@
       '<div id="qm-kwasm-out"></div></div>';
     return '<div class="lab-sheet">' + head('§ 08 · Studio', 'What should you build on the hardware you have?', 'Substrate mix<br>honest allocation') +
       '<p style="max-width:780px">Pick the <b>real chips</b> you have and a workload. The studio maps each to the role it is honestly good at — grounded in the <a href="education.html#m-efficiency">North Star</a>. Two things it will not let you pretend: that a <b>transformer is the best possible architecture</b> (it is the most-used, not the best), or that a <b>quantum chip accelerates your model</b> (it does not — its lever is materials simulation, a different workload).</p>' +
-      '<p class="eyebrow" style="margin:20px 0 10px">1 · Hardware you have  <span class="mono" style="font-size:9px;color:var(--faint)">real chips · ✦ = pinned in the referee</span></p>' + chipPicker +
-      '<p class="eyebrow" style="margin:22px 0 10px">2 · Workload  <span class="mono" style="font-size:9px;color:var(--faint)">★ = the dominant classical GPU workload today</span></p><div class="controls">' + wlChips + '</div>' +
+      '<p class="eyebrow" style="margin:20px 0 10px">1 · Hardware you have  <span class="mono" style="font-size:9px;color:var(--faint)">real chips · ✦ = pinned in the referee</span></p>' + chipPicker + podPicker +
+      '<p class="eyebrow" style="margin:22px 0 10px">2 · Workload  <span class="mono" style="font-size:9px;color:var(--faint)">★ = the dominant classical GPU workload today</span></p><div class="controls">' + wlChips + '</div>' + whatIfBanner +
       '<div class="lab-grid2" style="margin-top:24px"><div>' +
       '<p class="eyebrow" style="margin-bottom:6px">Best-architecture allocation</p><div class="panel" style="padding:8px 14px 4px">' + roleRows + '</div>' +
       '<p style="font-size:13px;color:var(--ink-2);line-height:1.5;margin-top:12px"><b>' + esc(w.name) + '.</b> ' + esc(w.note) + '</p>' + better + '</div>' +
@@ -381,10 +395,11 @@
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
     if (e.target.closest('.ratio-row')) return;            // clicking a ratio slider must not toggle its parent ingredient (replaces an inline onclick — CSP-safe)
-    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-chip],[data-workload]');
+    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-chip],[data-pod],[data-workload]');
     if (!el) return;
     // runner / overlay / copy / github actions are owned by runner.js (window.QMRunner)
     if (el.hasAttribute('data-chip')) return toggleChip(el.getAttribute('data-chip'));
+    if (el.hasAttribute('data-pod')) return setPod(el.getAttribute('data-pod'));
     if (el.hasAttribute('data-workload')) return setWorkload(el.getAttribute('data-workload'));
     if (el.hasAttribute('data-ing')) return toggleIngredient(el.getAttribute('data-ing'));
     if (el.hasAttribute('data-recipe-mint')) return mintRecipe();
