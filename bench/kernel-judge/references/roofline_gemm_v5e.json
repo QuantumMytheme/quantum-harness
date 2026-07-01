@@ -1,0 +1,14 @@
+{
+  "task": "roofline-attest",
+  "contract": "gemm",
+  "shape": [
+    1024,
+    1024,
+    1024
+  ],
+  "declared_dtype": "bf16",
+  "device_kind": "TPU v5e",
+  "thresholds": {
+    "pct_of_peak_min": 0.2
+  }
+}

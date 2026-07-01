@@ -1,0 +1,36 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "roofline-attest",
+  "problem_id": "roofline_gemm_v5e",
+  "constraints": {
+    "shape": [
+      1024,
+      1024,
+      1024
+    ],
+    "declared_dtype": "bf16"
+  },
+  "hardware": {
+    "device_kind": "TPU v5e",
+    "wall_clock_s": [
+      7.121942385922166e-06,
+      7.2672881489001695e-06,
+      7.412633911878173e-06
+    ],
+    "hbm_bytes": 6291456
+  },
+  "oracle": {
+    "numeric": {
+      "runner": "xprof + xla.cost_analysis (measured on silicon; NEEDS-A-TPU)"
+    }
+  },
+  "claim": {
+    "algorithmic_flops": 2147483648,
+    "arithmetic_intensity": 341.3333333333333,
+    "pct_of_peak": 1.4999999999999998,
+    "roofline_regime": "compute-bound"
+  },
+  "meta": {
+    "note": "wall_clock_s + hbm_bytes are placeholder measured values for the hermetic fixture; on real silicon they come from XProf"
+  }
+}

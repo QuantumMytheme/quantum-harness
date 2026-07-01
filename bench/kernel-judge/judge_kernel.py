@@ -34,7 +34,16 @@ It runs the same gate discipline and the SAME exit codes as the quantum judge:
 The claimant NEVER self-reports the deviation, the tolerance, or the reference:
 the judge recomputes all three. This exit code — not any claim in the bundle — is
 the result. Exit codes: 0 ok | 2 schema | 3 structure | 4 reproducibility |
-6 anti-overfit.
+5 performance | 6 anti-overfit.
+
+A second task, `roofline-attest` (T1, the Roofline Notary), attests a kernel's
+EFFICIENCY coordinate: the judge recomputes the useful FLOPs from the GEMM shape,
+the median wall-clock from the supplied samples, the %-of-peak against a PINNED
+per-generation peak, and the arithmetic-intensity / compute-vs-memory-bound regime
+against the pinned ridge — rejecting any self-reported number that disagrees, a
+byte tally below the physical lower bound, or a rate above 100% of peak. Producing
+the wall-clock samples + measured HBM bytes is the NEEDS-A-TPU leg; the arithmetic
+and the sanity bounds are HERMETIC-NOW.
 
 HERMETIC-NOW vs NEEDS-A-TPU: this judge proves, on a laptop with numpy only, that
 the sealed output is correct to the datatype's own bound, that the tolerance was
@@ -63,7 +72,17 @@ EXIT_OK = 0
 EXIT_SCHEMA = 2
 EXIT_STRUCTURE = 3
 EXIT_REPRODUCIBILITY = 4
+EXIT_PERFORMANCE = 5
 EXIT_OVERFIT = 6
+
+# ---- pinned per-generation roofline constants (T1 Roofline Notary) ----
+# Only devices whose numbers are verified are attested; an unknown generation is
+# rejected rather than guessed. v5e figures are the committed Part-V numbers
+# (peak bf16 1.97e14 FLOP/s, HBM 8.2e11 B/s -> ridge ~240 ops/byte, VMEM ~22x HBM,
+# int8 ~2x bf16, 128x128 MXU). Add a generation only with a source.
+PINNED = {
+    "TPU v5e": {"peak_bf16": 1.97e14, "peak_int8": 3.94e14, "hbm_bw": 8.2e11, "vmem_bw": 8.2e11 * 22, "mxu": 128},
+}
 
 # ---- tolerance model: PLATFORM constants, fixed in the judge (never claimant-set) ----
 # ulp = unit-in-last-place from the dtype's mantissa bits.
@@ -320,7 +339,111 @@ def verify_kernel_oracle(bundle, ref, checks):
         checks["anti_overfit"]["passed"] = True
 
 
-TASKS = {TASK: verify_kernel_oracle}
+# ---------------------------------------------------------------------------
+# T1 — the Roofline Notary (roofline-attest task)
+# ---------------------------------------------------------------------------
+def _pad(x, m):
+    return ((int(x) + m - 1) // m) * m
+
+
+def _bytes_per_elem(dtype):
+    if dtype in INT_DTYPES:
+        return 1 if dtype in ("int8", "int4") else 2
+    return {"bf16": 2, "fp16": 2, "fp8_e4m3": 1, "fp8_e5m2": 1, "fp32": 4}[dtype]
+
+
+def verify_roofline_attest(bundle, ref, checks):
+    """Attest a kernel's efficiency COORDINATE without trusting a single claimant
+    number. The judge recomputes the useful FLOPs from the GEMM shape (2·M·N·K),
+    the median wall-clock from the supplied samples, the %-of-peak against a PINNED
+    per-generation peak, the arithmetic intensity against the moved-byte tally, and
+    the compute/memory-bound regime vs the pinned ridge. Any claimant self-reported
+    number that disagrees is rejected (exit 4). Producing the wall-clock samples and
+    the measured HBM bytes is the NEEDS-A-TPU leg; the arithmetic, the physical
+    byte lower bound, and the <=100%-of-peak sanity are all HERMETIC-NOW."""
+    c = bundle.get("constraints") or {}
+    shape = c.get("shape")
+    if list(shape or []) != list(ref["shape"]):
+        raise Reject(EXIT_STRUCTURE, f"constraints.shape {shape} != reference shape {ref['shape']}")
+    m, n, k = (int(x) for x in ref["shape"])
+    dtype = c.get("declared_dtype")
+    if dtype not in KNOWN_DTYPES:
+        raise Reject(EXIT_SCHEMA, f"unknown declared_dtype {dtype!r}")
+    if dtype != ref["declared_dtype"]:
+        raise Reject(EXIT_STRUCTURE, f"declared_dtype {dtype!r} != reference {ref['declared_dtype']!r}")
+
+    hw = bundle.get("hardware") or {}
+    dev = hw.get("device_kind")
+    if dev != ref.get("device_kind"):
+        raise Reject(EXIT_STRUCTURE, f"device_kind {dev!r} != reference {ref.get('device_kind')!r} "
+                                     f"(the generation is read from the harness/reference, not self-declared)")
+    pin = PINNED.get(dev)
+    if not pin:
+        raise Reject(EXIT_SCHEMA, f"no pinned roofline constants for device {dev!r}; this generation is not "
+                                  f"attestable until its peak/bandwidth are verified and pinned")
+    peak = pin["peak_int8"] if dtype in INT_DTYPES else pin["peak_bf16"]
+    hbm_bw = pin["hbm_bw"]
+    ridge = peak / hbm_bw
+
+    samples = hw.get("wall_clock_s")
+    if not (isinstance(samples, list) and samples and all(isinstance(x, (int, float)) and x > 0 for x in samples)):
+        raise Reject(EXIT_SCHEMA, "hardware.wall_clock_s must be a non-empty list of positive per-run seconds")
+    median_t = float(np.median(np.asarray(samples, dtype=float)))
+
+    hbm_bytes = hw.get("hbm_bytes")
+    if not (isinstance(hbm_bytes, (int, float)) and hbm_bytes > 0):
+        raise Reject(EXIT_SCHEMA, "hardware.hbm_bytes (measured HBM traffic) is required and must be positive")
+    lower_bound = _bytes_per_elem(dtype) * (m * k + k * n + m * n)
+    if hbm_bytes < lower_bound - 0.5:
+        raise Reject(EXIT_REPRODUCIBILITY,
+                     f"hbm_bytes {hbm_bytes:g} is below the physical lower bound {lower_bound} "
+                     f"(the operands must cross HBM at least once); the byte tally undercounts to inflate intensity")
+
+    useful = 2 * m * n * k
+    issued = 2 * _pad(m, 8) * _pad(n, pin["mxu"]) * _pad(k, pin["mxu"])
+    intensity = useful / hbm_bytes
+    pct = useful / (median_t * peak)
+    regime = "compute-bound" if intensity >= ridge else "memory-bound"
+
+    if not (0 < pct <= 1.0 + 1e-6):
+        raise Reject(EXIT_REPRODUCIBILITY,
+                     f"recomputed %-of-peak {pct:.4f} is not in (0, 1]; a rate above the pinned {dev} peak "
+                     f"is physically impossible — the FLOP count or the timing is wrong")
+
+    # decorative claimant numbers are cross-checked against the recomputation, never trusted.
+    claim = bundle.get("claim") or {}
+
+    def disagree(key, val):
+        cv = claim.get(key)
+        return cv is not None and abs(float(cv) - val) > max(1e-9, 1e-3 * abs(val))
+
+    if disagree("algorithmic_flops", useful):
+        raise Reject(EXIT_REPRODUCIBILITY, f"claim.algorithmic_flops {claim['algorithmic_flops']} != recomputed 2·M·N·K = {useful}")
+    if disagree("arithmetic_intensity", intensity):
+        raise Reject(EXIT_REPRODUCIBILITY, f"claim.arithmetic_intensity {claim['arithmetic_intensity']} != recomputed {intensity:.4g}")
+    if disagree("pct_of_peak", pct):
+        raise Reject(EXIT_REPRODUCIBILITY, f"claim.pct_of_peak {claim['pct_of_peak']} != recomputed {pct:.4g} "
+                                           f"(useful FLOPs ÷ measured median time ÷ pinned peak)")
+    if claim.get("roofline_regime") not in (None, regime):
+        raise Reject(EXIT_REPRODUCIBILITY, f"claim.roofline_regime {claim.get('roofline_regime')!r} != recomputed {regime!r} "
+                                           f"(intensity {intensity:.3g} vs ridge {ridge:.1f})")
+
+    checks["structure"] = {"shape": [m, n, k], "device": dev, "dtype": dtype}
+    checks["reproduced"] = {
+        "useful_gflop": round(useful / 1e9, 4), "issued_gflop": round(issued / 1e9, 4),
+        "padding_waste": round(issued / useful, 4), "median_s": median_t, "hbm_bytes": hbm_bytes,
+        "arithmetic_intensity": round(intensity, 3), "ridge_ops_per_byte": round(ridge, 1),
+        "pct_of_peak": round(pct, 4), "regime": regime, "peak_flops": peak,
+    }
+
+    # PERFORMANCE (5): meet the reference's achieved-peak floor, if one is declared.
+    thr = ref.get("thresholds", {}).get("pct_of_peak_min")
+    if thr is not None and pct + 1e-9 < float(thr):
+        raise Reject(EXIT_PERFORMANCE, f"achieved {pct:.4f} of peak, below the target floor {thr}")
+    checks["performance"] = {"pct_of_peak": round(pct, 4), "min": thr}
+
+
+TASKS = {TASK: verify_kernel_oracle, "roofline-attest": verify_roofline_attest}
 
 
 def verify(bundle):

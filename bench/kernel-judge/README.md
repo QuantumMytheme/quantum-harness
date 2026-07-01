@@ -24,6 +24,27 @@ The claimant never self-reports the deviation, the tolerance, or the reference �
 the judge recomputes all three. **This exit code, not any claim in the bundle, is
 the result.**
 
+## T1 — the Roofline Notary (`roofline-attest` task)
+
+Once a kernel is *correct* (the gate above), the second task attests *how fast* it
+ran — again without trusting a single claimant number. For a `roofline-attest`
+bundle the judge recomputes, from the GEMM shape + the supplied measured samples +
+a **pinned per-generation** peak/bandwidth:
+
+- **useful FLOPs** = 2·M·N·K (and the padded/MXU-issued FLOPs, so padding waste is disclosed),
+- **median wall-clock** from the raw per-run samples (not a self-reported median),
+- **%-of-peak** = useful FLOPs ÷ median time ÷ pinned peak,
+- **arithmetic intensity** = useful FLOPs ÷ measured HBM bytes, and the **compute- vs memory-bound regime** vs the pinned ridge (~240 ops/byte on v5e).
+
+It REJECTs (exit 4) any self-reported number that disagrees, a **byte tally below
+the physical lower bound** (operands must cross HBM at least once), or an impossible
+**rate above 100 % of peak**; a **mis-declared device** (exit 3) or an **unpinned
+generation** (exit 2, refused rather than guessed); and, when the reference declares
+one, an achieved %-of-peak **below the floor** (exit 5). Only devices with verified
+constants are attested — today that is **TPU v5e**; add a generation only with a
+source. The wall-clock samples and measured HBM bytes are the **NEEDS-A-TPU** leg
+(placeholder in the fixtures); the arithmetic and the sanity bounds are HERMETIC-NOW.
+
 ## Run
 
 ```bash

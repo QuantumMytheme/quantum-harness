@@ -137,6 +137,25 @@ def main():
     reject_shape = jr.get("verdict") == "REJECT" and jr.get("code") == 4 and "reason" in jr
     record("K12 CLI --json emits the {verdict,code,checks|reason} shape", accept_shape and reject_shape)
 
+    # ---- T1 Roofline Notary (roofline-attest task) ---------------------------
+    if not os.path.exists(os.path.join(HERE, "bundle-roofline-OK.json")):
+        subprocess.run([sys.executable, os.path.join(HERE, "make_roofline_fixtures.py")], check=True)
+    roof = [
+        ("R1  honest roofline coordinate ACCEPTs (exit 0)", "bundle-roofline-OK.json", 0),
+        ("R2  FLOP-count lie REJECTed (exit 4)", "bundle-roofline-FLOPSLIE.json", 4),
+        ("R3  inflated %-of-peak REJECTed (exit 4)", "bundle-roofline-PEAKLIE.json", 4),
+        ("R4  arithmetic-intensity lie REJECTed (exit 4)", "bundle-roofline-INTENSITYLIE.json", 4),
+        ("R5  compute/memory-bound regime lie REJECTed (exit 4)", "bundle-roofline-REGIMELIE.json", 4),
+        ("R6  byte tally below the physical lower bound REJECTed (exit 4)", "bundle-roofline-UNDERBYTES.json", 4),
+        ("R7  >100%-of-peak (impossible rate) REJECTed (exit 4)", "bundle-roofline-OVER100.json", 4),
+        ("R8  mis-declared device_kind REJECTed (exit 3)", "bundle-roofline-BADDEV.json", 3),
+        ("R9  unpinned generation REJECTed (exit 2)", "bundle-roofline-UNPINNED.json", 2),
+        ("R10 below the %-of-peak floor REJECTed (exit 5)", "bundle-roofline-UNDERPERF.json", 5),
+    ]
+    for name, fx, want in roof:
+        code, _ = run_cli(fx)
+        record(name, code == want, f"exit {code} (want {want})")
+
     # Gate independence: a tampered claim on an otherwise-valid bundle is caught, and
     # an honest bundle with the SAME structure is accepted (the notary is the sole diff).
     b = copy.deepcopy(ok)
