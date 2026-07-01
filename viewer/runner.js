@@ -63,6 +63,7 @@
       case 'z': return [[[1, 0], [0, 0]], [[0, 0], [-1, 0]]];
       case 's': return [[[1, 0], [0, 0]], [[0, 0], [0, 1]]];
       case 't': return [[[1, 0], [0, 0]], [[0, 0], [Math.cos(Math.PI / 4), Math.sin(Math.PI / 4)]]];
+      case 'sx': return [[[0.5, 0.5], [0.5, -0.5]], [[0.5, -0.5], [0.5, 0.5]]];
       case 'rx': { var cx = Math.cos(p / 2), sx = Math.sin(p / 2); return [[[cx, 0], [0, -sx]], [[0, -sx], [cx, 0]]]; }
       case 'ry': { var cy = Math.cos(p / 2), sy = Math.sin(p / 2); return [[[cy, 0], [-sy, 0]], [[sy, 0], [cy, 0]]]; }
       case 'rz': { var cz = Math.cos(p / 2), sz = Math.sin(p / 2); return [[[cz, -sz], [0, 0]], [[0, 0], [cz, sz]]]; }
@@ -80,6 +81,20 @@
   function routingCost(n, edges, workload) { var adj = {}; for (var i = 0; i < n; i++) adj[i] = []; edges.forEach(function (e) { adj[e[0]].push(e[1]); adj[e[1]].push(e[0]); }); function dist(a, b) { var seen = {}, q = [[a, 0]]; seen[a] = 1; while (q.length) { var cur = q.shift(); if (cur[0] === b) return cur[1]; adj[cur[0]].forEach(function (nb) { if (!seen[nb]) { seen[nb] = 1; q.push([nb, cur[1] + 1]); } }); } return Infinity; } var tot = 0; workload.forEach(function (p) { tot += dist(p[0], p[1]); }); return tot; }
   function classifyAcc(R, points) { var n = R.fmap.n_qubits, correct = 0; points.forEach(function (d) { var stv = zeroState(n); R.fmap.ops.forEach(function (op) { var th = ('feature' in op) ? (op.scale || 1) * d.x[op.feature] : (op.params && op.params[0]) || 0; applyOp(stv, n, { gate: op.gate, q: op.q, params: [th] }); }); if ((expectation(stv, n, [{ coeff: 1, pauli: R.readout.pauli }]) > R.readout.bias ? 1 : 0) === d.y) correct++; }); return correct / points.length; }
 
+  function runOps(ops, n) { var S = zeroState(n); ops.forEach(function (op) { applyOp(S, n, op); }); return S; }
+  // mirrors bench/quantum-judge/sim.py circuit_depth (greedy layering) + two_qubit_gate_count
+  function golfCost(ops, n) {
+    var last = [], depth = 0, twoq = 0, q;
+    for (q = 0; q < n; q++) last.push(0);
+    ops.forEach(function (op) {
+      var layer = 0; op.q.forEach(function (qq) { if (last[qq] > layer) layer = last[qq]; }); layer += 1;
+      op.q.forEach(function (qq) { last[qq] = layer; });
+      if (layer > depth) depth = layer;
+      if (op.q.length >= 2) twoq++;
+    });
+    return { twoq: twoq, depth: depth };
+  }
+
   // ---------- RUNS: committed circuits + reference + raw-URL bundle/ref ----------
   var GH = 'https://raw.githubusercontent.com/QuantumMytheme/quantum-harness/main/bench/quantum-judge/';
   var RUNS = {
@@ -92,10 +107,145 @@
     qml_sign1: { task: 'classify', n: 1, label: 'Sign classifier · feature map', fmap: { n_qubits: 1, ops: [{ gate: 'ry', q: [0], feature: 0, scale: 1.0 }] }, readout: { pauli: 'X', bias: 0 }, train: [{ x: [-2], y: 0 }, { x: [-1], y: 0 }, { x: [1], y: 1 }, { x: [2], y: 1 }], test: [{ x: [-0.5], y: 0 }, { x: [0.5], y: 1 }], trainMin: 1.0, testMin: 0.99, claim: 1.0, bundle: GH + 'quantum-proof-qml.json', refId: 'qml_sign1' },
   };
 
+  // ---------- CIRCUIT GOLF — beat the frontier by hand (ghz3 + isingbell2 first slice) ----------
+  // The golf rules ARE the board's real tie-breaks (SCOREBOARD.md §b): tie the verified
+  // metric with FEWER 2-qubit gates — or the same 2q count at LOWER depth — and you'd
+  // outrank the current rank 1. Everything live here is the in-browser JS sim (exact,
+  // but advisory); only the real judge's verdict counts, and only a public repo the
+  // board re-verifies actually ranks.
+  var GOLF = {
+    ghz3: {
+      task: 'state_prep', n: 3,
+      native: ['h', 'cx', 'rz', 'rx', 'ry', 'sx', 'x', 'cz'],
+      coupling: [[0, 1], [1, 2]],
+      maxDepth: 6, maxTwoQ: 2, twoqPinned: true,  // 2q cap host-pinned by the hidden reference (tighter than the brief's 4)
+      twoqCost: 0.05, baselineVal: 0.5,
+      // self-declared constraints for the bundle — same as the committed rank-1 bundle;
+      // the judge merges the reference's tighter host-pinned caps on top.
+      constraints: { n_qubits: 3, max_depth: 6, native_gates: ['h', 'cx', 'rz', 'rx', 'ry', 'sx', 'x', 'cz'], coupling_map: [[0, 1], [1, 2]], max_two_qubit_gates: 4 },
+      baselineBundle: { fidelity: 0.5, note: 'the best unentangled product state overlaps the GHZ state with fidelity 0.5' },
+      minimal: 'The board’s own note: 2 CX is provably minimal for GHZ₃ on this coupling map — only a tie at lower cost could outrank it, and here that is impossible. The golf is to feel why.'
+    },
+    isingbell2: {
+      task: 'vqe', n: 2,
+      native: ['h', 'cx', 'rz', 'rx', 'ry', 'cz', 'x'],
+      coupling: [[0, 1]],
+      maxDepth: 4, maxTwoQ: 2, twoqPinned: false,
+      twoqCost: 0, baselineVal: -1.0,
+      constraints: { n_qubits: 2, max_depth: 4, native_gates: ['h', 'cx', 'rz', 'rx', 'ry', 'cz', 'x'], coupling_map: [[0, 1]], max_two_qubit_gates: 2 },
+      baselineBundle: { energy: -1.0, note: 'best unentangled product state reaches energy -1; the entangled Bell state reaches the true ground -2' },
+      minimal: 'Rank 1 reaches gap 0 with one CX at depth 2. A product state (zero 2q gates) cannot reach −2, so the frontier is provably saturated — the golf is to verify that with your own hands.'
+    }
+  };
+  var PARAM_GATES = { rx: 1, ry: 1, rz: 1, rzz: 1 };
+  var SYM_2Q = { cz: 1, rzz: 1 };
+
+  function golfMetric(pid, ops) {
+    var G = GOLF[pid], R = RUNS[pid];
+    var S = runOps(ops, G.n), cost = golfCost(ops, G.n);
+    if (G.task === 'state_prep') {
+      var fid = fidelity(S, R.target);
+      var meets = fid + 1e-12 >= R.threshold && (fid - G.twoqCost * cost.twoq) + 1e-12 >= G.baselineVal;
+      return { name: 'fidelity', value: fid, rank1Value: R.claim, tie: Math.abs(fid - R.claim) < 1e-9, better: fid > R.claim + 1e-9, meets: meets, cost: cost };
+    }
+    var E = expectation(S, G.n, R.terms), gap = E - R.E0;
+    var meetsV = gap <= R.gapBudget + 1e-12 && E <= G.baselineVal + 1e-9;
+    return { name: 'energy', value: E, gap: gap, rank1Value: R.claim, tie: Math.abs(E - R.claim) < 1e-9, better: E < R.claim - 1e-9, meets: meetsV, cost: cost };
+  }
+  function golfViolations(pid, ops) {
+    var G = GOLF[pid], v = [], coup = {};
+    G.coupling.forEach(function (e) { coup[Math.min(e[0], e[1]) + ',' + Math.max(e[0], e[1])] = 1; });
+    ops.forEach(function (op, i) {
+      var g = op.gate.toLowerCase();
+      if (G.native.indexOf(g) < 0) v.push('op ' + (i + 1) + ': ' + g.toUpperCase() + ' is not in the native gate set');
+      if (op.q.some(function (q) { return q < 0 || q >= G.n; })) v.push('op ' + (i + 1) + ': qubit index out of range');
+      if (op.q.length === 2 && !coup[Math.min(op.q[0], op.q[1]) + ',' + Math.max(op.q[0], op.q[1])]) v.push('op ' + (i + 1) + ': 2q gate on q' + op.q.join(',q') + ' violates the coupling map');
+    });
+    var cost = golfCost(ops, G.n);
+    if (cost.twoq > G.maxTwoQ) v.push('2q-gate count ' + cost.twoq + ' exceeds the cap ' + G.maxTwoQ + (G.twoqPinned ? ' (host-pinned by the hidden reference)' : ''));
+    if (cost.depth > G.maxDepth) v.push('depth ' + cost.depth + ' exceeds the budget ' + G.maxDepth);
+    return v;
+  }
+  // rank vs the current rank 1 under the board's real ordering: metric first, then 2q, then depth.
+  function golfStatus(pid, ops) {
+    var G = GOLF[pid]; if (!G) return null;
+    var R = RUNS[pid];
+    var m = golfMetric(pid, ops), v = golfViolations(pid, ops), rank1 = golfCost(R.ops, G.n);
+    var rank = 'behind';
+    if (v.length || !m.meets) rank = 'invalid';
+    else if (m.better) rank = 'outrank';
+    else if (m.tie) {
+      if (m.cost.twoq < rank1.twoq || (m.cost.twoq === rank1.twoq && m.cost.depth < rank1.depth)) rank = 'outrank';
+      else if (m.cost.twoq === rank1.twoq && m.cost.depth === rank1.depth) rank = 'tie';
+    }
+    return { metric: m, cost: m.cost, rank1: rank1, violations: v, rank: rank };
+  }
+  function cleanOps(ops) { return ops.map(function (op) { var o = { gate: op.gate, q: op.q.slice() }; if (op.params) o.params = op.params.slice(); return o; }); }
+  function golfBundle(pid, ops) {
+    var G = GOLF[pid], m = golfMetric(pid, ops);
+    return {
+      schema: 'quantum-harness/proof-bundle@1', problem_id: pid, task: G.task,
+      circuit: { n_qubits: G.n, ops: cleanOps(ops) },
+      constraints: G.constraints,
+      claim: G.task === 'state_prep' ? { fidelity: m.value } : { energy: m.value },
+      classical_baseline: G.baselineBundle,
+      meta: { author: 'circuit-golf (hand-edited in the browser)', framework: 'json-ir', note: 'claim recomputed by the exact in-browser JS statevector sim; the real judge re-derives it independently' }
+    };
+  }
+
+  // ---------- IMPOSTOR WORKSHOP — the committed forgery/overfit fixtures, runnable ----------
+  // Honest framing: every entry is a COMMITTED adversarial fixture from
+  // bench/quantum-judge/ (the judge's own regression bench), labeled as such.
+  // The lesson: a design can pass every gate you can SEE and still be wrong —
+  // the held-out anti-overfit gate (exit 6) exists exactly for that.
+  var EXIT_NAMES = { 0: 'ACCEPT', 2: 'SCHEMA', 3: 'STRUCTURE', 4: 'REPRODUCE', 5: 'PERFORMANCE', 6: 'ANTI-OVERFIT' };
+  var IMPOSTORS = {
+    'pops-overfit': { file: 'quantum-proof-OVERFIT.json', refId: 'bell_pops2', label: 'Wrong-phase Bell — |Φ⁻⟩ impostor', expect: 6, trap: 'Appends a Z: the Z-basis populations are still 50/50 — it matches everything visible — but the held-out ⟨X₀X₁⟩ is −1, not the +1 the model was never told about.' },
+    'qml-overfit': { file: 'quantum-proof-qml-OVERFIT.json', refId: 'qml_sign1', label: 'High-frequency feature map — Ry(7x)', expect: 6, trap: 'sin(7x) happens to nail all four training points (train accuracy 1.0), then oscillates onto the wrong side of the held-out x = ±0.5 — the textbook overfit.' },
+    'arch-overfit': { file: 'quantum-proof-arch-OVERFIT.json', refId: 'aiaccel4', label: 'Workload-tuned topology — path, not ring', expect: 6, trap: 'A 0–1–2–3 path tuned to the visible pairs (cost 2); the held-out cross-pairs cost 4 on a path. A ring would have generalized.' },
+    'ghz-forged': { file: 'quantum-proof-FORGED.json', refId: 'ghz3', label: 'GHZ₃ with a fabricated fidelity', expect: 4, trap: 'Omits the second CX — the real fidelity is 0.25 — but the bundle claims 1.0. The judge re-simulates and catches the lie.' },
+    'h2-forged': { file: 'quantum-proof-h2-FORGED.json', refId: 'h2vqe', label: 'H₂ ansatz with an overclaimed energy', expect: 4, trap: 'The circuit is genuine; the number is not — it claims the exact ground energy the ansatz does not reach.' },
+    'noisy-forged': { file: 'quantum-proof-noisy-FORGED.json', refId: 'bellnoisy2', label: 'Bell prep with an inflated noise prediction', expect: 4, trap: 'A perfect ideal circuit, but the on-device prediction is inflated to 0.98 (the density-matrix sim says 0.916) — even noisy predictions are recomputed.' }
+  };
+
+  // ---------- LANDSCAPE — tfim3 p=1 QAOA plane, pure sim helpers (UI in lab.js) ----------
+  // p=1 QAOA for the TFIM₃ brief: |+++> → rzz(γ) on the chain couplings → rx(β) mixers.
+  // Same structure as the rank-1 run-tfim3-qaoa circuit, truncated to one layer.
+  function tfim3P1Ops(gamma, beta) {
+    return [
+      { gate: 'h', q: [0] }, { gate: 'h', q: [1] }, { gate: 'h', q: [2] },
+      { gate: 'rzz', q: [0, 1], params: [gamma] }, { gate: 'rzz', q: [1, 2], params: [gamma] },
+      { gate: 'rx', q: [0], params: [beta] }, { gate: 'rx', q: [1], params: [beta] }, { gate: 'rx', q: [2], params: [beta] }
+    ];
+  }
+  function tfim3P1Energy(gamma, beta) { return expectation(runOps(tfim3P1Ops(gamma, beta), 3), 3, RUNS.tfim3.terms); }
+
+  // ---------- Replication Census hook: a genuine ACCEPT of a KNOWN committed bundle ----------
+  // detail.sha256 = SHA-256 over the RAW bundle bytes exactly as fetched
+  // (fetch → arrayBuffer → digest → lowercase hex, 64 chars) — NOT re-serialized JSON;
+  // the census module hashes its rows the same way. Strings are UTF-8-encoded only as
+  // a fallback for callers that kept just the text.
+  function emitVerifyAccept(problemId, bundleBytes) {
+    function fire(sha) { try { document.dispatchEvent(new CustomEvent('qm:verify-accept', { detail: { problem_id: problemId, sha256: sha } })); } catch (e) { } }
+    try {
+      var subtle = (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) || (typeof crypto !== 'undefined' && crypto.subtle);
+      var bytes = (typeof bundleBytes === 'string')
+        ? (typeof TextEncoder !== 'undefined' ? new TextEncoder().encode(bundleBytes) : null)
+        : bundleBytes;
+      if (subtle && bytes) {
+        return subtle.digest('SHA-256', bytes).then(function (buf) {
+          fire(Array.prototype.map.call(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, '0'); }).join(''));
+        }).catch(function () { fire(null); });
+      }
+    } catch (e) { }
+    fire(null);
+    return Promise.resolve();
+  }
+
   // ---------- overlay ----------
   function ensureOverlay() { var o = document.getElementById('qm-overlay'); if (!o) { o = document.createElement('div'); o.className = 'qm-overlay'; o.id = 'qm-overlay'; o.innerHTML = '<div class="qm-scrim" data-close></div>'; document.body.appendChild(o); } return o; }
   function openOverlay(kind, inner) { var o = ensureOverlay(); var old = o.querySelector('.qm-panel'); if (old) old.remove(); var p = document.createElement('div'); p.className = 'qm-panel ' + (kind === 'modal' ? 'qm-modalpanel' : 'qm-drawer'); p.innerHTML = '<button class="qm-close" data-close>esc ✕</button>' + inner; o.appendChild(p); o.classList.toggle('center', kind === 'modal'); o.classList.add('open'); document.body.style.overflow = 'hidden'; return p; }
-  function closeOverlay() { var o = document.getElementById('qm-overlay'); if (!o) return; o.classList.remove('open'); document.body.style.overflow = ''; var p = o.querySelector('.qm-panel'); if (p) p.remove(); runnerToken = null; }
+  function closeOverlay() { var o = document.getElementById('qm-overlay'); if (!o) return; o.classList.remove('open'); document.body.style.overflow = ''; var p = o.querySelector('.qm-panel'); if (p) p.remove(); runnerToken = null; golf = null; }
   function copyText(btn) { var code = btn.parentElement.querySelector('code'); var txt = code ? code.textContent : btn.getAttribute('data-copy'); try { navigator.clipboard.writeText(txt); } catch (e) { } var old = btn.textContent; btn.textContent = 'copied'; setTimeout(function () { btn.textContent = old; }, 1100); }
 
   // ---------- runner UI ----------
@@ -112,7 +262,7 @@
     var inner = '<p class="eyebrow">In-browser runner · ' + R.task + '</p><h2 style="font-family:var(--serif);margin:6px 0 3px;">' + R.label + '</h2>' +
       '<p style="font-size:13.5px;color:var(--ink-2);margin:0 0 14px;">A JS statevector simulator recomputes the metric instantly. Or run the <b>real</b> <span class="mono">judge_verify.py</span> + numpy here via WebAssembly — no server, never leave the page.</p>' +
       design + '<div class="panel" style="padding:6px;"><canvas id="qm-run-cv" class="lab-stage" style="display:block;width:100%;height:180px;background:var(--stage-bg);"></canvas></div>' +
-      '<div class="controls" style="margin:14px 0 6px;display:flex;gap:9px;flex-wrap:wrap;"><button class="btn primary" data-runsim="' + pid + '">▸ Run preview</button><button class="btn" data-realjudge="' + pid + '">⚙ Run real judge (WASM)</button></div>' +
+      '<div class="controls" style="margin:14px 0 6px;display:flex;gap:9px;flex-wrap:wrap;"><button class="btn primary" data-runsim="' + pid + '">▸ Run preview</button><button class="btn" data-realjudge="' + pid + '">⚙ Run real judge (WASM)</button>' + (GOLF[pid] ? '<button class="btn" data-golf="' + pid + '">⛳ Golf this circuit</button>' : '') + '</div>' +
       '<div id="qm-run-out" style="margin-top:8px;"></div><div id="qm-wasm-out"></div>';
     openOverlay('drawer', inner);
     var cv = document.getElementById('qm-run-cv');
@@ -174,25 +324,34 @@
     })();
     return pyReady;
   }
+  // Shared core: run the REAL judge_verify.py (WASM) on an arbitrary bundle string.
+  // Used by the committed re-verify path, Circuit Golf's "Prove it", and the Impostor cards.
+  async function judgeBundleText(refId, bundleText) {
+    var py = await getPyodide();
+    var ref = await (await fetch(RAW + 'references/' + refId + '.json')).text();
+    py.FS.writeFile('/refs/' + refId + '.json', ref);
+    py.globals.set('BUNDLE_JSON', bundleText);
+    var code = "import json, importlib\n" +
+      "import judge_verify; importlib.reload(judge_verify)\n" +
+      "b = json.loads(BUNDLE_JSON)\n" +
+      "try:\n  ch = judge_verify.verify(b)\n  res = {'verdict':'ACCEPT','code':0,'checks':ch}\n" +
+      "except judge_verify.Reject as r:\n  res = {'verdict':'REJECT','code':r.code,'reason':str(r)}\n" +
+      "json.dumps(res)";
+    return JSON.parse(py.runPython(code));
+  }
   async function runRealJudge(pid) {
     var R = RUNS[pid]; if (!R) return;
     var btn = document.querySelector('[data-realjudge="' + pid + '"]'); if (btn) { btn.disabled = true; btn.textContent = '⚙ running…'; }
     try {
-      var py = await getPyodide();
+      await getPyodide();
       logw('Fetching reference + proof bundle…\n', true);
-      var ref = await (await fetch(RAW + 'references/' + R.refId + '.json')).text();
-      var bundle = await (await fetch(R.bundle)).text();
-      py.FS.writeFile('/refs/' + R.refId + '.json', ref);
-      py.globals.set('BUNDLE_JSON', bundle);
+      var bundleBuf = await (await fetch(R.bundle)).arrayBuffer();   // raw bytes: hashed as-fetched for the census hook
+      var bundle = new TextDecoder().decode(bundleBuf);
       logw('Running judge_verify.verify() …\n', true);
-      var code = "import json, importlib\n" +
-        "import judge_verify; importlib.reload(judge_verify)\n" +
-        "b = json.loads(BUNDLE_JSON)\n" +
-        "try:\n  ch = judge_verify.verify(b)\n  res = {'verdict':'ACCEPT','code':0,'checks':ch}\n" +
-        "except judge_verify.Reject as r:\n  res = {'verdict':'REJECT','code':r.code,'reason':str(r)}\n" +
-        "json.dumps(res)";
-      var out = JSON.parse(py.runPython(code));
+      var out = await judgeBundleText(R.refId, bundle);
       var accept = out.code === 0;
+      // Replication Census hook: a genuine in-browser ACCEPT of this KNOWN committed bundle.
+      if (accept) emitVerifyAccept(pid, bundleBuf);
       var summary = accept
         ? '✓ ACCEPT · exit 0 — the REAL numpy judge, run in your browser via WebAssembly.\n\n' + JSON.stringify(out.checks, null, 1)
         : '✕ REJECT · exit ' + out.code + '\n' + (out.reason || '');
@@ -201,6 +360,133 @@
     } catch (e) {
       logw('\nWASM judge unavailable (' + (e && e.message ? e.message : e) + ').\nThe instant JS preview above is exact and offline; the real judge needs network for Pyodide + GitHub raw.', true);
       if (btn) { btn.textContent = '⚙ Run real judge (WASM)'; btn.disabled = false; }
+    }
+  }
+
+  // ---------- CIRCUIT GOLF UI (drawer) ----------
+  var golf = null;
+  function golfAddOptions(G) {
+    var opts = [];
+    G.native.forEach(function (g) {
+      if (g === 'cx') { G.coupling.forEach(function (e) { opts.push(['cx:' + e[0] + ',' + e[1], 'CX q' + e[0] + '→q' + e[1]]); opts.push(['cx:' + e[1] + ',' + e[0], 'CX q' + e[1] + '→q' + e[0]]); }); return; }
+      if (SYM_2Q[g]) { G.coupling.forEach(function (e) { opts.push([g + ':' + e[0] + ',' + e[1], g.toUpperCase() + ' q' + e[0] + ',q' + e[1]]); }); return; }
+      for (var q = 0; q < G.n; q++) opts.push([g + ':' + q, g.toUpperCase() + (PARAM_GATES[g] ? '(θ)' : '') + ' q' + q]);
+    });
+    return opts;
+  }
+  function openGolf(pid) {
+    var G = GOLF[pid], R = RUNS[pid]; if (!G || !R) return;
+    golf = { pid: pid, ops: cleanOps(R.ops) };
+    var opts = golfAddOptions(G).map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
+    var inner = '<p class="eyebrow">Circuit Golf · in-browser sim · ' + esc(G.task) + '</p><h2 style="font-family:var(--serif);margin:6px 0 3px;">' + esc(R.label) + ' — beat the frontier by hand</h2>' +
+      '<p style="font-size:13.5px;color:var(--ink-2);margin:0 0 10px;">The golf rules are the board’s <b>real tie-break rules</b> (SCOREBOARD.md §b): tie the verified metric with <b>fewer 2-qubit gates</b> — or the same 2q count at <b>lower depth</b> — and your design would take rank 1. Every live number below is the exact <b>in-browser JS sim</b> (advisory); the <b>real judge’s verdict is the only authority</b>, and only a public repo the board re-verifies actually ranks.</p>' +
+      '<p class="mono" style="font-size:10px;color:var(--faint);margin:0 0 12px;">' + esc(G.minimal) + '</p>' +
+      '<p class="eyebrow" style="margin:0 0 6px">Your circuit · add / remove / reorder / tune</p><div id="qm-golf-ops"></div>' +
+      '<div class="controls" style="margin:10px 0 6px;align-items:center;"><select class="qm-golfsel" id="qm-golf-addsel">' + opts + '</select><button class="btn" data-golfadd>+ add gate</button><button class="btn" data-golfreset>↺ reset to rank 1</button></div>' +
+      '<div id="qm-golf-meter" style="margin-top:12px;"></div>' +
+      '<div class="controls" style="margin:14px 0 6px;"><button class="btn primary" data-golfprove>⚖ Prove it — run the real judge (WASM)</button></div>' +
+      '<div id="qm-golf-verdict"></div><div id="qm-wasm-out"></div>';
+    openOverlay('drawer', inner);
+    renderGolfOps(); renderGolfMeter();
+  }
+  function renderGolfOps() {
+    var el = document.getElementById('qm-golf-ops'); if (!el || !golf) return;
+    var N = golf.ops.length;
+    el.innerHTML = '<div class="qm-oplist">' + (golf.ops.map(function (op, i) {
+      var g = op.gate.toLowerCase();
+      var mid = PARAM_GATES[g]
+        ? '<input type="range" min="-3.1416" max="3.1416" step="0.0001" value="' + (+op.params[0]).toFixed(4) + '" data-golfparam="' + i + '" aria-label="rotation angle"><span class="gv">' + (+op.params[0]).toFixed(3) + '</span>'
+        : '<span style="flex:1"></span>';
+      return '<div class="qm-golfrow"><span class="gn">' + esc(op.gate.toUpperCase()) + '</span><span style="flex:0 0 52px">q' + op.q.join(',q') + '</span>' + mid +
+        '<button class="qm-golfbtn" data-golfup="' + i + '"' + (i === 0 ? ' disabled' : '') + ' title="move up">↑</button>' +
+        '<button class="qm-golfbtn" data-golfdn="' + i + '"' + (i === N - 1 ? ' disabled' : '') + ' title="move down">↓</button>' +
+        '<button class="qm-golfbtn" data-golfdel="' + i + '" title="remove">✕</button></div>';
+    }).join('') || '<div class="qm-golfrow"><span style="color:var(--faint)">empty circuit — add gates below</span></div>') + '</div>';
+  }
+  function renderGolfMeter() {
+    var el = document.getElementById('qm-golf-meter'); if (!el || !golf) return;
+    var st = golfStatus(golf.pid, golf.ops), m = st.metric, R = RUNS[golf.pid];
+    var mline = m.name === 'fidelity'
+      ? row('fidelity (in-browser sim)', m.value.toFixed(6) + '  (≥ ' + R.threshold + ')')
+      : row('energy (in-browser sim)', m.value.toFixed(6)) + row('gap to E₀', m.gap.toExponential(2) + '  (≤ ' + R.gapBudget + ')');
+    var costline = row('your cost', '2q ' + st.cost.twoq + ' · depth ' + st.cost.depth) + row('rank 1 cost', '2q ' + st.rank1.twoq + ' · depth ' + st.rank1.depth);
+    var badge, note;
+    if (st.rank === 'outrank') { badge = '<span class="qm-gv pass">▲ would outrank rank 1</span>'; note = 'Metric holds at lower cost. If the real judge ACCEPTs and the board re-verifies your public repo, this takes rank 1.'; }
+    else if (st.rank === 'tie') { badge = '<span class="qm-gv" style="border-color:var(--accent);color:var(--accent)">= dead heat with rank 1</span>'; note = 'Same metric, same 2q count, same depth — golf it lower to outrank.'; }
+    else if (st.rank === 'behind') { badge = '<span class="qm-gv">· behind rank 1</span>'; note = m.tie ? 'Metric ties, but the cost is higher — the tie-breaks rank this below rank 1.' : 'The judge gates would pass, but the metric is behind rank 1.'; }
+    else { badge = '<span class="qm-gv fail">✕ would not ACCEPT</span>'; note = st.violations.length ? st.violations.join(' · ') : (m.name === 'fidelity' ? 'fidelity is below the threshold / cost-adjusted baseline gate' : 'energy gap above budget, or worse than the classical baseline'); }
+    el.innerHTML = mline + costline + '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + badge + '</div><p class="mono" style="font-size:10px;color:var(--ink-2);margin:7px 0 0">' + esc(note) + '</p>';
+  }
+  function golfAdd() {
+    var sel = document.getElementById('qm-golf-addsel'); if (!sel || !golf) return;
+    var p = String(sel.value || '').split(':'); if (p.length !== 2) return;
+    var op = { gate: p[0], q: p[1].split(',').map(Number) };
+    if (PARAM_GATES[p[0]]) op.params = [Math.PI / 2];
+    golf.ops.push(op); renderGolfOps(); renderGolfMeter();
+  }
+  function golfMove(i, d) { if (!golf) return; var j = i + d; if (j < 0 || j >= golf.ops.length) return; var t = golf.ops[i]; golf.ops[i] = golf.ops[j]; golf.ops[j] = t; renderGolfOps(); renderGolfMeter(); }
+  function golfDel(i) { if (!golf) return; golf.ops.splice(i, 1); renderGolfOps(); renderGolfMeter(); }
+  function golfReset() { if (!golf) return; golf.ops = cleanOps(RUNS[golf.pid].ops); renderGolfOps(); renderGolfMeter(); var v = document.getElementById('qm-golf-verdict'); if (v) v.innerHTML = ''; }
+  async function golfProve() {
+    if (!golf) return;
+    var pid = golf.pid, text = JSON.stringify(golfBundle(pid, golf.ops), null, 2);
+    var box = document.getElementById('qm-golf-verdict');
+    var btn = document.querySelector('[data-golfprove]'); if (btn) { btn.disabled = true; btn.textContent = '⚖ judging…'; }
+    try {
+      var out = await judgeBundleText(pid, text);
+      var accept = out.code === 0;
+      var chips;
+      if (accept) chips = [gv('structure', true), gv('reproduce', true), gv('performance', true), gv('anti-overfit', true)];
+      else if (out.code === 2) chips = ['<span class="qm-gv fail">✕ schema</span>'];
+      else chips = [[3, 'structure'], [4, 'reproduce'], [5, 'performance'], [6, 'anti-overfit']].map(function (g) {
+        return g[0] < out.code ? gv(g[1], true) : (g[0] === out.code ? gv(g[1], false) : '<span class="qm-gv">· ' + g[1] + '</span>');
+      });
+      var head = accept
+        ? '<div style="margin-top:10px;font-family:var(--mono);font-weight:700;font-size:14px;color:var(--pass)">✓ ACCEPT · exit 0 · the REAL judge_verify.py, run in your browser</div>'
+        : '<div style="margin-top:10px;font-family:var(--mono);font-weight:700;font-size:14px;color:var(--reject)">✕ REJECT · exit ' + out.code + ' · failed the ' + esc(EXIT_NAMES[out.code] || '?') + ' gate</div><p class="mono" style="font-size:11px;color:var(--ink-2);margin:5px 0 0">' + esc(out.reason || '') + '</p>';
+      var mint = '';
+      if (accept) {
+        mint = '<p style="font-size:13px;color:var(--ink-2);margin-top:10px">That is a verdict, <b>not a board entry</b> — the scoreboard only ranks public repos it re-verifies itself. Mint a run repo and commit this exact bundle:</p>' +
+          '<div class="qm-cmd"><code>' + esc('bin/new-run.sh run-' + pid + '-golf --remix ' + pid) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
+          '<details style="margin-top:8px"><summary class="mono" style="font-size:11px;color:var(--ink-2);cursor:pointer">quantum-proof-' + esc(pid) + '.json — your proof bundle (copy it into the repo)</summary><div class="qm-cmd"><code>' + esc(text) + '</code><button class="qm-copy" data-copy>copy</button></div></details>';
+      }
+      if (box) box.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + chips.join('') + '</div>' + head + mint;
+      if (btn) { btn.disabled = false; btn.textContent = accept ? '✓ real judge: ACCEPT' : '✕ real judge: exit ' + out.code; }
+    } catch (e) {
+      if (box) box.innerHTML = '<p class="mono" style="font-size:11px;color:var(--reject)">real judge unavailable (' + esc(e && e.message ? e.message : String(e)) + ') — it needs network for Pyodide + GitHub raw. The live meter above is the exact in-browser sim, but only the judge’s verdict counts.</p>';
+      if (btn) { btn.disabled = false; btn.textContent = '⚖ Prove it — run the real judge (WASM)'; }
+    }
+  }
+
+  // ---------- IMPOSTOR WORKSHOP UI (drawer) ----------
+  function openImpostor(key) {
+    var T = IMPOSTORS[key]; if (!T) return;
+    var inner = '<p class="eyebrow">Impostor Workshop · committed forgery fixture</p><h2 style="font-family:var(--serif);margin:6px 0 3px;">' + esc(T.label) + '</h2>' +
+      '<p style="font-size:13.5px;color:var(--ink-2);margin:0 0 8px;"><b>The trap:</b> ' + esc(T.trap) + '</p>' +
+      '<p style="font-size:13px;color:var(--ink-2);margin:0 0 8px;">This is a <b>committed adversarial fixture</b> from <span class="mono">bench/quantum-judge/' + esc(T.file) + '</span> — part of the judge’s own regression bench, labeled as such. It is built to pass every gate you can <em>see</em>' + (T.expect === 6 ? '; the held-out anti-overfit gate (exit 6) exists precisely because that is not enough.' : ' from the outside; hermetic re-simulation is what catches the lie.') + '</p>' +
+      '<div class="qm-row"><span>documented catch</span><span style="color:var(--reject)">REJECT · exit ' + T.expect + ' · ' + esc(EXIT_NAMES[T.expect]) + '</span></div>' +
+      '<div class="controls" style="margin:12px 0 6px;"><button class="btn primary" data-impjudge="' + esc(key) + '">⚖ Run the real judge (WASM)</button></div>' +
+      '<div id="qm-imp-out"></div><div id="qm-wasm-out"></div>';
+    openOverlay('drawer', inner);
+  }
+  async function runImpostor(key) {
+    var T = IMPOSTORS[key]; if (!T) return;
+    var btn = document.querySelector('[data-impjudge="' + key + '"]'); if (btn) { btn.disabled = true; btn.textContent = '⚖ judging…'; }
+    var box = document.getElementById('qm-imp-out');
+    try {
+      logw('Fetching ' + T.file + ' + reference…\n', true);
+      var bundle = await (await fetch(RAW + T.file)).text();
+      var out = await judgeBundleText(T.refId, bundle);
+      var msg = out.code === 0
+        ? '<div style="margin-top:8px;font-family:var(--mono);font-weight:700;font-size:14px;color:var(--reject)">⚠ ACCEPT — the judge did NOT catch this committed fixture. That would be a genuine judge blind spot: please open an issue with this page.</div>'
+        : '<div style="margin-top:8px;font-family:var(--mono);font-weight:700;font-size:14px;color:var(--pass)">✓ caught · REJECT · exit ' + out.code + ' · the ' + esc(EXIT_NAMES[out.code] || '?') + ' gate</div>' +
+          (out.code !== T.expect ? '<p class="mono" style="font-size:11px;color:var(--reject);margin:5px 0 0">note: documented catch is exit ' + T.expect + '</p>' : '') +
+          '<p class="mono" style="font-size:11px;color:var(--ink-2);margin:6px 0 0">' + esc(out.reason || '') + '</p>';
+      if (box) box.innerHTML = msg;
+      if (btn) { btn.disabled = false; btn.textContent = out.code === 0 ? '⚠ not caught' : '✕ exit ' + out.code + ' — caught'; }
+    } catch (e) {
+      if (box) box.innerHTML = '<p class="mono" style="font-size:11px;color:var(--reject)">real judge unavailable (' + esc(e && e.message ? e.message : String(e)) + ') — it needs network for Pyodide + GitHub raw.</p>';
+      if (btn) { btn.disabled = false; btn.textContent = '⚖ Run the real judge (WASM)'; }
     }
   }
 
@@ -379,10 +665,19 @@
 
   // ---------- global handlers (work on any page) ----------
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-kjudge],[data-close],[data-copy],[data-ghlogin],[data-ghcreate],[data-ghlogout]'); if (!el) return;
+    var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-kjudge],[data-close],[data-copy],[data-ghlogin],[data-ghcreate],[data-ghlogout],[data-golf],[data-golfadd],[data-golfreset],[data-golfprove],[data-golfup],[data-golfdn],[data-golfdel],[data-impostor],[data-impjudge]'); if (!el) return;
     if (el.hasAttribute('data-close')) { e.preventDefault(); return closeOverlay(); }
     if (el.hasAttribute('data-copy')) { e.preventDefault(); return copyText(el); }
     if (el.hasAttribute('data-run')) { e.preventDefault(); return openRunner(el.getAttribute('data-run')); }
+    if (el.hasAttribute('data-golf')) { e.preventDefault(); return openGolf(el.getAttribute('data-golf')); }
+    if (el.hasAttribute('data-golfadd')) { e.preventDefault(); return golfAdd(); }
+    if (el.hasAttribute('data-golfreset')) { e.preventDefault(); return golfReset(); }
+    if (el.hasAttribute('data-golfprove')) { e.preventDefault(); return golfProve(); }
+    if (el.hasAttribute('data-golfup')) { e.preventDefault(); return golfMove(+el.getAttribute('data-golfup'), -1); }
+    if (el.hasAttribute('data-golfdn')) { e.preventDefault(); return golfMove(+el.getAttribute('data-golfdn'), 1); }
+    if (el.hasAttribute('data-golfdel')) { e.preventDefault(); return golfDel(+el.getAttribute('data-golfdel')); }
+    if (el.hasAttribute('data-impostor')) { e.preventDefault(); return openImpostor(el.getAttribute('data-impostor')); }
+    if (el.hasAttribute('data-impjudge')) { e.preventDefault(); return runImpostor(el.getAttribute('data-impjudge')); }
     if (el.hasAttribute('data-runsim')) { var R = RUNS[el.getAttribute('data-runsim')]; if (R) runSim(R); return; }
     if (el.hasAttribute('data-realjudge')) { e.preventDefault(); return runRealJudge(el.getAttribute('data-realjudge')); }
     if (el.hasAttribute('data-kjudge')) { e.preventDefault(); return runRealKernelJudge(el.getAttribute('data-kjudge')); }
@@ -390,7 +685,24 @@
     if (el.hasAttribute('data-ghcreate')) { e.preventDefault(); return ghCreate(el.getAttribute('data-ghcreate')); }
     if (el.hasAttribute('data-ghlogout')) { e.preventDefault(); return ghLogout(); }
   });
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (!t || !t.matches || !t.matches('[data-golfparam]')) return;
+    var i = +t.getAttribute('data-golfparam');
+    if (!golf || !golf.ops[i] || !golf.ops[i].params) return;
+    golf.ops[i].params[0] = +t.value;
+    var v = t.parentElement && t.parentElement.querySelector('.gv'); if (v) v.textContent = (+t.value).toFixed(3);
+    renderGolfMeter();   // keep the slider itself untouched so dragging never breaks
+  });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
 
-  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, KERNEL_RUNS: KERNEL_RUNS, createRepo: createRepo, runRealJudge: runRealJudge, runRealKernelJudge: runRealKernelJudge, ghWidget: ghWidget, anonSubmitWidget: anonSubmitWidget };
+  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, KERNEL_RUNS: KERNEL_RUNS, createRepo: createRepo, runRealJudge: runRealJudge, runRealKernelJudge: runRealKernelJudge, ghWidget: ghWidget, anonSubmitWidget: anonSubmitWidget,
+    // in-browser sim primitives (exact; advisory — the judge verdict is the only authority)
+    sim: { zeroState: zeroState, applyOp: applyOp, runOps: runOps, fidelity: fidelity, expectation: expectation, cost: golfCost },
+    // Circuit Golf (ghz3 + isingbell2 first slice)
+    GOLF: GOLF, openGolf: openGolf, golf: { status: golfStatus, metric: golfMetric, violations: golfViolations, bundle: golfBundle, cost: golfCost, addOptions: golfAddOptions },
+    // Impostor Workshop (committed forgery fixtures, runnable)
+    IMPOSTORS: IMPOSTORS, EXIT_NAMES: EXIT_NAMES, openImpostor: openImpostor, runImpostor: runImpostor,
+    // Landscape (tfim3 p=1 QAOA plane — pure helpers; the UI lives in lab.js)
+    landscape: { ops: tfim3P1Ops, energyAt: tfim3P1Energy, terms: RUNS.tfim3.terms, E0: RUNS.tfim3.E0 },
+    judgeBundleText: judgeBundleText, emitVerifyAccept: emitVerifyAccept };
 })();
