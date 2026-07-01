@@ -169,6 +169,10 @@ test('recipe builder has the device variables, forecaster + the circuit↦chip d
   // the design schematic — a real circuit + the chip topology it needs (replaces the decorative 3-D blend)
   assert.match(js, /buildAnsatz/)                        // derives the circuit from the recipe
   assert.match(js, /couplingMap/)                        // derives the chip topology
+  // full-stack integration: the Studio's hardware target flows into the recipe + its export
+  assert.match(js, /function hardwareSpec/)
+  assert.match(js, /Hardware target/)
+  assert.match(js, /hardware: hardwareSpec\(\)/)         // recipe JSON carries hardware + software
   assert.match(js, /CIRCUIT · the ansatz/)
   assert.match(js, /CHIP · the topology/)
   assert.match(js, /id="recipe-pcard"/)                  // the problem card (what a good result looks like)
