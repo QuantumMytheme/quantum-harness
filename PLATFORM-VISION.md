@@ -212,6 +212,152 @@ quantum circuits out, all scored without human taste.
 
 ---
 
+---
+
+## Track 2 — refereeing efficiency on real classical silicon (TPU)
+
+> **Status: roadmap, not built.** Nothing in this track ships today. The quantum
+> harness in this repo is real and runs; this section describes a *second* referee track
+> designed on top of the same judge machinery, and it does not exist yet. The design work is
+> in [TPU-NATIVE-ARCHITECTURES.md](./TPU-NATIVE-ARCHITECTURES.md); nothing below has touched a
+> TPU. Treat every gate, task, and phase here as a target, not a description of current behavior.
+
+Everything above is one track: the platform referees **quantum-circuit correctness** — a submitted
+circuit either builds the claimed state or it doesn't, and the judge re-derives the number. That is
+the *hardest verifiability case*, which is why it is the wedge. But the project's own
+[curriculum](https://quantummytheme.com/education) (Part V, "the North Star") says plainly where the
+real machine-intelligence efficiency gains live: **classical architectures on real silicon**, not a
+quantum LLM accelerator. If that is the honest map, then the platform's job is not finished when it
+can referee a *correctness* claim — it has to be able to referee an **efficiency** claim, on the
+silicon where efficiency is actually won or lost. Track 2 is that extension.
+
+The reframe is the whole point. A correctness verdict asks "is this circuit right?" An efficiency
+verdict asks a strictly harder question — "is this kernel both *right* **and** *faster*, and can a
+stranger reproduce the number?" — because a speed claim is worthless if the kernel quietly went
+numerically wrong to get there. A TPU is the cleanest place to ask it: nearly all math flows through
+one dominant 128×128 systolic MXU over one HBM bandwidth, so the roofline is unusually sharp and
+"compute-bound vs bandwidth-bound," "what fraction of peak," and "how many HBM bytes per token" are
+first-principles questions with hardware-anchored answers rather than vibes. And Pallas's
+`interpret=True` supplies the missing half: the same kernel source that lowers to the MXU can be
+replayed in a deterministic pure-JAX emulator sharing the exact tiling, giving a third-party-replayable
+correctness oracle. **The TPU supplies the physics (roofline); Pallas supplies the notary.** That is
+the same shape as Track 1 — a deterministic thing recomputes the claim — pointed at real classical
+hardware instead of a statevector.
+
+### The efficiency judge — extending the four gates
+
+Track 1's judge is four gates, each able to REJECT with its own exit code (structure /
+reproducibility / performance / anti-overfit). Track 2 does not replace that model; it *extends* it
+with efficiency gates that obey the same discipline — **the judge recomputes, the claimant never
+self-reports** — and the same exit-code contract, so a kernel bundle slots into the existing
+`mint_run` / `verify_bundle` flow:
+
+| Gate | Role | What it proves | Honesty rule |
+|---|---|---|---|
+| Correctness | **enabling** (extends the golden-output gate) | `interpret=True` *control notary* (fp32, near-exact grid/masking) **plus** a *numeric notary* for reduced-precision paths against an fp64 host reference | tolerance is a **checked function of the declared dtype** (bf16 ≈ 2⁻⁸ ulp), never claimant-chosen; must pass before any speed number is scored |
+| FLOP / roofline | **scored** | `%-of-peak` = algorithmic-FLOPs ÷ measured-median wall-clock; roofline coordinate on the named generation | FLOPs come from XLA `cost_analysis()` of the lowered program (compiler-computed from attacker input); logical-vs-MXU-issued FLOPs reported to disclose 8×128 / 128×128 padding; `device_kind` read from the harness |
+| HBM-byte | **scored** | bytes/token moved | ground truth is the **XProf hardware counters**; the static BlockSpec + cost-model derivations are shown only as *predictors validated against* the measurement (three legs, not two static views agreeing with themselves) |
+| MXU-utilization | **diagnostic, not headline** | duty cycle | trivially gamed by padded/redundant busywork, so it is *shown, never sorted on* |
+| Energy-proxy | **explicitly aspirational** | joules/token | instrumented-and-caveated where per-chip power exists; where it doesn't (analog twins), a labeled "measured-in-twin / hoped-on-hardware" vendor-spec calculator with the dominant term exposed, never a verified number |
+
+The rule that makes this an *extension* and not a new trust path: correctness is the precondition,
+speed is the payload. A kernel that fails the correctness notary is REJECTED before any efficiency
+number is even computed — exactly as a fabricated quantum metric is caught at reproducibility before
+performance is scored.
+
+### New task types, the cartridge, and the anti-gaming invariants
+
+A quantum submission is a proof bundle. A TPU submission is a **cartridge**: a hermetic run-bundle
+that pins the toolchain (`jaxlib` + `libtpu` + `XLA_FLAGS` + `device_kind`/topology + RNG seed +
+autotune cache + input tensors), embeds the raw XProf trace, and carries the `interpret=True` golden
+output hash. `verify_bundle` boots the cartridge on matching silicon, replays, and diffs — the same
+"self-contained, re-runnable artifact" property that makes a proof bundle a submission, now carrying a
+pinned execution environment because wall-clock is physical and environment-dependent. New task types
+name the claims a cartridge can make — `kernel-correctness-oracle`, `roofline-attest`,
+`bytes-per-token`, `cartridge-replay`, `precision-tradeoff`, the architecture tasks (`int4-rail`,
+`residency-*`, `chunked-recurrence`, `windowed-decode`, `moe-amortize`), the on-mission classical
+simulators (`mps-evolve`, `xeb-certify`, `qaoa-batch`, `statevector-exact`), and a later multi-host
+tier (`topology-moe`, `collective-claim`, `pod-dataflow-bundle`).
+
+The scoreboard generalizes too. Where Track 1 ranks judge-ACCEPTED runs by a verified metric per
+problem, Track 2 stamps each run with a **roofline coordinate** (achieved %-of-peak vs arithmetic
+intensity, against the ~240 ops/byte ridge on the named generation) and ranks *within a problem
+class* — cross-class ranking is dishonest. Variance bands are platform-set from a calibration corpus,
+never claimant-set.
+
+And because every entry above was a scar earned in adversarial review, a set of **anti-gaming
+invariants** is baked into the judge, not left to reviewer taste:
+
+- **Sort on *useful* FLOPs, not duty cycle.** A kernel can pin the MXU at 90% doing padded busywork; the leaderboard denominates in declared-problem-FLOPs ÷ measured time, so padding counts *against* you.
+- **Measure HBM from hardware counters, not the cost model.** `cost_analysis()` "bytes accessed" is a static estimate that ignores fusion and VMEM reuse — the bandwidth-bound classification can be wrong by several× while advertising itself as measured. XProf counters are the ground truth; the cost model is labeled "modeled."
+- **Derive precision tolerance from dtype, not from the claimant.** A claimant-chosen scalar is exactly where a numerically-degraded fast path hides.
+- **Count quant *scale* bytes in every tally.** A W4A8 "half the bytes" claim that omits per-group scales is a rigged ledger.
+- **Read `device_kind` from the harness.** Kills the mis-declaration attack (claiming a slower chip to inflate %-of-peak) for free.
+- **Separate deterministic *hardware* claims from statistical *quality estimates*.** An int8 MXU multiple on a fixed shape is a hardware fact; a perplexity delta is a point estimate over a registered distribution with reported n and CI — graded on disclosure-with-provenance, not on clearing a threshold.
+
+### Phased path (Track 2)
+
+Same discipline as Track 1's Phase 0→3: each phase shippable on its own, strictly additive, anchored
+on the **build-first trio** — two gates, then the first refereed kernel — every claim either bit-exact
+or wall-clock-physical, all single-chip until the last step.
+
+#### Phase T0 — Oracle-Diff Gate (the enabling correctness notary)
+
+A Pallas kernel bundle (start with a plain tiled GEMM) that ships an `interpret=True` golden run.
+`verify_bundle` runs the fp32 control notary (bit-match grid/index-map/masking logic) and, for the
+reduced-precision path, the numeric notary against an fp64 host reference with a dtype-derived
+tolerance plus a distribution check. This is the highest-leverage build because *every* efficiency
+number below is unscorable until correctness is a hash-sealed, replayable artifact. Nothing here
+crosses the roofline knee or touches performance — it just makes "right" a compiler-tied fact instead
+of a claimant's word.
+
+#### Phase T1 — Roofline Notary (the measurement backbone)
+
+A `roofline-attest` task that re-lowers the submitted kernel, pulls algorithmic FLOPs from
+`cost_analysis()`, reads `device_kind` from the harness, times median wall-clock over N runs, and
+emits `%-of-bf16-peak` + arithmetic intensity + logical-vs-issued FLOPs (padding disclosed). HBM
+bytes come from the XProf counters and are labeled "hardware traffic," with the cost-model estimate
+shown separately and stamped as modeled. This is the honesty split — measured vs compiler-modeled —
+built into the output, and it makes the transparent-scoring capability real for efficiency, using only
+what a single TPU VM emits.
+
+#### Phase T2 — Twin-Rail Int4 (the first refereed kernel)
+
+A Pallas W4A8 decode kernel: int4 weights packed so low/high nibbles land as separate MXU-aligned
+sub-tiles (elementwise unpack, no cross-lane shuffle), int8 activations, int32 accumulate, per-group
+scales in the accumulator. Verified bit-exact against the reconstructed int8 reference under
+`interpret=True` (Phase T0), then graded on **measured decode tokens/s and realized HBM bytes/token —
+scales included** — against a real Pallas int8 baseline (Phase T1), with a Precision-Ledger quality
+estimate attached. In memory-bound decode the halved HBM traffic is the whole win and the unpack hides
+under DMA; because integer accumulation is deterministic it gives the strongest verifiability in the
+whole set. This is the first entry on a TPU-efficiency leaderboard — the moment the referee has
+actually refereed something on classical silicon.
+
+#### Phase T3 — multi-host / pod-scale (later, honestly caveated)
+
+Interconnect-native claims (locality-routed MoE, ICI-as-dataflow, one-hop model parallelism) that need
+a real pod slice. `interpret=True` has no inter-chip collectives, so their correctness oracles are
+single-host (routing-permutation only) while the perf claim is a small-slice measurement with profiler
+ICI counters. These stay explicitly **thought-experiment + small-slice-measured** until a pod is in
+hand, and are strictly additive on top of the single-chip referee below them.
+
+### The honest boundary
+
+The line held throughout the design doc, and the reason this whole track is marked roadmap-not-built,
+is that **measured-in-harness and hoped-on-hardware are different words and we never blur them.**
+Specifically:
+
+- **The TPU constants are asserted, not re-pinned.** VMEM size and bandwidth, the ~240 ops/byte ridge, int8 at 2× — all generation-specific (v5e/v5p/v6e differ materially) and unverified until a real VM re-measures them. Anything tuned to one chip is mis-tuned on another.
+- **Native int4 on the MXU is unconfirmed.** The documented low-precision path is int8 (2×); until proven on silicon, int4 claims are flagged "software-emulated, no MXU multiple," and the defensible win is int4 *weight-only* (memory) + int8 *compute* — which is exactly what Twin-Rail commits to.
+- **Multi-host needs a pod slice.** No single-chip cartridge can reproduce a collective; Phase T3 is thought-experiment until the hardware exists.
+- **This is not open third-party verification.** Cloud-gated silicon means a stranger cannot spin up the exact chip on a whim, so the honest framing is **attested reproduction on a notary pool** — reproduces within a platform-set band on matching silicon — not "anyone, anywhere, reproduces bit-for-bit on a laptop" the way a quantum bundle does. That is a real weakening of the trust model relative to Track 1, and the platform must say so in the UI rather than dress an efficiency verdict up as something it isn't.
+
+This is the concrete first step of the [long game](#the-long-game) below: the same gate that re-derives
+a quantum number, pointed at the efficiency claims — quantization, sparse MoE, resident-state
+recurrence — that actually decide whether machine intelligence gets cheaper. Quantum correctness is the
+hardest verifiability case and the wedge; TPU efficiency is the first place the referee earns its keep
+on the silicon that runs today's models.
+
 ## The long game
 
 The near-term deliverable is a machine-checkable verdict you can reproduce on a laptop. The

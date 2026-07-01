@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Education · QuantumMytheme — from a bit and a qubit to the efficiency frontier</title>
-<meta name="description" content="A thirty-nine-slice curriculum in six parts: the two histories, two ladders (classical bit → logic → chips → ML → transformers → SSMs, and quantum qubit → entanglement → algorithms → error correction → real hardware), prove-then-run verification, thirteen re-runnable landmark experiments, and the North Star — an honest, source-backed map of where machine intelligence actually gets more efficient, and where quantum does and doesn't fit." />
+<meta name="description" content="A forty-slice curriculum in six parts: the two histories, two ladders (classical bit → logic → chips → ML → transformers → SSMs, and quantum qubit → entanglement → algorithms → error correction → real hardware), prove-then-run verification, thirteen re-runnable landmark experiments, and the North Star — an honest, source-backed map of where machine intelligence actually gets more efficient, and where quantum does and doesn't fit." />
 <link rel="canonical" href="https://quantummytheme.com/education" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="QuantumMytheme" />
 <meta property="og:url" content="https://quantummytheme.com/education" />
 <meta property="og:title" content="Education — from a bit and a qubit to the efficiency frontier" />
-<meta property="og:description" content="Thirty-nine slices in six parts: history, two ladders (classical + quantum), prove-then-run, thirteen re-runnable landmark experiments, and the North Star — where machine intelligence actually gets more efficient, honest about where quantum fits." />
+<meta property="og:description" content="Forty slices in six parts: history, two ladders (classical + quantum), prove-then-run, thirteen re-runnable landmark experiments, and the North Star — where machine intelligence actually gets more efficient, honest about where quantum fits." />
 <meta property="og:image" content="https://quantummytheme.com/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -75,7 +75,7 @@
 
     <div class="abstract">
       <span class="lbl">How to read this</span>
-      <p>Thirty-nine slices in six parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live. <b>Part&nbsp;V</b> is the North Star: an honest, source-backed map of where machine intelligence actually gets more efficient — and where quantum does and doesn't fit — through an explorer and five verify-it-yourself lessons (the three physical walls, the levers that ship, how to read a multiplier, why quantum is a simulation lever, and the one honest metric), before the page hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
+      <p>Forty slices in six parts. <b>Part&nbsp;0</b> sets the two histories side by side. <b>Part&nbsp;I</b> climbs the classical stack from a single bit — logic gates, the chip — up through machine learning, transformers, state-space models, and the silicon that runs them. <b>Part&nbsp;II</b> climbs the quantum stack from a single qubit — entanglement, what the speedups actually are, why noise forces error correction, and the machines being built. <b>Part&nbsp;III</b> lets you experiment with qubit counts against the chips that exist today. <b>Part&nbsp;IV</b> re-runs thirteen landmark experiments — Bell's inequality, teleportation and its dual superdense coding, quantum error correction, GHZ's all-or-nothing refutation of local realism, the one-query algorithms (Deutsch–Jozsa, Bernstein–Vazirani, Simon), the classical counterparts (the Hamming code, the 3-SAT phase transition, Rule 110's universality, Landauer's energy limit) and the RSA→Shor bridge — each computing its headline result live. <b>Part&nbsp;V</b> is the North Star: an honest, source-backed map of where machine intelligence actually gets more efficient — and where quantum does and doesn't fit — through an explorer and six verify-it-yourself lessons (the three physical walls, the levers that ship, how to read a multiplier, why quantum is a simulation lever, the one honest metric, and refereeing efficiency on real silicon), before the page hands you the loop: prove a design in simulation with a classical model, then run it on real silicon. Every figure reads in both the paper and luminous themes; toggle any time.</p>
     </div>
 
     <nav class="contents" aria-label="Curriculum contents">
@@ -810,6 +810,23 @@
 </section>
 
 <!-- ============================= 38 ============================= -->
+<section id="m-roofline">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">North Star · lesson 6</p>
+      <h2>Refereeing efficiency on real silicon</h2>
+      <p class="takeaway"><b>Takeaway.</b> The four gates make <em>correctness</em> re-checkable; the roofline makes <em>efficiency</em> re-checkable. A speed claim is only as good as the byte and FLOP counts a stranger can recompute — and on a TPU those are hardware-anchored, not asserted.</p>
+    </div>
+    <p>The last lesson reduced every efficiency claim to one number — joules per token, full-system — but a number is only honest if it is <em>measured</em>, not asserted. A TPU is the cleanest place to measure it: nearly all of its math flows through a single 128×128 systolic array over one memory channel, so the roofline is unusually sharp, and “compute-bound or memory-bound?”, “what fraction of peak did you reach?”, and “how many bytes did you move per token?” all have first-principles answers a third party can recompute from the compiler's own accounting rather than take on faith. Pallas supplies the missing half: the same kernel source that runs on the array can be replayed in a deterministic emulator sharing its exact tiling, so correctness becomes a compiler-tied artifact — a notary — and a speed number is void unless the kernel is still right. Drag the operating point below: left of the ridge a kernel is starved for data and the array idles; keeping the working set resident or dropping precision changes <em>which</em> bandwidth binds you, but only reuse crosses the knee. This is how the same discipline that referees a quantum circuit's correctness extends to the classical-silicon efficiency that Part V says actually decides whether machine intelligence gets cheaper.</p>
+    <div class="panel edu-fig">
+      <div class="controls"></div>
+      <canvas class="edu-stage" data-edu="roofline" aria-label="A log-log TPU roofline: a memory-bound ramp rising to a compute-bound ceiling at the roughly 240 ops-per-byte ridge, with a draggable operating point that reads compute-bound or memory-bound and its percent of peak, and toggles for keeping weights resident in VMEM and for int8 precision"></canvas>
+    </div>
+    <p class="figcap"><b>Fig 38.</b> Drag the arithmetic intensity; the operating point rides the roofline. Left of the ridge (~240 ops/byte on TPU v5e) a kernel is memory-bound and the systolic array idles; right of it, compute-bound at full peak. Toggle <em>weights in VMEM</em> to see residency drop the ridge (~22× the bandwidth → ridge ≈ 11 ops/byte); toggle <em>int8</em> to raise the ceiling ~2×. Figures are generation-specific — the honest first act on real silicon is to re-measure them.</p>
+  </div>
+</section>
+
+<!-- ============================= 39 ============================= -->
 <section id="m-your-run">
   <div class="wrap">
     <div class="sec-head">
@@ -822,7 +839,7 @@
       <div class="controls"></div>
       <canvas class="edu-stage" data-edu="your-run" aria-label="A run flows through the four judge gates, each latching green, then a new verified row slides onto the scoreboard"></canvas>
     </div>
-    <p class="figcap"><b>Fig 38.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
+    <p class="figcap"><b>Fig 39.</b> A forked run flows through the four gates — each latching green as it passes — and a new verified row slides onto the board. Hover to park the run between gates.</p>
   </div>
 </section>
 

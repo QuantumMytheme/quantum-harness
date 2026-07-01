@@ -3974,6 +3974,90 @@
   draw();
 };
 
+  // ───── roofline (refereeing efficiency on real silicon — the TPU roofline) ─────
+  EDU["roofline"] = function (canvas, controls, K) {
+  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  // TPU v5e figures (generation-specific — see caption): HBM 8.2e11 B/s, VMEM ~22×, bf16 peak 1.97e14 FLOP/s, int8 ~2×.
+  var BW_HBM = 8.2e11, BW_VMEM = 8.2e11 * 22, PEAK = 1.97e14, INT8X = 2;
+  var Imin = 0.5, Imax = 4096, I = 4, vmem = false, int8 = false;
+  function sToI(s) { var lo = Math.log10(Imin), hi = Math.log10(Imax); return Math.pow(10, lo + (s / 1000) * (hi - lo)); }
+  function iToS(i) { var lo = Math.log10(Imin), hi = Math.log10(Imax); return Math.round((Math.log10(i) - lo) / (hi - lo) * 1000); }
+
+  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'arithmetic intensity ';
+  var range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = '1000'; range.step = '1'; range.value = String(iToS(I)); range.style.marginLeft = '6px';
+  range.addEventListener('input', function () { I = sToI(parseInt(range.value, 10)); draw(); });
+  lab.appendChild(range); controls.appendChild(lab);
+  function mkToggle(text, get, set) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = text; b.setAttribute('aria-pressed', get());
+    b.addEventListener('click', function () { set(!get()); b.setAttribute('aria-pressed', get()); draw(); }); controls.appendChild(b); return b;
+  }
+  mkToggle('weights in VMEM', function () { return vmem; }, function (v) { vmem = v; });
+  mkToggle('int8', function () { return int8; }, function (v) { int8 = v; });
+
+  function draw() {
+    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
+        acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
+    var bw = vmem ? BW_VMEM : BW_HBM, peak = PEAK * (int8 ? INT8X : 1), ridge = peak / bw;
+    var Fmin = 4e11, Fmax = PEAK * INT8X * 1.15;
+    var px0 = 58, px1 = W - 16, py0 = 34, py1 = H - 66;
+    function X(i) { var lo = Math.log10(Imin), hi = Math.log10(Imax); return px0 + (Math.log10(i) - lo) / (hi - lo) * (px1 - px0); }
+    function Y(fl) { var lo = Math.log10(Fmin), hi = Math.log10(Fmax); return py1 - (Math.log10(fl) - lo) / (hi - lo) * (py1 - py0); }
+    function roof(i) { return Math.min(peak, bw * i); }
+
+    // header line — the configuration in words
+    ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
+    ctx.fillText('TPU v5e roofline · ' + (int8 ? 'int8 (2× peak)' : 'bf16') + ' · weights ' + (vmem ? 'resident in VMEM (~22× bandwidth)' : 'streamed from HBM'), px0, 16);
+
+    // axes + log gridlines
+    ctx.strokeStyle = rule; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(px0, py1); ctx.lineTo(px1, py1); ctx.stroke();
+    ctx.font = '9px ' + mono; ctx.textAlign = 'center';
+    [0.5, 1, 10, 100, 1000, 4096].forEach(function (i) { if (i < Imin || i > Imax) return; var x = X(i);
+      ctx.strokeStyle = rule; ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.moveTo(x, py0); ctx.lineTo(x, py1); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = faint; ctx.fillText(i >= 1000 ? Math.round(i / 1000) + 'k' : String(i), x, py1 + 13); });
+    ctx.textAlign = 'right';
+    [1e12, 1e13, 1e14, 4e14].forEach(function (fl) { var y = Y(fl);
+      ctx.strokeStyle = rule; ctx.globalAlpha = 0.22; ctx.beginPath(); ctx.moveTo(px0, y); ctx.lineTo(px1, y); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = faint; ctx.fillText((fl / 1e12) + ' TFLOP/s', px0 - 6, y + 3); });
+    ctx.fillStyle = ink2; ctx.font = '9.5px ' + mono; ctx.textAlign = 'center';
+    ctx.fillText('arithmetic intensity — useful ops per byte moved', (px0 + px1) / 2, H - 38);
+
+    // the roofline: memory-bound ramp → compute ceiling, with faint fill beneath
+    ctx.globalAlpha = 0.06; ctx.fillStyle = acc; ctx.beginPath();
+    ctx.moveTo(X(Imin), Y(roof(Imin))); ctx.lineTo(X(ridge), Y(peak)); ctx.lineTo(X(Imax), Y(peak)); ctx.lineTo(X(Imax), py1); ctx.lineTo(X(Imin), py1); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = acc; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(Imin), Y(roof(Imin))); ctx.lineTo(X(ridge), Y(peak)); ctx.lineTo(X(Imax), Y(peak)); ctx.stroke();
+
+    // ridge marker (the knee)
+    var rx = X(ridge); ctx.strokeStyle = faint; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(rx, Y(peak)); ctx.lineTo(rx, py1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = ink2; ctx.font = '9px ' + mono; ctx.textAlign = 'center';
+    ctx.fillText('ridge ≈ ' + (ridge < 10 ? ridge.toFixed(1) : Math.round(ridge)) + ' ops/byte', rx, Y(peak) - 6);
+
+    // static reference marker — batch-1 LLM decode lives deep in the memory-bound region
+    var mx = X(1), my = Y(roof(1)); ctx.fillStyle = reject; ctx.beginPath(); ctx.arc(mx, my, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = faint; ctx.font = '8.5px ' + mono; ctx.textAlign = 'left'; ctx.fillText('LLM decode (batch-1)', mx + 6, my - 4);
+
+    // operating point — rides the roofline; colour says which regime
+    var opF = roof(I), compute = I >= ridge, ox = X(I), oy = Y(opF);
+    ctx.strokeStyle = compute ? pass : acc2; ctx.setLineDash([2, 3]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ox, py1); ctx.lineTo(ox, oy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = compute ? pass : acc2; ctx.beginPath(); ctx.arc(ox, oy, 5, 0, Math.PI * 2); ctx.fill();
+
+    // status (top-right) + referee message (bottom)
+    var pct = Math.round(opF / peak * 100);
+    ctx.textAlign = 'right'; ctx.font = '600 12px ' + mono; ctx.fillStyle = compute ? pass : acc2;
+    ctx.fillText((compute ? 'compute-bound' : 'memory-bound') + '  ·  ' + pct + '% of peak', px1, 16);
+    ctx.textAlign = 'left'; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif');
+    ctx.fillStyle = compute ? ink : reject;
+    var msg = compute
+      ? 'The MXU is fed. Now it is a real FLOP claim — and the judge recomputes the bytes and FLOPs it rests on, so a stranger gets the same number.'
+      : 'Moving bytes, not doing math — the systolic array idles. The only lever that crosses the ridge is reuse (batch); residency and precision just move which bandwidth binds you.';
+    wrap(msg, px0, H - 20, W - px0 - 12, 12);
+  }
+  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
+  draw();
+};
+
 
   // ============ EXPANSION: landmark experiments · queries, thermodynamics, universality ============
 
