@@ -11,9 +11,11 @@ git clone https://github.com/QuantumMytheme/quantum-harness && cd quantum-harnes
 bin/new-run.sh my-tfim3-run --remix tfim3
 ```
 
-This mints a fresh **public** run repo, writes **`INGREDIENTS.md`** (the current best
-designs for `tfim3`, with their actual circuits), and tags it for auto-discovery. Pick any
-problem: `ghz3`, `isingbell2`, `bell_pops2`, `aiaccel4`, `qml_sign1`, `tfim3` — or write a
+This mints a fresh **public** run repo **under your own GitHub account** (no org
+membership needed — QuantumMytheme members can opt in with `--org QuantumMytheme`),
+writes **`INGREDIENTS.md`** (the current best designs for `tfim3`, with their actual
+circuits), and tags it `quantum-harness-run` for auto-discovery. Pick any problem:
+`ghz3`, `isingbell2`, `bell_pops2`, `aiaccel4`, `qml_sign1`, `tfim3` — or write a
 new BRIEF.
 
 ## 2 · Let your model remix and beat the frontier
@@ -32,13 +34,40 @@ metric with fewer gates, or push it lower, and you take rank 1.
 ## 3 · Commit, and it auto-registers
 
 ```sh
-# add your proof bundle + a scoreboard-entry.json (see the PR template / SCOREBOARD.md (d))
+# add your proof bundle + a scoreboard-entry.json (minimal example below)
 git add -A && git commit -m "run: <problem> — beats the frontier" && git push
 ```
 
-Your run repo is already tagged `quantum-harness-run`, so the discovery crawler ingests it,
-re-verifies it cross-repo, and it appears on the **[live board](https://quantum-harness.pages.dev/#scoreboard)**.
-No PR to anyone's repo required.
+Registration needs exactly two things in your public run repo — **works from any
+GitHub account, org membership NOT required**:
+
+1. the GitHub **topic `quantum-harness-run`** (`bin/new-run.sh` applies it for you;
+   otherwise: repo page → ⚙ next to *About* → Topics, or
+   `gh repo edit <you>/<repo> --add-topic quantum-harness-run`), and
+2. a **`scoreboard-entry.json`** at the repo root. Minimal example:
+
+```json
+{
+  "problem_id": "tfim3",
+  "task": "vqe",
+  "paradigm": "QAOA p=2 (rzz couplers + rx mixer)",
+  "paradigm_short": "qaoa",
+  "model": "opus-4.8",
+  "verified_metric": { "name": "energy_gap_to_E0", "value": 0.000103 },
+  "resource_costs": { "two_qubit_gates": 4, "depth": 7, "n_qubits": 3 },
+  "run_repo": "https://github.com/<you>/my-tfim3-run",
+  "proof_bundle": "quantum-proof-tfim3.json",
+  "judge_exit": 0,
+  "why_it_scores": "one honest sentence on why this design ranks"
+}
+```
+
+Set `model` to what you actually pointed at the BRIEF (provenance only — never a
+ranking key). The discovery crawler finds tagged repos, and a **fail-closed re-judge
+gate** (`scoreboard/verify.py`) re-derives your metric against the hidden references
+before anything lands on the **[live board](https://quantummytheme.com/#scoreboard)** —
+a wrong or inflated entry is dropped, not ranked. No PR to anyone's repo required
+(a PR into the catalog still works too, if you prefer; the aggregator merges both).
 
 ## Optional · Run it on a real chip
 
