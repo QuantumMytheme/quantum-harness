@@ -178,7 +178,10 @@ def check_structure(bundle, ref, checks):
     tile = c.get("tile")
     if not (isinstance(tile, list) and len(tile) == 3):
         raise Reject(EXIT_STRUCTURE, "tile must be [tm, tn, tk]")
-    tm, tn, tk = (int(x) for x in tile)
+    try:
+        tm, tn, tk = (int(x) for x in tile)
+    except (ValueError, TypeError):
+        raise Reject(EXIT_SCHEMA, "tile entries must be integers")
     if tm < 1 or tn < 1 or tk < 1:
         raise Reject(EXIT_STRUCTURE, f"tile {tile} has a non-positive dimension")
     # the output block's last two dims must obey the MXU rule: divisible by 8 and
@@ -209,7 +212,11 @@ def check_structure(bundle, ref, checks):
     rlen = bundle.get("oracle", {}).get("numeric", {}).get("reduction_len")
     if rlen is None:
         raise Reject(EXIT_SCHEMA, "oracle.numeric.reduction_len is required")
-    if int(rlen) != k:
+    try:
+        rlen_i = int(rlen)
+    except (ValueError, TypeError):
+        raise Reject(EXIT_SCHEMA, "oracle.numeric.reduction_len must be an integer")
+    if rlen_i != k:
         raise Reject(EXIT_STRUCTURE, f"oracle.numeric.reduction_len {rlen} != K={k}")
 
     checks["structure"] = {"shape": [m, n, k], "tile": [tm, tn, tk], "grid": exp_grid, "dtype": dtype}
@@ -223,9 +230,12 @@ def _get_output(block, shape, label):
     out = block.get("output")
     if out is None:
         raise Reject(EXIT_SCHEMA, f"{label}.output is required")
-    arr = np.asarray(out, dtype=np.float64)
+    try:
+        arr = np.asarray(out, dtype=np.float64)
+    except (ValueError, TypeError):
+        raise Reject(EXIT_SCHEMA, f"{label}.output must be a rectangular numeric array")
     m, n, _ = shape
-    if arr.shape != (m, n):
+    if arr.ndim != 2 or arr.shape != (m, n):
         raise Reject(EXIT_STRUCTURE, f"{label}.output shape {arr.shape} != ({m},{n})")
     return out, arr
 
@@ -312,6 +322,10 @@ def verify_kernel_oracle(bundle, ref, checks):
 
     declared_tol = bundle.get("claim", {}).get("declared_tolerance")
     if declared_tol is not None:
+        try:
+            declared_tol = float(declared_tol)
+        except (ValueError, TypeError):
+            raise Reject(EXIT_REPRODUCIBILITY, "claim.declared_tolerance must be numeric")
         # recompute the dtype-derived rtol against the VISIBLE reference scale.
         vis_ref = reference_output(shape, ref["inputs"]["seed"], dtype)
         maxref = float(np.abs(vis_ref).max())
@@ -415,7 +429,13 @@ def verify_roofline_attest(bundle, ref, checks):
 
     def disagree(key, val):
         cv = claim.get(key)
-        return cv is not None and abs(float(cv) - val) > max(1e-9, 1e-3 * abs(val))
+        if cv is None:
+            return False
+        try:
+            cvf = float(cv)
+        except (ValueError, TypeError):
+            return True   # a non-numeric self-reported number cannot match the recomputation → reject
+        return abs(cvf - val) > max(1e-9, 1e-3 * abs(val))
 
     if disagree("algorithmic_flops", useful):
         raise Reject(EXIT_REPRODUCIBILITY, f"claim.algorithmic_flops {claim['algorithmic_flops']} != recomputed 2·M·N·K = {useful}")

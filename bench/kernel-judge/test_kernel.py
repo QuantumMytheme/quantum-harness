@@ -156,6 +156,30 @@ def main():
         code, _ = run_cli(fx)
         record(name, code == want, f"exit {code} (want {want})")
 
+    # ---- H · adversarial hardening: malformed input must REJECT cleanly, never crash ----
+    def safe(b):
+        try:
+            jk.verify(b); return 0
+        except jk.Reject as r:
+            return r.code
+        except Exception:            # ANY other exception = a crash on adversarial input = a bug
+            return -1
+    o, r = load("bundle-gemm-bf16-OK.json"), load("bundle-roofline-OK.json")
+    hardening = [
+        ("H1 non-numeric output rejects cleanly", o, lambda b: b["hardware"].__setitem__("output", [["x"] * 128] * 16)),
+        ("H2 ragged output rejects cleanly", o, lambda b: b["hardware"].__setitem__("output", [[1.0] * 128] * 15 + [[1.0] * 64])),
+        ("H3 non-integer tile rejects cleanly", o, lambda b: b["constraints"].__setitem__("tile", ["a", 128, 128])),
+        ("H4 non-integer reduction_len rejects cleanly", o, lambda b: b["oracle"]["numeric"].__setitem__("reduction_len", "z")),
+        ("H5 non-numeric declared_tolerance rejects cleanly", o, lambda b: b["claim"].__setitem__("declared_tolerance", "loose")),
+        ("H6 non-numeric roofline claim rejects cleanly", r, lambda b: b["claim"].__setitem__("algorithmic_flops", "big")),
+        ("H7 non-numeric hbm_bytes rejects cleanly", r, lambda b: b["hardware"].__setitem__("hbm_bytes", "lots")),
+        ("H8 string in wall_clock rejects cleanly", r, lambda b: b["hardware"].__setitem__("wall_clock_s", [1e-5, "x"])),
+    ]
+    for name, base_b, mut in hardening:
+        b = copy.deepcopy(base_b); mut(b)
+        code = safe(b)
+        record(name, code > 0, f"exit {code} (want a clean non-zero reject, not a crash)")
+
     # Gate independence: a tampered claim on an otherwise-valid bundle is caught, and
     # an honest bundle with the SAME structure is accepted (the notary is the sole diff).
     b = copy.deepcopy(ok)
