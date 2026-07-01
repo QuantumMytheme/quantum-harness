@@ -57,6 +57,21 @@ test('a quantum chip IS genuinely for something — the honest shortlist + quant
   }
 })
 
+test('the Studio offers real, known chips mapped to substrate classes', () => {
+  assert.ok(Array.isArray(K.CHIPS) && K.CHIPS.length >= 12, 'CHIPS catalog of real hardware')
+  const classes = new Set(K.CHIPS.map(c => c.cls))
+  for (const cl of ['cpu', 'gpu', 'tpu', 'qpu']) assert.ok(classes.has(cl), `a real chip in class ${cl}`)
+  for (const c of K.CHIPS) {
+    assert.ok(c.name && c.spec && c.src, `${c.id} has name/spec/src`)
+    assert.ok(['cpu', 'gpu', 'tpu', 'qpu'].includes(c.cls), `${c.id} maps to a valid class`)
+  }
+  assert.ok(K.CHIPS.find(c => c.id === 'tpu-v5e' && c.pinned), 'TPU v5e is the referee-pinned generation')
+  // real chips drive the allocation via their class
+  assert.deepEqual(K.haveFromChips({ h100: true, 'tpu-v5e': true, epyc: true }), { gpu: true, tpu: true, cpu: true })
+  const a = K.allocate(K.haveFromChips({ 'tpu-v5e': true, epyc: true }), 'transformer-infer')
+  assert.equal(a.roles.find(r => r.substrate === 'tpu').role, 'matmul-dense', 'a TPU chip is the dense engine')
+})
+
 test('transformer inference is flagged as most-used, not best, with real alternatives', () => {
   const a = K.allocate({ cpu: true, tpu: true }, 'transformer-infer')
   assert.ok(K.WORKLOADS['transformer-infer'].dominant, 'transformer-infer is the dominant workload')

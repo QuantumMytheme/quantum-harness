@@ -153,7 +153,7 @@
   }
 
   // ─────────────────────────── RECIPE BUILDER (§07) ───────────────────────────
-  var studio = { have: { cpu: true, gpu: true, tpu: true, qpu: true }, workload: 'transformer-infer' };
+  var studio = { chips: { 'tpu-v5e': true, 'h100': true, 'epyc': true, 'willow': true }, workload: 'transformer-infer' };
   var recipe = { ings: { tfim3: 65, h2vqe: 40 }, target: 'tfim3', hi: null, params: { depth: 2, entangle: 'linear', optimizer: 'qaoa', novelty: 45, backend: 'noisy', noise: 0.5, twoq: 6, shots: 2048 } };
   var INGREDIENTS = [
     ['ghz3', 'GHZ₃', 'linear entanglement ladder', 'state_prep'],
@@ -298,18 +298,21 @@
   }
 
   // ─────────────────────────── SCENARIO STUDIO (§08) ───────────────────────────
-  function toggleSubstrate(s) { studio.have[s] = !studio.have[s]; render(); }
+  function toggleChip(id) { if (studio.chips[id]) delete studio.chips[id]; else studio.chips[id] = true; render(); }
   function setWorkload(id) { studio.workload = id; render(); }
   function secStudio() {
     var K = window.QMKnowledge;
     if (!K || !K.allocate) return '<div class="lab-sheet">' + head('§ 08 · Studio', 'Scenario Studio', '') + '<p>knowledge base unavailable.</p></div>';
-    var have = studio.have;
-    var subBtns = ['cpu', 'gpu', 'tpu', 'qpu'].map(function (s) {
-      var on = have[s], S = K.SUBSTRATES[s];
-      return '<button class="lab-gcard" data-substrate="' + s + '" aria-pressed="' + on + '" style="padding:12px 13px;text-align:left;transition:opacity .15s,border-color .15s;' + (on ? 'border-color:var(--accent);' : 'opacity:.5;') + '">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="mono" style="font-size:14px;color:var(--ink);font-weight:600">' + esc(S.name) + '</span><span class="chip" style="font-size:8px">' + esc(S.tag) + '</span></div>' +
-        '<div style="font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.4">' + esc(S.good) + '</div>' +
-        '<div class="mono" style="font-size:9px;color:' + (on ? 'var(--accent)' : 'var(--faint)') + ';margin-top:7px">' + (on ? '✓ available — click to remove' : 'click to add') + '</div></button>';
+    var have = K.haveFromChips(studio.chips);
+    var byClass = K.chipsByClass();
+    var picked = {}; K.CHIPS.forEach(function (c) { if (studio.chips[c.id]) (picked[c.cls] = picked[c.cls] || []).push(c.name); });
+    var clsMeta = { cpu: ['CPU', 'latency + orchestration'], gpu: ['GPU / accelerator', 'flexible matmul'], tpu: ['TPU', 'systolic matmul'], qpu: ['Quantum', 'special-purpose'] };
+    var chipPicker = ['cpu', 'gpu', 'tpu', 'qpu'].map(function (cls) {
+      var cards = (byClass[cls] || []).map(function (c) {
+        var on = !!studio.chips[c.id];
+        return '<button class="chip" data-chip="' + c.id + '" title="' + esc(c.spec + ' · ' + c.src) + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + esc(c.name) + (c.pinned ? ' ✦' : '') + '</button>';
+      }).join('');
+      return '<div style="margin-bottom:11px"><div class="mono" style="font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">' + esc(clsMeta[cls][0]) + ' · ' + esc(clsMeta[cls][1]) + '</div><div class="controls">' + cards + '</div></div>';
     }).join('');
     var wlChips = Object.keys(K.WORKLOADS).map(function (id) {
       var w = K.WORKLOADS[id], on = studio.workload === id;
@@ -317,12 +320,13 @@
     }).join('');
     var a = K.allocate(have, studio.workload), w = a.workload;
     var roleRows = a.roles.map(function (r) {
-      var col = r.role === 'idle' ? 'var(--faint)' : (r.role === 'quantum-sim' ? 'var(--accent-2)' : 'var(--accent)');
+      var col = r.role === 'idle' ? 'var(--faint)' : (r.role === 'quantum-sim' || r.role === 'quantum-engine' ? 'var(--accent-2)' : 'var(--accent)');
+      var chips = (picked[r.substrate] || []).join(', ');
       return '<div style="display:flex;gap:11px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--rule)">' +
-        '<span class="mono" style="flex:0 0 92px;font-size:12px;font-weight:600;color:var(--ink)">' + esc(r.sub.name) + '</span>' +
+        '<span style="flex:0 0 118px"><span class="mono" style="font-size:12px;font-weight:600;color:var(--ink)">' + esc(r.sub.name) + '</span>' + (chips ? '<br><span class="mono" style="font-size:8.5px;color:var(--faint)">' + esc(chips) + '</span>' : '') + '</span>' +
         '<span class="mono" style="flex:0 0 auto;font-size:10px;color:' + col + ';border:1px solid ' + col + ';border-radius:5px;padding:2px 7px">' + esc(r.label) + '</span>' +
         '<span style="font-size:13px;color:var(--ink-2);line-height:1.35">' + esc(r.why) + '</span></div>';
-    }).join('') || '<p class="mono" style="color:var(--faint);padding:10px 0">select at least one substrate above</p>';
+    }).join('') || '<p class="mono" style="color:var(--faint);padding:10px 0">pick at least one chip above</p>';
     var toneName = { incumbent: 'most-used ≠ best', quantum: 'quantum reality', gap: 'gap' };
     var toneCol = { incumbent: '#c4880c', quantum: 'var(--accent-2)', gap: 'var(--reject)' };
     var honesty = a.honesty.map(function (h) {
@@ -345,8 +349,8 @@
       '<div class="controls" style="margin-bottom:10px">' + Object.keys(kr).map(function (k) { return '<button class="btn" data-kjudge="' + k + '">' + esc(kr[k].label) + ' · ' + esc(kr[k].expect) + '</button>'; }).join('') + '</div>' +
       '<div id="qm-kwasm-out"></div></div>';
     return '<div class="lab-sheet">' + head('§ 08 · Studio', 'What should you build on the hardware you have?', 'Substrate mix<br>honest allocation') +
-      '<p style="max-width:780px">Pick the substrates you actually have and a workload. The studio maps each chip to the role it is honestly good at — grounded in the <a href="education.html#m-efficiency">North Star</a>. Two things it will not let you pretend: that a <b>transformer is the best possible architecture</b> (it is the most-used, not the best), or that a <b>quantum chip accelerates your model</b> (it does not — its lever is materials simulation, a different workload).</p>' +
-      '<p class="eyebrow" style="margin:20px 0 10px">1 · Hardware you have</p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" class="lab-models">' + subBtns + '</div>' +
+      '<p style="max-width:780px">Pick the <b>real chips</b> you have and a workload. The studio maps each to the role it is honestly good at — grounded in the <a href="education.html#m-efficiency">North Star</a>. Two things it will not let you pretend: that a <b>transformer is the best possible architecture</b> (it is the most-used, not the best), or that a <b>quantum chip accelerates your model</b> (it does not — its lever is materials simulation, a different workload).</p>' +
+      '<p class="eyebrow" style="margin:20px 0 10px">1 · Hardware you have  <span class="mono" style="font-size:9px;color:var(--faint)">real chips · ✦ = pinned in the referee</span></p>' + chipPicker +
       '<p class="eyebrow" style="margin:22px 0 10px">2 · Workload  <span class="mono" style="font-size:9px;color:var(--faint)">★ = the dominant classical GPU workload today</span></p><div class="controls">' + wlChips + '</div>' +
       '<div class="lab-grid2" style="margin-top:24px"><div>' +
       '<p class="eyebrow" style="margin-bottom:6px">Best-architecture allocation</p><div class="panel" style="padding:8px 14px 4px">' + roleRows + '</div>' +
@@ -369,10 +373,10 @@
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
     if (e.target.closest('.ratio-row')) return;            // clicking a ratio slider must not toggle its parent ingredient (replaces an inline onclick — CSP-safe)
-    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-substrate],[data-workload]');
+    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-chip],[data-workload]');
     if (!el) return;
     // runner / overlay / copy / github actions are owned by runner.js (window.QMRunner)
-    if (el.hasAttribute('data-substrate')) return toggleSubstrate(el.getAttribute('data-substrate'));
+    if (el.hasAttribute('data-chip')) return toggleChip(el.getAttribute('data-chip'));
     if (el.hasAttribute('data-workload')) return setWorkload(el.getAttribute('data-workload'));
     if (el.hasAttribute('data-ing')) return toggleIngredient(el.getAttribute('data-ing'));
     if (el.hasAttribute('data-recipe-mint')) return mintRecipe();

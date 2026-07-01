@@ -239,6 +239,33 @@
       src: 'Farhi 2014 (QAOA) · dequantization (Tang 2018)' }
   ];
 
+  // Real, known chips — so the public experiments with actual hardware, not abstract classes.
+  // Each maps to a substrate class {cpu,gpu,tpu,qpu}. Specs are vendor-quoted / widely-cited
+  // context, NOT referee-pinned (only TPU v5e is pinned in the Roofline Notary) — labelled so.
+  var CHIPS = [
+    { id: 'epyc', name: 'AMD EPYC (Turin)', cls: 'cpu', spec: 'up to 192 cores · big L3 · AVX-512', note: 'orchestration, retrieval, sparse/branchy work', src: 'AMD' },
+    { id: 'xeon', name: 'Intel Xeon (Emerald Rapids)', cls: 'cpu', spec: 'AMX matrix tiles · bf16/int8', note: 'CPU with a small matrix unit — glue + light inference', src: 'Intel' },
+    { id: 'graviton', name: 'AWS Graviton4 (Arm)', cls: 'cpu', spec: '96 cores · cloud-efficient', note: 'serving + orchestration at low power', src: 'AWS' },
+    { id: 'apple-m', name: 'Apple M-series', cls: 'cpu', spec: 'unified memory · on-device NPU', note: 'on-device inference + glue', src: 'Apple' },
+    { id: 'h100', name: 'NVIDIA H100', cls: 'gpu', spec: '~990 TFLOP/s bf16 dense · 80GB HBM3 ~3.35 TB/s', note: 'the training/inference workhorse', src: 'NVIDIA (vendor)' },
+    { id: 'a100', name: 'NVIDIA A100', cls: 'gpu', spec: '~312 TFLOP/s bf16 · 80GB HBM2e ~2 TB/s', note: 'prior-gen workhorse', src: 'NVIDIA (vendor)' },
+    { id: 'b200', name: 'NVIDIA B200 (Blackwell)', cls: 'gpu', spec: '~2.2 PFLOP/s bf16 dense · 192GB HBM3e ~8 TB/s', note: 'current flagship', src: 'NVIDIA (vendor)' },
+    { id: 'mi300x', name: 'AMD MI300X', cls: 'gpu', spec: '~1.3 PFLOP/s bf16 · 192GB HBM3 ~5.3 TB/s', note: 'large-memory accelerator', src: 'AMD (vendor)' },
+    { id: 'groq', name: 'Groq LPU', cls: 'gpu', spec: 'SRAM-only · deterministic · ultra-low latency', note: 'specialized inference — latency, not batch', src: 'Groq' },
+    { id: 'cerebras', name: 'Cerebras WSE-3', cls: 'gpu', spec: 'wafer-scale · ~900k cores · ~44GB on-chip SRAM', note: 'weights on-chip — no HBM wall if the model fits', src: 'Cerebras' },
+    { id: 'tpu-v5e', name: 'Google TPU v5e', cls: 'tpu', spec: '~197 TFLOP/s bf16 · HBM ~0.82 TB/s · ridge ~240 ops/byte', note: 'the generation the Roofline Notary PINS (verified)', src: '/education Part V', pinned: true },
+    { id: 'tpu-v5p', name: 'Google TPU v5p', cls: 'tpu', spec: 'training-class · larger HBM + ICI', note: 'high-end training TPU', src: 'Google (not yet pinned)' },
+    { id: 'tpu-v6e', name: 'Google TPU v6e (Trillium)', cls: 'tpu', spec: '256×256 MXU · higher peak', note: 'current-gen TPU', src: 'Google (not yet pinned)' },
+    { id: 'willow', name: 'Google Willow', cls: 'qpu', spec: '105 superconducting qubits · below-threshold QEC', note: 'error-correction milestone (2024)', src: 'Google 2024' },
+    { id: 'ibm-heron', name: 'IBM Heron r2', cls: 'qpu', spec: '156 superconducting qubits', note: 'utility-scale superconducting', src: 'IBM 2024' },
+    { id: 'quantinuum-h2', name: 'Quantinuum H2', cls: 'qpu', spec: '56 trapped-ion qubits · very high fidelity', note: 'trapped-ion, all-to-all', src: 'Quantinuum 2024' },
+    { id: 'atom', name: 'Atom Computing', cls: 'qpu', spec: '1000+ neutral-atom qubits', note: 'neutral-atom scale', src: 'Atom 2023' },
+    { id: 'ionq', name: 'IonQ Forte', cls: 'qpu', spec: 'trapped-ion · ~36 algorithmic qubits', note: 'trapped-ion', src: 'IonQ' }
+  ];
+  function chipsByClass() { var g = { cpu: [], gpu: [], tpu: [], qpu: [] }; CHIPS.forEach(function (c) { (g[c.cls] || (g[c.cls] = [])).push(c); }); return g; }
+  function chip(id) { for (var i = 0; i < CHIPS.length; i++) if (CHIPS[i].id === id) return CHIPS[i]; return null; }
+  function haveFromChips(chips) { var h = {}; CHIPS.forEach(function (c) { if (chips && chips[c.id]) h[c.cls] = true; }); return h; }
+
   // engine = preference order among matmul substrates for this workload; quantum = 'none'|'genuine'.
   var WORKLOADS = {
     'transformer-infer': { name: 'Transformer inference', kind: 'ml', dominant: true, engine: ['tpu', 'gpu'], quantum: 'none',
@@ -335,6 +362,7 @@
   window.QMKnowledge = {
     GATES: GATES, TASKS: TASKS, PROBLEMS: PROBLEMS, QUALITY_AXES: QUALITY_AXES, GRADE_NOTE: GRADE_NOTE,
     SUBSTRATES: SUBSTRATES, WORKLOADS: WORKLOADS, ROLE_LABEL: ROLE_LABEL, allocate: allocate, QUANTUM_USES: QUANTUM_USES,
+    CHIPS: CHIPS, chipsByClass: chipsByClass, chip: chip, haveFromChips: haveFromChips,
     esc: esc, gradeColor: gradeColor, taskColor: taskColor,
     profileBadge: profileBadge, profileDetail: profileDetail,
     taskOne: taskOne, taskChip: taskChip, problemCard: problemCard,
