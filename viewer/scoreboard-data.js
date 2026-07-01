@@ -159,7 +159,7 @@ window.SCOREBOARD_DATA = {
         "grade": "B+"
       },
       "bundleUrl": "https://github.com/QuantumMytheme/quantum-harness/blob/main/bench/quantum-judge/quantum-proof-h2.json",
-      "why": "Reaches within 4e-4 Ha of the exact H₂ ground energy (E0 = -1.8512) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline.",
+      "why": "Reaches within 4e-4 Ha of the exact electronic ground energy of the reduced 2-qubit H₂ Hamiltonian (E0 = -1.8512 Ha, STO-3G; nuclear repulsion excluded) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline.",
       "hardware": null
     },
     {

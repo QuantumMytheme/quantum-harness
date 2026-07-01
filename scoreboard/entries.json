@@ -82,7 +82,7 @@
     {
       "problem_id": "h2vqe",
       "task": "vqe",
-      "paradigm": "hardware-efficient ansatz (Ry-Ry-CX-Ry-Ry) for the H₂ ground state",
+      "paradigm": "hardware-efficient ansatz (Ry-Ry-CX-Ry-Ry) for the H₂ electronic ground state (STO-3G, 2-qubit reduced)",
       "paradigm_short": "hardware-efficient-h2",
       "model": "reference-baseline",
       "model_usage": "hand-authored worked example — the bar to beat, not a model run",
@@ -92,7 +92,7 @@
       "proof_bundle": "bench/quantum-judge/quantum-proof-h2.json",
       "judge_exit": 0,
       "verified_at": "2026-06-16",
-      "why_it_scores": "Reaches within 4e-4 Ha of the exact H₂ ground energy (E0 = -1.8512) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline."
+      "why_it_scores": "Reaches within 4e-4 Ha of the exact electronic ground energy of the reduced 2-qubit H₂ Hamiltonian (E0 = -1.8512 Ha, STO-3G; nuclear repulsion excluded) with a single CX, capturing the correlation energy the mean-field product state (-1.8302) misses — a real molecular-VQE problem, not a toy. Headroom is open: a deeper or cleverer ansatz that closes the remaining gap, or ties it at lower cost, outranks this baseline."
     }
   ]
 }

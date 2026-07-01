@@ -211,7 +211,7 @@ test('mint flow works for strangers: own-account defaults, honest OAuth probe, r
 test('every page carries the same top-bar nav (no links drop off across pages)', () => {
   // The canonical link set + order, shared by index / education / lab. Guards against
   // the brandbar diverging per page (the "some links drop off" regression).
-  const CANON = ['Why', 'Platform', 'Bench', 'Learn', 'Scenario', 'Scoreboard', 'Run yours', 'Notebook']
+  const CANON = ['Why', 'Platform', 'Judge', 'Learn', 'Studio', 'Scoreboard', 'Run yours', 'Notebook']
   const indexIds = new Set([...html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]))
 
   for (const page of ['index.html', 'education.html', 'lab.html']) {
