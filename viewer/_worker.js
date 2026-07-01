@@ -101,7 +101,8 @@ async function github(request, url, env) {
     const name = String(body.name || "").replace(/[^A-Za-z0-9._-]/g, "");
     if (!name) return json({ error: "missing repo name" }, 400);
     const payload = { name, description: "QuantumMytheme run · " + name, private: !!body.private, include_all_branches: false };
-    if (body.owner) payload.owner = String(body.owner);
+    // default new runs to the QuantumMytheme org so results are easy to source
+    payload.owner = body.owner ? String(body.owner) : "QuantumMytheme";
     try {
       const r = await fetch(`https://api.github.com/repos/${TEMPLATE}/generate`, {
         method: "POST",

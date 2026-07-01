@@ -254,7 +254,7 @@
   function ghBoxHTML(name) {
     if (ghAuth.signedIn) {
       return '<p class="eyebrow" style="margin:14px 0 6px">Create it from here · signed in as ' + esc(ghAuth.login || '?') + '</p>' +
-        '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org (blank = ' + esc(ghAuth.login || 'you') + '; or QuantumMytheme if you have access)">' +
+        '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org (blank = QuantumMytheme; or ' + esc(ghAuth.login || 'your login') + ' for your own account)">' +
         '<div class="controls" style="margin-top:6px"><button class="btn primary" data-ghcreate="' + esc(name) + '">Create repo →</button> <button class="btn" data-ghlogout>sign out</button></div>' +
         '<div id="qm-ghresult" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>';
     }
@@ -262,7 +262,7 @@
       '<div class="controls"><button class="btn primary" data-ghlogin>Sign in with GitHub</button></div>' +
       '<p class="mono" style="font-size:10px;color:var(--faint);margin-top:6px">OAuth — nothing to paste. (Falls back to a token if OAuth is not configured on this deployment.)</p>' +
       '<details style="margin-top:8px"><summary class="mono" style="font-size:11px;color:var(--ink-2);cursor:pointer">…or use a personal access token</summary>' +
-      '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org"><input class="qm-tok" id="qm-ghtoken" type="password" placeholder="GitHub token · public_repo scope">' +
+      '<input class="qm-tok" id="qm-ghowner" placeholder="owner / org (blank = QuantumMytheme)"><input class="qm-tok" id="qm-ghtoken" type="password" placeholder="GitHub token · public_repo scope">' +
       '<div class="controls" style="margin-top:6px"><button class="btn" data-ghcreate="' + esc(name) + '">Create via token →</button></div></details>' +
       '<div id="qm-ghresult" class="mono" style="font-size:11px;margin-top:8px;color:var(--ink-2)"></div>';
   }
@@ -282,7 +282,7 @@
   function ghLogout() { fetch('/api/github/logout', { method: 'POST', credentials: 'same-origin' }).then(function () { ghAuth = { signedIn: false, login: null }; rerenderGhBox(); }); }
   function ghCreate(name) {
     var res = document.getElementById('qm-ghresult'), ownerEl = document.getElementById('qm-ghowner'), tokEl = document.getElementById('qm-ghtoken');
-    var owner = (ownerEl && ownerEl.value.trim()) || undefined, token = tokEl && tokEl.value.trim();
+    var owner = (ownerEl && ownerEl.value.trim()) || 'QuantumMytheme', token = tokEl && tokEl.value.trim();
     if (res) res.textContent = 'Creating ' + name + '…';
     var p;
     if (ghAuth.signedIn && !token) {

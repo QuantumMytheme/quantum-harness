@@ -90,7 +90,7 @@ export const TOOLS = [
       type: 'object',
       properties: {
         name: { type: 'string', description: 'repo name, e.g. "run-ghz3-2026-06-16"' },
-        owner: { type: 'string', description: 'target owner (default: the authenticated user; pass "QuantumMytheme" if you have org access)' },
+        owner: { type: 'string', description: 'target owner (default: the QuantumMytheme org, so results are easy to source; pass your own login to use your account instead)' },
         remix: { type: 'string', description: 'optional problem_id to tag the repo as a remix of the current frontier' },
         description: { type: 'string', description: 'optional repo description' },
       },
@@ -123,7 +123,7 @@ export const TOOLS = [
       properties: {
         name: { type: 'string', description: 'repo name, e.g. "run-fullstack-tfim3-tpu8t"' },
         recipe: { type: 'object', description: 'the full-stack RECIPE.json (schema "quantummytheme/full-stack-recipe@1") — a hardware half (hardware.chips[]) + a software half (target or ingredients)' },
-        owner: { type: 'string', description: 'target owner (default: the authenticated user; pass "QuantumMytheme" if you have org access)' },
+        owner: { type: 'string', description: 'target owner (default: the QuantumMytheme org, so results are easy to source; pass your own login to use your account instead)' },
         description: { type: 'string', description: 'optional repo description' },
       },
       required: ['name', 'recipe'], additionalProperties: false,
@@ -254,6 +254,30 @@ function ghFetch(token, url, init = {}) {
   })
 }
 
+// New runs land in the QuantumMytheme ORG by default, so every result is easy to
+// source (the scoreboard discovers repos tagged in one place). If the caller lacks
+// org access, we fall back to their own account — still discoverable via the run topic.
+const DEFAULT_OWNER = TEMPLATE.owner   // "QuantumMytheme"
+
+async function generateFromTemplate(gh, owner, name, description) {
+  const wanted = owner || DEFAULT_OWNER
+  const body = who => JSON.stringify({ owner: who, name, description, private: false, include_all_branches: false })
+  const url = `https://api.github.com/repos/${TEMPLATE.owner}/${TEMPLATE.repo}/generate`
+  const res = await gh(url, { method: 'POST', body: body(wanted) })
+  if (res.ok || owner) return { res, owner: wanted, fellBack: false }   // explicit owner: no fallback
+  // default (org) failed with a permission/not-found → retry under the authenticated user
+  if ([403, 404, 422].includes(res.status)) {
+    const me = await gh('https://api.github.com/user')
+    if (me.ok) {
+      const login = (await me.json()).login
+      if (login && login !== wanted) {
+        return { res: await gh(url, { method: 'POST', body: body(login) }), owner: login, fellBack: true }
+      }
+    }
+  }
+  return { res, owner: wanted, fellBack: false }
+}
+
 async function mintRun({ name, owner, remix, description }) {
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
   if (!token) {
@@ -264,28 +288,13 @@ async function mintRun({ name, owner, remix, description }) {
   }
   const gh = (url, init = {}) => ghFetch(token, url, init)
 
-  let targetOwner = owner
-  if (!targetOwner) {
-    const me = await gh('https://api.github.com/user')
-    if (!me.ok) return json({ error: `token check failed (HTTP ${me.status})`, remediation: 'Confirm the token is valid and has `public_repo` scope.' }, true)
-    targetOwner = (await me.json()).login
+  const gen = await generateFromTemplate(gh, owner, name, description || `quantum-harness run${remix ? ` — remix of ${remix}` : ''}`)
+  if (!gen.res.ok) {
+    const body = await gen.res.text()
+    return json({ error: `repo creation failed (HTTP ${gen.res.status}) under ${gen.owner}`, detail: body.slice(0, 400),
+      remediation: 'Confirm the token can create repos in the QuantumMytheme org, or pass owner:"<your-login>" to use your account.' }, true)
   }
-
-  const res = await gh(`https://api.github.com/repos/${TEMPLATE.owner}/${TEMPLATE.repo}/generate`, {
-    method: 'POST',
-    body: JSON.stringify({
-      owner: targetOwner,
-      name,
-      description: description || `quantum-harness run${remix ? ` — remix of ${remix}` : ''}`,
-      private: false,
-      include_all_branches: false,
-    }),
-  })
-  if (!res.ok) {
-    const body = await res.text()
-    return json({ error: `repo creation failed (HTTP ${res.status})`, detail: body.slice(0, 400) }, true)
-  }
-  const repo = await res.json()
+  const repo = await gen.res.json()
 
   // best-effort: tag remixes so the scoreboard auto-discovers the run.
   if (remix) {
@@ -297,6 +306,8 @@ async function mintRun({ name, owner, remix, description }) {
     repo: repo.full_name,
     url: repo.html_url,
     clone_url: repo.clone_url,
+    owner: gen.owner,
+    ...(gen.fellBack ? { note: `The QuantumMytheme org was not accessible, so this landed under ${gen.owner} — it still registers on the board via its topic.` } : {}),
     next: `Use the GitHub MCP to clone ${repo.full_name}, then: pick the BRIEF, design a bundle, verify_bundle until ACCEPT, commit, push.`,
   })
 }
@@ -413,22 +424,13 @@ async function mintRecipe({ name, recipe, owner, description }) {
   }
   const gh = (url, init = {}) => ghFetch(token, url, init)
 
-  let targetOwner = owner
-  if (!targetOwner) {
-    const me = await gh('https://api.github.com/user')
-    if (!me.ok) return json({ error: `token check failed (HTTP ${me.status})`, remediation: 'Confirm the token is valid and has `public_repo` scope.' }, true)
-    targetOwner = (await me.json()).login
+  const gen = await generateFromTemplate(gh, owner, name, description || `full-stack design · ${name}`)
+  if (!gen.res.ok) {
+    const body = await gen.res.text()
+    return json({ error: `repo creation failed (HTTP ${gen.res.status}) under ${gen.owner}`, detail: body.slice(0, 400),
+      remediation: 'Confirm the token can create repos in the QuantumMytheme org, or pass owner:"<your-login>" to use your account.' }, true)
   }
-
-  const res = await gh(`https://api.github.com/repos/${TEMPLATE.owner}/${TEMPLATE.repo}/generate`, {
-    method: 'POST',
-    body: JSON.stringify({ owner: targetOwner, name, description: description || `full-stack design · ${name}`, private: false, include_all_branches: false }),
-  })
-  if (!res.ok) {
-    const body = await res.text()
-    return json({ error: `repo creation failed (HTTP ${res.status})`, detail: body.slice(0, 400) }, true)
-  }
-  const repo = await res.json()
+  const repo = await gen.res.json()
 
   // write the RECIPE.json (hardware + software) into the fresh repo
   const content = Buffer.from(JSON.stringify(recipe, null, 2), 'utf8').toString('base64')
@@ -443,6 +445,8 @@ async function mintRecipe({ name, recipe, owner, description }) {
   return json({
     repo: repo.full_name,
     url: repo.html_url,
+    owner: gen.owner,
+    ...(gen.fellBack ? { note: `The QuantumMytheme org was not accessible, so this landed under ${gen.owner} — still discoverable via its topic.` } : {}),
     recipe_path: wrote ? 'RECIPE.json' : null,
     wrote_recipe: wrote,
     attestable: v.attestable,
