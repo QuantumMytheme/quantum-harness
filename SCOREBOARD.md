@@ -337,6 +337,42 @@ Hash-pinning rules:
 
 ---
 
+## (c5) Reproduced ×N — third-party re-verification attestations
+
+Re-running the judge is the platform's core invitation; attestations make it leave a
+public trace. The flow (**PR-only** — zero new attack surface):
+
+1. **Re-verify a row yourself**, and mint the attestation in one step:
+
+   ```bash
+   python3 scoreboard/verify.py --attest ghz3 --handle your-github-handle
+   # ambiguous board? disambiguate:  --attest tfim3:qaoa
+   # or point straight at a bundle:  --attest path/to/bundle.json
+   ```
+
+   This re-runs the **full merge gate** (judge ACCEPT + entry↔bundle binding +
+   metric/resource recompute) and, **only on ACCEPT**, writes a one-line attestation
+   JSON — `{bundle_sha256, problem_id, handle, judge_exit, date}` — under
+   [`scoreboard/attestations/`](scoreboard/attestations/). A REJECT is refused; there
+   is nothing to attest.
+2. **Commit that file on a branch and open a PR.** The regular merge gate re-runs the
+   suites; nothing else changes.
+3. **The board counts it.** `build.mjs` tallies attestations per **bundle sha256**
+   (raw committed file bytes, lowercase hex — the same hash the cite button pins) and
+   the row grows a **reproduced ×N** badge.
+
+Honesty rules: an attestation whose hash matches **no committed bundle is skipped and
+logged**, never counted. `N` counts **distinct handles** — re-attesting doesn't
+inflate it. The handle is **self-declared** (attested, trusted-but-labeled — the same
+vocabulary as HARDWARE.md provenance), and the badge **never changes rank**; the row
+still says *re-run it yourself*. The first attestation on the board is the
+maintainer's own labeled re-run (`quantum-harness-ci`) — seeded to prove the flow,
+not to be mistaken for independent replication. A design-hash "auto-reproduced" badge
+was considered and **rejected**: independently re-running the judge is reproduction;
+copying a design file is not.
+
+---
+
 ## (f) Status — honest
 
 **Phase 1 is now partly shipped.** An **aggregator** (`scoreboard/build.mjs`) ranks

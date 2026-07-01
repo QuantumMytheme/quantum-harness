@@ -319,6 +319,8 @@ function proofLinks(r, esc) {
     h += ` <a class="hwlink simlink" href="${esc(r.hardware.url)}" title="EMULATED backend — a noisy simulation, not a device run · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">≈ noisy-sim ↗</a>`;
   else if (r.hardware) h += ` <a class="hwlink" href="${esc(r.hardware.url)}" title="hardware overlay · ${esc(r.hardware.backend)} · ${esc(r.hardware.metric)} ${esc(r.hardware.value)}">⚛ hw ↗</a>`;
   if (window.QMRunner && window.QMRunner.RUNS[r.problem_id]) h += ` · <a href="#" data-run="${esc(r.problem_id)}" title="re-run this circuit in your browser">▸ run</a>`;
+  // reproduced ×N — attested, trusted-but-labeled credibility display; NEVER changes rank
+  if (r.reproduced) h += ` <span class="repro" title="reproduced ×${r.reproduced}: ${esc(r.reproduced_by.join(', '))} re-ran the judge on this exact bundle (sha256-pinned attestation in scoreboard/attestations/) and it ACCEPTed. Attested and labeled — it never changes rank; or re-run it yourself: ${esc(r.reverify)}">↺ reproduced ×${r.reproduced}</span>`;
   h += ` <button class="citebtn" type="button" title="export a citation pinned to this bundle's sha256 + the exact re-verify command">cite</button>`;
   return h;
 }

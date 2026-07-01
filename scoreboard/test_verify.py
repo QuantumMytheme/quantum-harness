@@ -182,6 +182,75 @@ def main():
         elif os.path.exists(disc):
             os.remove(disc)
 
+    # 10. --attest: re-run the judge, emit a one-line attestation ONLY on ACCEPT.
+    #     The sha256 is over the RAW COMMITTED FILE BYTES (the platform hashing
+    #     contract) — never re-serialized JSON.
+    import hashlib
+    import tempfile
+    vp = os.path.join(HERE, "verify.py")
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "att.json")
+        p = subprocess.run([sys.executable, vp, "--attest", "ghz3",
+                            "--handle", "test-suite", "--date", "2026-07-01", "--out", out],
+                           capture_output=True, text=True)
+        record("--attest ghz3 exits 0 on a full re-verify ACCEPT", p.returncode == 0,
+               p.stderr[-300:])
+        try:
+            with open(out) as f:
+                raw = f.read()
+            att = json.loads(raw)
+            record("attestation file is one-line JSON", raw.count("\n") == 1 and raw.endswith("\n"), raw)
+            with open(os.path.join(ROOT, POC_BUNDLE), "rb") as f:
+                want = hashlib.sha256(f.read()).hexdigest()
+            record("attestation sha256 = raw committed bundle bytes (sha256sum semantics)",
+                   att.get("bundle_sha256") == want, f"{att.get('bundle_sha256')} != {want}")
+            record("attestation carries problem_id / handle / judge_exit 0 / date",
+                   att.get("problem_id") == "ghz3" and att.get("handle") == "test-suite"
+                   and att.get("judge_exit") == 0 and att.get("date") == "2026-07-01",
+                   json.dumps(att))
+        except (OSError, json.JSONDecodeError) as ex:
+            record("attestation file is one-line JSON", False, repr(ex))
+            record("attestation sha256 = raw committed bundle bytes (sha256sum semantics)", False, "no file")
+            record("attestation carries problem_id / handle / judge_exit 0 / date", False, "no file")
+
+        # a handle is mandatory — an attestation must say who re-ran the judge
+        p = subprocess.run([sys.executable, vp, "--attest", "ghz3", "--out", out + ".2"],
+                           capture_output=True, text=True)
+        record("--attest without --handle is REFUSED", p.returncode != 0 and "handle" in p.stderr, p.stderr)
+
+        # a REJECTing bundle can never be attested (direct-path mode runs the judge)
+        forged = os.path.join(ROOT, "bench", "quantum-judge", "quantum-proof-FORGED.json")
+        p = subprocess.run([sys.executable, vp, "--attest", forged, "--handle", "test-suite",
+                            "--out", out + ".3"],
+                           capture_output=True, text=True)
+        record("--attest on a judge-REJECTing bundle is REFUSED (no attestation written)",
+               p.returncode != 0 and "REFUSED" in p.stderr and not os.path.exists(out + ".3"),
+               p.stderr)
+
+        # an unknown reference is refused with a clear message
+        p = subprocess.run([sys.executable, vp, "--attest", "no-such-board", "--handle", "t",
+                            "--out", out + ".4"],
+                           capture_output=True, text=True)
+        record("--attest with an unknown entry ref is REFUSED", p.returncode != 0 and "no scoreboard entry" in p.stderr, p.stderr)
+
+    # 11. The committed seed attestation is genuine: its hash matches the committed
+    #     seed bundle it claims, byte for byte.
+    att_dir = os.path.join(HERE, "attestations")
+    seeded = [f for f in os.listdir(att_dir) if f.endswith(".json")] if os.path.isdir(att_dir) else []
+    ok_seed = False
+    detail = "no attestations committed"
+    for f in seeded:
+        with open(os.path.join(att_dir, f)) as fh:
+            a = json.load(fh)
+        if a.get("problem_id") == "ghz3":
+            with open(os.path.join(ROOT, POC_BUNDLE), "rb") as fh:
+                ok_seed = a.get("bundle_sha256") == hashlib.sha256(fh.read()).hexdigest()
+            detail = f"{f}: labeled maintainer-own-run: {'maintainer' in str(a.get('note', ''))}"
+            ok_seed = ok_seed and "maintainer" in str(a.get("note", ""))
+            break
+    record("committed seed attestation matches its bundle bytes and is labeled as the maintainer's own re-run",
+           ok_seed, detail)
+
     passed = sum(1 for _, ok, _ in results if ok)
     total = len(results)
     print(f"\n{passed}/{total} checks passed")

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, mkdtempSync, mkdirSync, cpSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, cpSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -336,4 +336,60 @@ test('cite viewer wiring: per-row cite button, BibTeX + CSL-JSON exports, honest
   assert.doesNotMatch(app, /on(click|mouseover|load)\s*=/i, 'no inline handlers — CSP-clean')
   const css = readFileSync(v('style.css'), 'utf8')
   for (const cls of ['.citebtn', '.citeblock', '.citecopy']) assert.ok(css.includes(cls), `style.css styles ${cls}`)
+})
+
+/* ---------------------- 4 · reproduced ×N attestations -------------------- */
+test('the seeded attestation counts: ghz3 shows reproduced ×1 by the maintainer handle; badge never touches rank', () => {
+  const d = sbData()
+  const ghz3 = d.rows.find(r => r.problem_id === 'ghz3')
+  assert.equal(ghz3.reproduced, 1)
+  assert.deepEqual(ghz3.reproduced_by, ['quantum-harness-ci'])
+  assert.equal(ghz3.rank, 1, 'attestations are credibility display — rank still comes from the verified metric')
+  for (const r of d.rows) {
+    assert.equal(typeof r.reproduced, 'number')
+    assert.ok(Array.isArray(r.reproduced_by))
+    if (!r.bundle_sha256) assert.equal(r.reproduced, 0, 'no honest hash → nothing to bind an attestation to')
+  }
+  // the committed attestation is honest about being the maintainer's own re-run
+  const att = JSON.parse(readFileSync(join(ROOT, 'scoreboard', 'attestations', 'ghz3-2c38fa2b-quantum-harness-ci.json'), 'utf8'))
+  assert.match(att.note, /maintainer/i)
+  assert.equal(att.judge_exit, 0)
+})
+
+test('an attestation whose hash matches no committed bundle is skipped + logged; duplicates by the same handle never inflate ×N', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'qh-attest-'))
+  try {
+    for (const dir of ['scoreboard', 'bench/quantum-judge', 'bench/kernel-judge/references'])
+      cpSync(join(ROOT, dir), join(tmp, dir), { recursive: true })
+    mkdirSync(join(tmp, 'viewer'), { recursive: true })
+    const adir = join(tmp, 'scoreboard', 'attestations')
+    const mk = (name, obj) => writeFileSync(join(adir, name), JSON.stringify(obj) + '\n')
+    mk('zz-unknown-hash.json', { schema: 'quantummytheme/attestation@1', bundle_sha256: 'f'.repeat(64), problem_id: 'ghz3', handle: 'stranger', judge_exit: 0, date: '2026-07-01' })
+    mk('zz-malformed.json', { problem_id: 'ghz3' })
+    const real = JSON.parse(readFileSync(join(adir, 'ghz3-2c38fa2b-quantum-harness-ci.json'), 'utf8'))
+    mk('zz-duplicate-handle.json', real)                       // same hash + same handle
+    mk('zz-second-handle.json', { ...real, handle: 'independent-verifier' })
+    const b = spawnSync(process.execPath, [join(tmp, 'scoreboard', 'build.mjs')], { encoding: 'utf8' })
+    assert.equal(b.status, 0, b.stderr)
+    assert.match(b.stderr, /skipped attestation zz-unknown-hash\.json: bundle sha256 ffffffffffff… matches no committed bundle/)
+    assert.match(b.stderr, /skipped malformed attestation zz-malformed\.json/)
+    const built = JSON.parse(readFileSync(join(tmp, 'viewer', 'scoreboard-data.js'), 'utf8').replace(/^[^=]*=\s*/, '').replace(/;\s*$/, ''))
+    const ghz3 = built.rows.find(r => r.problem_id === 'ghz3')
+    assert.equal(ghz3.reproduced, 2, 'distinct handles count; a duplicate by the same handle does not')
+    assert.deepEqual(ghz3.reproduced_by, ['independent-verifier', 'quantum-harness-ci'])
+    assert.ok(!built.rows.some(r => r.reproduced_by.includes('stranger')), 'the unknown-hash attestation never lands')
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
+})
+
+test('reproduced viewer wiring: badge renderer, honest attested-not-rank language, style', () => {
+  const app = readFileSync(v('app.js'), 'utf8')
+  assert.match(app, /reproduced ×/, 'badge text')
+  assert.match(app, /never changes rank/i, 'the HARDWARE.md attested-but-labeled rule is stated')
+  assert.match(app, /re-run it yourself/i, 'the badge still points at self-verification')
+  assert.ok(readFileSync(v('style.css'), 'utf8').includes('.repro'))
+  // the CLI flow is documented where contributors look
+  const sb = readFileSync(join(ROOT, 'SCOREBOARD.md'), 'utf8')
+  assert.match(sb, /--attest/)
+  assert.match(sb, /attestations\//)
+  assert.match(sb, /PR-only|PR only/i)
 })

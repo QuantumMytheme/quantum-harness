@@ -485,6 +485,42 @@ export function reverifyCommand(e, harness) {
   return `curl -sL ${raw} -o bundle.json && python3 bench/quantum-judge/judge_verify.py bundle.json`
 }
 
+// ---- reproduced ×N: third-party re-verification attestations -----------------
+// scoreboard/attestations/*.json — one-line records emitted by
+// `python3 scoreboard/verify.py --attest <ref> --handle <who>` and committed via PR
+// (PR-only: zero new attack surface). Counting rules, honestly:
+//   - an attestation binds to a bundle by sha256 of the RAW COMMITTED BYTES; one
+//     whose hash matches no known bundle is SKIPPED + LOGGED, never counted;
+//   - N = DISTINCT handles per bundle (re-attesting twice doesn't inflate the badge);
+//   - the badge is credibility display only — it NEVER changes rank (the same
+//     attested/trusted-but-labeled vocabulary as HARDWARE.md).
+export function loadAttestations(root, knownHashes) {
+  const byHash = {}   // sha256 -> Set of handles
+  let files = []
+  try { files = readdirSync(join(root, 'scoreboard', 'attestations')).filter(f => f.endsWith('.json')).sort() } catch { return byHash }
+  for (const f of files) {
+    let a
+    try { a = JSON.parse(readFileSync(join(root, 'scoreboard', 'attestations', f), 'utf8')) } catch (err) {
+      console.error(`skipped unreadable attestation ${f}: ${err.message}`); continue
+    }
+    const errs = []
+    if (!a || typeof a !== 'object' || Array.isArray(a)) errs.push('not an object')
+    else {
+      if (!/^[0-9a-f]{64}$/.test(String(a.bundle_sha256 || ''))) errs.push('bundle_sha256')
+      if (typeof a.handle !== 'string' || !a.handle) errs.push('handle')
+      if (a.judge_exit !== 0) errs.push('judge_exit must be 0')
+      if (typeof a.problem_id !== 'string' || !a.problem_id) errs.push('problem_id')
+    }
+    if (errs.length) { console.error(`skipped malformed attestation ${f} (${errs.join(', ')})`); continue }
+    if (!knownHashes.has(a.bundle_sha256)) {
+      console.error(`skipped attestation ${f}: bundle sha256 ${a.bundle_sha256.slice(0, 12)}… matches no committed bundle`)
+      continue
+    }
+    ;(byHash[a.bundle_sha256] ||= new Set()).add(a.handle)
+  }
+  return byHash
+}
+
 const HISTORY_NOTE = 'Append-only frontier ledger. `events` are NEVER rewritten — build.mjs only appends; `snapshot` is a mutable cache of the last-diffed board state. Event dates come from each entry\'s verified_at; `observed` (when present) is the date the operator ran the build with --now. Genesis-flagged events were backfilled from the board state when the ledger was created.'
 
 // ---- assemble the full payload ----------------------------------------------
@@ -529,6 +565,15 @@ export function buildAll(root = ROOT, opts = {}) {
           : null,
       })
     })
+  }
+
+  // reproduced ×N — count PR-committed attestations per bundle hash (display only, never rank)
+  const knownHashes = new Set(rows.map(r => r.bundle_sha256).filter(Boolean))
+  const atts = loadAttestations(root, knownHashes)
+  for (const r of rows) {
+    const s = r.bundle_sha256 ? atts[r.bundle_sha256] : null
+    r.reproduced = s ? s.size : 0
+    r.reproduced_by = s ? [...s].sort() : []
   }
 
   const catalog = problemCatalog(root)

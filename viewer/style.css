@@ -440,3 +440,6 @@ html[data-theme="dark"] .chlog { border-left-color: var(--rule-2); }
 .citecopy { font-family: var(--mono); font-size: 10px; border: 1px solid var(--rule-2); border-radius: 4px; background: transparent; color: var(--ink-2); padding: 2px 8px; cursor: pointer; }
 .citecopy:hover { border-color: var(--accent); color: var(--accent); }
 html[data-theme="dark"] .citeblock pre { background: rgba(10,13,32,0.6); }
+
+/* reproduced ×N — attestation badge (credibility display, never rank) */
+.repro { display: inline-block; font-family: var(--mono); font-size: 10px; color: var(--pass); border: 1px solid var(--pass); border-radius: 4px; padding: 1px 6px; white-space: nowrap; cursor: help; }

@@ -29,7 +29,20 @@ stays offline). Use --local-only to skip external fetches when developing offlin
 
   python3 scoreboard/verify.py                # verify all entries (fetches external)
   python3 scoreboard/verify.py --local-only   # in-repo entries only
+
+Attestations ("reproduced ×N"): --attest re-runs the judge on one entry's bundle and,
+ONLY on a full ACCEPT, emits a one-line attestation JSON binding the verifier's
+self-declared handle to the bundle's sha256 (raw file bytes, lowercase hex — the
+platform-wide hashing contract). The verifier commits it under
+scoreboard/attestations/ via PR (PR-only: zero new attack surface). An attestation
+never changes rank — it is attested, trusted-but-labeled credibility display only
+(the HARDWARE.md vocabulary), and the row still says "or re-run it yourself".
+
+  python3 scoreboard/verify.py --attest ghz3 --handle your-github-handle
+  python3 scoreboard/verify.py --attest tfim3:qaoa --handle you       # disambiguate
+  python3 scoreboard/verify.py --attest path/to/bundle.json --handle you
 """
+import hashlib
 import json
 import os
 import subprocess
@@ -219,6 +232,105 @@ def all_entries():
     return out
 
 
+def _flag(name):
+    """Value of a --flag from argv, else None."""
+    if name in sys.argv:
+        i = sys.argv.index(name)
+        if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
+            return sys.argv[i + 1]
+    return None
+
+
+def _bundle_bytes(e):
+    """The bundle's RAW BYTES exactly as committed/fetched — the hashing contract
+    (sha256 is never computed over re-parsed/re-serialized JSON)."""
+    if e.get("run_repo", HARNESS) != HARNESS:
+        url = raw_url(e["run_repo"], e.get("run_branch", "main"), e["proof_bundle"])
+        with urllib.request.urlopen(url, timeout=20) as r:
+            return r.read()
+    with open(os.path.join(ROOT, e["proof_bundle"]), "rb") as f:
+        return f.read()
+
+
+def attest_main():
+    """--attest <problem_id[:paradigm_short] | bundle-path>: re-run the judge and,
+    on ACCEPT, emit a one-line attestation JSON for scoreboard/attestations/."""
+    from datetime import date as _date
+    ref = _flag("--attest")
+    handle = _flag("--handle")
+    note = _flag("--note")
+    when = _flag("--date") or _date.today().isoformat()
+    out = _flag("--out")
+    if not ref:
+        print("usage: verify.py --attest <problem_id[:paradigm_short] | bundle-path> "
+              "--handle <your-github-handle> [--date YYYY-MM-DD] [--note ...] [--out PATH]",
+              file=sys.stderr)
+        return 2
+    if not handle:
+        print("REFUSED: --handle is required — an attestation is a self-declared "
+              "'I re-ran the judge and it ACCEPTed', and it must say who.", file=sys.stderr)
+        return 2
+
+    if os.path.isfile(ref):
+        # Direct bundle path: the judge is the whole gate; identity comes from the
+        # bundle itself. (If its hash matches no committed bundle, the aggregator
+        # skips + logs the attestation rather than counting it.)
+        code, _checks = run_judge(ref)
+        if code != 0:
+            print(f"REFUSED: judge exited {code} (not 0) — only an ACCEPTing re-run can be attested.",
+                  file=sys.stderr)
+            return 1
+        try:
+            with open(ref) as f:
+                pid = json.load(f).get("problem_id") or "unknown"
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError, AttributeError):
+            pid = "unknown"
+        with open(ref, "rb") as f:
+            blob = f.read()
+    else:
+        pid, _, para = ref.partition(":")
+        cands = [e for e in all_entries() if isinstance(e, dict) and e.get("problem_id") == pid
+                 and (not para or (e.get("paradigm_short") or e.get("paradigm")) == para)]
+        if not cands:
+            print(f"REFUSED: no scoreboard entry matches {ref!r} (and it is not a bundle file).",
+                  file=sys.stderr)
+            return 2
+        if len(cands) > 1:
+            opts = ", ".join(f"{pid}:{e.get('paradigm_short') or e.get('paradigm')}" for e in cands)
+            print(f"REFUSED: ambiguous — {len(cands)} entries on {pid}; pick one of: {opts}",
+                  file=sys.stderr)
+            return 2
+        entry = cands[0]
+        ok, msg = verify_entry(entry)   # the FULL merge gate: shape, binding, judge, metric, resources
+        if ok is not True:
+            print(f"REFUSED: entry does not re-verify ({msg}) — only an ACCEPTing re-run can be attested.",
+                  file=sys.stderr)
+            return 1
+        try:
+            blob = _bundle_bytes(entry)
+        except Exception as ex:  # noqa: BLE001 — no bytes, no honest hash, no attestation
+            print(f"REFUSED: could not read the exact bundle bytes: {ex}", file=sys.stderr)
+            return 1
+
+    digest = hashlib.sha256(blob).hexdigest()
+    att = {"schema": "quantummytheme/attestation@1", "bundle_sha256": digest,
+           "problem_id": pid, "handle": handle, "judge_exit": 0, "date": when}
+    if note:
+        att["note"] = note
+    line = json.dumps(att)
+    if not out:
+        slug = "".join(c if c.isalnum() or c in "-_" else "-" for c in handle).strip("-").lower() or "anon"
+        out = os.path.join(ROOT, "scoreboard", "attestations", f"{pid}-{digest[:8]}-{slug}.json")
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    with open(out, "w") as f:
+        f.write(line + "\n")
+    print(line)
+    print(f"attestation written: {os.path.relpath(out, ROOT)}", file=sys.stderr)
+    print("commit it on a branch and open a PR — submission is PR-only, and the board "
+          "counts it into the row's 'reproduced ×N' badge (rank never changes).", file=sys.stderr)
+    return 0
+
+
 def main():
     entries = all_entries()
     bad = 0
@@ -238,4 +350,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(attest_main() if "--attest" in sys.argv else main())
