@@ -5,7 +5,7 @@ commands MUST reach the same verdict. Every R/A/S criterion binds to a `judge_ve
 code, a `node --test` assertion, the `test_judge.py` regression suite, or an emitted metric.
 No criterion grades on prose. A criterion whose artifact is absent here cannot pass.
 
-Run all commands from the repo root `/home/craigm26/quantum-harness`. Reference override for a
+Run all commands from the repo root. Reference override for a
 live contest: prefix any judge command with `QH_REFERENCES_DIR=/secret/refs`.
 
 ## Exit-code legend (`bench/quantum-judge/judge_verify.py`)
@@ -71,7 +71,7 @@ placed in its own bundle is caught at the reproducibility (4) / performance (5) 
 | Crit | Artifact | Exact command | Pass condition |
 |------|----------|---------------|----------------|
 | S1 | public MIT repo + `bench/quantum-judge/`, `bin/`, `lib/`, `test/`, `RUBRIC.md`, `VERIFIER-MAP.md`, scrubbed log | `ls bench/quantum-judge RUBRIC.md VERIFIER-MAP.md LICENSE` | all present; LICENSE = MIT; provenance-from-fieldops stated in prose |
-| S2 | node measurement suite | `node --test test/*.test.mjs` | **107 tests pass, 0 fail** |
+| S2 | node measurement suite | `node --test test/*.test.mjs` | **0 fail** (every test passes; the run prints the live count) |
 | S3 | secret scan + scrubbed transcript | `node bin/prepare-transcript.mjs <raw.jsonl> --out-dir transcript/` then a `gitleaks`/`trufflehog` scan | no live keys/tokens; scorecard built from committed scrubbed log; no transcript over the byte cap |
 | S4 | `RERUN.md` | manual read | one-page new-problem rerun doc (add held-out `references/<id>.json`, BRIEF stanza, submit bundle, run judge) |
 
@@ -85,7 +85,7 @@ placed in its own bundle is caught at the reproducibility (4) / performance (5) 
 ## One-shot bench gate (verifier copy-paste)
 
 ```
-node --test test/*.test.mjs                                   # expect: 107 pass, 0 fail
+node --test test/*.test.mjs                                   # expect: all pass, 0 fail
 python3 bench/quantum-judge/test_judge.py                     # expect: 38/38 checks passed (exit 0)
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-poc.json    # expect exit 0
 python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-vqe.json    # expect exit 0

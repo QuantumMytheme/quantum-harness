@@ -41,8 +41,11 @@ in sim — but the provenance of the counts is an attestation, clearly marked.
    python3 bench/quantum-judge/hardware_report.py <hardware-report.json>   # recomputes the metric, checks sim-ACCEPT
    ```
    See the worked example: [`bench/quantum-judge/hardware-report-bell_pops2.json`](bench/quantum-judge/hardware-report-bell_pops2.json)
-   — a Bell state whose held-out ⟨X₀X₁⟩ measures ≈ 0.94 on a noisy device (vs the
-   noiseless +1.00; that gap is real-hardware error, honestly recorded).
+   — a Bell state whose held-out ⟨X₀X₁⟩ comes out ≈ 0.94 vs the noiseless +1.00.
+   Note: the counts in that file are **synthetic NISQ-like noise (a worked example,
+   not a real device** — its `backend` field says so); it shows the format, and how a
+   real device's error gap would be honestly recorded once you substitute your own
+   QPU's counts.
 4. **Commit + register.** Commit the hardware report to your public run repo next to
    the proof bundle, and register a hardware overlay on the scoreboard
    ([SCOREBOARD.md](SCOREBOARD.md)). The sim score keeps the rank; the overlay shows

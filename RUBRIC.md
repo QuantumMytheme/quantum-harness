@@ -176,8 +176,8 @@ check — anti-overfit.
       the measurement tooling (`bin/` + `lib/` + `test/`), this RUBRIC.md, VERIFIER-MAP.md, and
       the scrubbed session log. Provenance-from-fieldops is stated in prose (no shared git
       history).
-- [ ] **S2 The full measurement suite is green:** `node --test test/*.test.mjs` reports **107
-      tests pass, 0 fail** (scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector).
+- [ ] **S2 The full measurement suite is green:** `node --test test/*.test.mjs` reports
+      **0 fail** — every test passes (scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector; the run prints the live test count).
 - [ ] **S3 The committed session log and the entire repo pass a secret scan** (no live keys,
       bearer/deploy tokens); the scorecard was generated from the COMMITTED (scrubbed) log via
       `bin/prepare-transcript.mjs`; no transcript file is oversized (`prepare-transcript`
@@ -200,7 +200,7 @@ check — anti-overfit.
 ## Done is a two-stage gate
 
 - **Bench-done** = all H + R1–R8 + A1–A3 + S1 + S2 pass in ONE fresh-verifier run:
-  `node --test test/*.test.mjs` is 107/107, `python3 bench/quantum-judge/test_judge.py` is
+  `node --test test/*.test.mjs` is all-pass (0 fail), `python3 bench/quantum-judge/test_judge.py` is
   38/38, and every submitted bundle exits 0 under `judge_verify.py` (including under a
   relocated `QH_REFERENCES_DIR`).
 - **Submission-done** = S3 + S4 pass, plus an S1 re-check, in a second short verifier run.

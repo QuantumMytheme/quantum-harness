@@ -46,9 +46,10 @@ test('every in-page nav link resolves to a real section id', () => {
 })
 
 // --- education page ---------------------------------------------------------
-// 23-slice, two-track curriculum (Part 0 history; Part I classical bit->silicon;
+// Two-track curriculum (Part 0 history; Part I classical bit->silicon;
 // Part II quantum qubit->hardware; Part III scale; Part IV landmark re-runnable
-// experiments; close: your-run), in page order.
+// experiments; Part V North Star; close: your-run), in page order. EDU_IDS is the
+// single roster the wiring tests below compare every surface against.
 const EDU_IDS = [
   'history',
   'bit', 'rules-to-learning', 'machine-learning', 'big-data', 'neural-nets',
@@ -82,6 +83,28 @@ test('education.js defines an animation for every mounted module', () => {
 test('overview links to the education page; sitemap lists its canonical URL', () => {
   assert.match(html, /href="education\.html"/)
   assert.match(readFileSync(v('sitemap.xml'), 'utf8'), /<loc>https:\/\/quantummytheme\.com\/education<\/loc>/)
+})
+
+test('education TOC lists every slice, densely numbered (the missing-#m-roofline regression)', () => {
+  const edu = readFileSync(v('education.html'), 'utf8')
+  const tocStart = edu.indexOf('<nav class="contents"')
+  const toc = edu.slice(tocStart, edu.indexOf('</nav>', tocStart))
+  const tocIds = [...toc.matchAll(/href="#(m-[a-z0-9-]+)"/g)].map(m => m[1])
+  const secIds = [...edu.matchAll(/<section id="(m-[a-z0-9-]+)"/g)].map(m => m[1])
+  assert.equal(new Set(tocIds).size, tocIds.length, 'no duplicate TOC links')
+  for (const id of secIds) assert.ok(tocIds.includes(id), `TOC must link #${id} — every section is discoverable from the contents`)
+  assert.equal(tocIds.length, secIds.length, 'TOC link count matches section count')
+  const nums = [...toc.matchAll(/<b>(\d+)<\/b>/g)].map(m => Number(m[1]))
+  nums.forEach((n, i) => assert.equal(n, i, `TOC numbering is dense 00..N (entry ${i} is numbered ${n})`))
+})
+
+test('EDUCATION.md is the build-spec index (prose lives on the live page) and tracks it 1:1', () => {
+  const md = readFileSync(fileURLToPath(new URL('../EDUCATION.md', import.meta.url)), 'utf8')
+  assert.match(md, /Prose source of truth: \[`viewer\/education\.html`\]/)   // the banner
+  const mdSections = [...md.matchAll(/^## \d+\. /gm)]
+  const edu = readFileSync(v('education.html'), 'utf8')
+  const mounts = [...edu.matchAll(/data-edu="([a-z0-9-]+)"/g)]
+  assert.equal(mdSections.length, mounts.length, 'EDUCATION.md carries one ## build-spec section per live slice')
 })
 
 // --- field notebook (lab) page ----------------------------------------------
@@ -261,17 +284,18 @@ test('homepage advertises the full platform, not just the bench', () => {
   assert.match(html, /href="education\.html"/)              // curriculum is linked from the hero/hub
   assert.match(html, /8\/8 exit 0/)                          // scoreboard prose matches verify.py
   assert.match(html, /38\/38/)                               // judge suite metric is current
-  // node-suite badge: an all-green N/N from the current era — not a brittle literal that
-  // goes stale every time a test is added (the very drift that produced the old build).
-  const meas = html.match(/<b>(\d+)\/(\d+)<\/b><span>node suite<\/span>/)
-  assert.ok(meas, 'node-suite metric badge present')
-  assert.equal(meas[1], meas[2], 'node-suite badge shows all checks passing (N/N)')
-  assert.ok(Number(meas[1]) >= 95, 'node-suite badge reflects the current-era suite, not an old stale build')
+  // node-suite badge: rot-proof by construction — it claims "all green, 0 fail" without
+  // pinning a test count, so adding tests can never make the hero metric stale again
+  // (the drift that produced 112/112-vs-117 on the honesty-branded homepage).
+  assert.match(html, /<b>100%<\/b><span>node suite · 0 fail<\/span>/, 'node-suite badge is the count-free all-green form')
+  assert.doesNotMatch(html, /\d+\/\d+<\/b><span>node suite/, 'node-suite badge must not pin a rot-prone test count')
   assert.doesNotMatch(html, /Phase 2 of the platform/)      // old footer tagline is gone
   // the North-Star intention must be present (the bench is the wedge, the mission is the referee) —
   // and the retired overclaim must not creep back in.
   assert.match(html, /verifiable-efficiency referee/i)      // the project's stated intention is on the homepage
   assert.match(html, /North Star/i)                          // and points into the curriculum's North Star
   assert.match(html, /forty-slice|40[- ]slice/i)      // curriculum card reflects the current arc (40 slices, Part V lesson 6 added)
+  assert.match(html, /no background needed/)           // plain-language on-ramp: the hero tells a citizen the curriculum is for them
+  assert.match(html, /curriculum starts at [“"]what is a bit\?/) // …and where it starts
   assert.doesNotMatch(html, /quantum-processing architectures for AI|quantum-native inference/i) // honest: quantum is not an AI accelerator
 })

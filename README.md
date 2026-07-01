@@ -107,7 +107,7 @@ the real judge, and mint a run repo — without leaving the chat.
 | `lib/scorecard.mjs` | Scorecard engine (intervention classification, autonomy scoring) |
 | `lib/prepare-transcript.mjs` | Scrub engine behind the transcript pipeline |
 | `lib/planner-*.mjs` | Planner roster / walkthrough used by the run orchestration |
-| `test/*.test.mjs` | Node test suite — 107 tests (scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector) |
+| `test/*.test.mjs` | Node test suite — scorecard + transcript scrub + planner roster/walkthrough + site/education wiring + MCP connector (`node --test` prints the live count; all pass, 0 fail) |
 | `viewer/test-education.mjs` | Headless site smoke test — mounts all 40 education modules + the Scenario Studio logic, asserts no throw / no NaN |
 | `bin/test-all.sh` · `npm run test:all` | Runs **every** suite (both judges + router + soundness fuzz + node + site smoke + MCP selftest) — green = safe to push |
 | `viewer/index.html` | Interactive, self-contained showcase of the bench (paper / luminous themes) — opens from `file://`, no build, runs the real sim |
@@ -125,7 +125,7 @@ the real judge, and mint a run repo — without leaving the chat.
 No build step. Node 22+ for the measurement layer; Python 3 with **numpy only** for the judge.
 
 ```sh
-# 1. Node test suite — 107 tests green
+# 1. Node test suite — all green (0 fail; the run prints the live test count)
 node --test test/*.test.mjs
 
 # 2. Verify a proof bundle — ACCEPT (exit 0) / REJECT (non-zero)

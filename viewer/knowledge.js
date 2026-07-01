@@ -86,15 +86,15 @@
       goal: 'held-out test accuracy ≥ 0.99', baseline: 'high-freq Ry(7x) memorizes train, fails test',
       good: 'low-frequency Ry(x) generalizes to 100% on the test set', best: 'test 100% · 1 op · 1 qubit' },
     h2vqe: { task: 'vqe', n: 2, title: 'H₂ molecule · VQE',
-      question: 'Find the ground-state energy of H₂ (STO-3G), E₀ = −1.8512 Ha.',
-      given: 'the molecular Hamiltonian and budgets',
+      question: 'Find the electronic ground-state energy of H₂’s reduced 2-qubit Hamiltonian (STO-3G; nuclear repulsion excluded), E₀ = −1.8512 Ha.',
+      given: 'the molecular (electronic, 2-qubit) Hamiltonian and budgets',
       goal: 'energy gap ≤ 0.005 Ha', baseline: '−1.8302 (mean-field)',
       good: 'gap → 0 — recover the correlation energy past mean-field', best: 'gap 0.0004 Ha · 2q 1' },
     tfim3: { task: 'vqe', n: 3, title: 'Transverse-field Ising · TFIM₃',
       question: 'Find the ground state of a 3-qubit transverse-field Ising model, E₀ = −3.009.',
       given: 'the Hamiltonian and budgets',
       goal: 'energy gap ≤ 0.05', baseline: '−2.72',
-      good: 'gap → 0 — two paradigms compete: QAOA (deeper, best gap) vs hardware-efficient (leaner, hardware-validated)', best: 'gap 0.0001 (QAOA) · gap 0.0143 + hardware (HWE)' },
+      good: 'gap → 0 — two paradigms compete: QAOA (deeper, best gap) vs hardware-efficient (leaner, with an emulated-noise overlay)', best: 'gap 0.0001 (QAOA) · gap 0.0143 + emulated-noise overlay (HWE)' },
     bellnoisy2: { task: 'state_prep', n: 2, title: 'Bell on a noisy device',
       question: 'Prepare a Bell state AND predict its on-device fidelity under depolarizing noise.',
       given: 'the target plus a stated noise budget; predict the noisy fidelity',
@@ -107,7 +107,7 @@
     ['correctness', 'Correctness', 'passed all four judge gates — the price of being on the board'],
     ['margin', 'Margin', 'how far the verified result clears the bar, toward the ideal'],
     ['efficiency', 'Efficiency', 'circuit / topology economy — fewer 2-qubit gates and depth (for architecture: edges beyond a spanning tree; for classify: feature-map ops + qubits)'],
-    ['robustness', 'Robustness', 'verification depth — a real held-out gate and/or a hardware overlay'],
+    ['robustness', 'Robustness', 'verification depth — a real held-out gate and/or a hardware overlay (real-device or emulated, as labelled)'],
     ['novelty', 'Novelty', 'a distinct approach that adds new knowledge, vs a near-duplicate']
   ];
   var GRADE_NOTE = 'Rank is the single verified primary metric — the leaderboard. Grade is a holistic profile, so a leaner or hardware-validated design can out-grade a run with a slightly better raw number.';
@@ -215,7 +215,7 @@
       note: 'wins the dense matmul when the workload fits it — otherwise the GPU is more forgiving' },
     qpu: { name: 'Quantum chip', tag: 'simulation co-processor — NOT an accelerator',
       good: 'simulating strongly-correlated quantum systems (chemistry/materials → better catalysts and classical chips)',
-      weak: 'does NOT accelerate LLM/transformer inference: the O(N) data read-in / O(√N) read-out wall, dequantization, and barren plateaus close that door',
+      weak: 'does NOT accelerate LLM/transformer inference: the O(N) data read-in wall, costly read-out (an amplitude-encoded answer takes repeated sampling to extract — up to O(N)), dequantization, and barren plateaus close that door',
       fact: 'a catalyst like FeMoco needs ~4M physical qubits, fault-tolerant — 10–20 yr out',
       src: '/education Part V · quantum-lever · Aaronson 2015 · Tang 2018',
       note: 'the honest lever for BETTER CLASSICAL CHIPS, not for running today’s models faster' }
@@ -233,7 +233,7 @@
   var QUANTUM_USES = [
     { key: 'simulation', name: 'Simulating quantum systems', maturity: 'the flagship — small instances today, hard cases fault-tolerant (10–20 yr)',
       what: 'Chemistry & materials whose classical cost is 2ⁿ: catalysts (nitrogen fixation / FeMoco), battery electrolytes, high-Tc superconductors — and the materials for better classical chips.',
-      demonstrates: 'This IS what the bench’s VQE tasks are — h2vqe (a molecule’s ground-state energy), isingbell2 / tfim3 (condensed-matter models).',
+      demonstrates: 'This IS what the bench’s VQE tasks are — h2vqe (a molecule’s electronic ground-state energy), isingbell2 / tfim3 (condensed-matter models).',
       src: 'Feynman 1982 · FeMoco ~4M physical qubits (resource estimates)' },
     { key: 'cryptanalysis', name: 'Breaking today’s public-key crypto', maturity: 'real but far — ~millions of physical qubits, a decade+',
       what: 'Shor’s algorithm factors integers / solves discrete-log in polynomial time → breaks RSA and elliptic-curve crypto. The impact is NOW: it is why the world is migrating to post-quantum cryptography (NIST ML-KEM / ML-DSA).',
@@ -251,7 +251,9 @@
 
   // Real, known chips — so the public experiments with actual hardware, not abstract classes.
   // Each maps to a substrate class {cpu,gpu,tpu,qpu}. Specs are vendor-quoted / widely-cited
-  // context, NOT referee-pinned (only TPU v5e is pinned in the Roofline Notary) — labelled so.
+  // context; the Roofline Notary pins per-chip constants for six TPU generations
+  // (v5e, v5p, v6e, Ironwood/TPU7x, 8t, 8i — see bench/kernel-judge/judge_kernel.py PINNED),
+  // marked pinned:true below. Everything else is vendor-quoted, not referee-pinned — labelled so.
   var CHIPS = [
     { id: 'epyc', name: 'AMD EPYC (Turin)', cls: 'cpu', spec: 'up to 192 cores · big L3 · AVX-512', note: 'orchestration, retrieval, sparse/branchy work', src: 'AMD' },
     { id: 'xeon', name: 'Intel Xeon (Emerald Rapids)', cls: 'cpu', spec: 'AMX matrix tiles · bf16/int8', note: 'CPU with a small matrix unit — glue + light inference', src: 'Intel' },
@@ -266,7 +268,7 @@
     { id: 'tpu-v5e', name: 'Google TPU v5e', cls: 'tpu', spec: '~197 TFLOP/s bf16 · HBM ~0.82 TB/s · ridge ~240 ops/byte', note: 'the generation the Roofline Notary PINS (verified)', src: '/education Part V', pinned: true },
     { id: 'tpu-v5p', name: 'Google TPU v5p', cls: 'tpu', spec: '459 TFLOP/s bf16 · HBM ~2.77 TB/s · 128×128 MXU · ridge ~166', note: 'high-end training TPU — pinned in the referee', src: 'Google Cloud · scaling-book', pinned: true },
     { id: 'tpu-v6e', name: 'Google TPU v6e (Trillium)', cls: 'tpu', spec: '918 TFLOP/s bf16 · HBM ~1.64 TB/s · 256×256 MXU · ridge ~560', note: 'current-gen TPU — pinned in the referee', src: 'Google Cloud · scaling-book', pinned: true },
-    { id: 'ironwood', name: 'Google Ironwood (TPU v7 / TPU7x)', cls: 'tpu', spec: '~2.3 PFLOP/s bf16 · int8 4.6 EOP/s · HBM 192GB ~7.4 TB/s · 256×256 MXU · ridge ~311', note: '7th-gen — pinned in the referee', src: 'scaling-book · Google · Ironwood', pinned: true },
+    { id: 'ironwood', name: 'Google Ironwood (TPU v7 / TPU7x)', cls: 'tpu', spec: '~2.3 PFLOP/s bf16 · int8 ~4.6 POP/s · HBM 192GB ~7.4 TB/s · 256×256 MXU · ridge ~311', note: '7th-gen — pinned in the referee', src: 'scaling-book · Google · Ironwood', pinned: true },
     { id: 'tpu-8t', name: 'Google TPU 8t (8th-gen · training)', cls: 'tpu', spec: '12.6 PFLOP/s FP4 · HBM 216GB ~6.53 TB/s · 128 MB VMEM · SparseCore + LLM-Decoder', note: '8th-gen “agentic era” — pinned for FP4 (bf16 peak + MXU not disclosed)', src: 'Google Cloud deep-dive 2025', pinned: true },
     { id: 'tpu-8i', name: 'Google TPU 8i (8th-gen · inference)', cls: 'tpu', spec: '10.1 PFLOP/s FP4 · HBM 288GB ~8.6 TB/s · 384 MB VMEM · Collectives-Accel Engine', note: '8th-gen inference — pinned for FP4 (bf16 peak + MXU not disclosed)', src: 'Google Cloud deep-dive 2025', pinned: true },
     { id: 'willow', name: 'Google Willow', cls: 'qpu', spec: '105 superconducting qubits · below-threshold QEC', note: 'error-correction milestone (2024)', src: 'Google 2024' },
@@ -277,6 +279,8 @@
   ];
   // Real TPU pods — for the "pretend you have Google's largest chip farm" what-if. Aspirational,
   // NOT something a visitor actually has; ExaFLOPS are vendor peak (mixed precision).
+  // pinned:true here means the pod's PER-CHIP constants are referee-pinned (lab.js renders it
+  // as "per-chip pinned"); pod-scale totals (chips/exaflops/HBM) are vendor-quoted, never refereed.
   var PODS = [
     { id: '8t-virgo', name: 'TPU 8t · Virgo cluster', cls: 'tpu', chips: 134000, exaflops: 1700, hbm: '~28 PB', note: 'Google’s LARGEST — the Virgo network links 134,000+ 8t chips (47 Pb/s bisectional), scaling toward 1M+ in a single cluster', src: 'Google Cloud deep-dive 2025', pinned: true },
     { id: '8t-superpod', name: 'TPU 8t superpod', cls: 'tpu', chips: 9600, exaflops: 121, hbm: '2 PB', note: 'a single 8th-gen “agentic era” training superpod', src: 'Google Cloud deep-dive 2025', pinned: true },
@@ -360,7 +364,7 @@
     var honesty = [];
     if (w.kind === 'ml') honesty.push({ tone: 'incumbent', text: w.incumbent + ' Most-used is not the same as best possible — that gap is exactly what this platform exists to close.' });
     if (have.qpu && w.quantum === 'none')
-      honesty.push({ tone: 'quantum', text: 'You selected a quantum chip, but it does NOT accelerate ' + w.name.toLowerCase() + ' — the O(N) data read-in / O(√N) read-out wall, dequantization, and barren plateaus close that door. Its honest role is materials simulation, a different workload entirely.' });
+      honesty.push({ tone: 'quantum', text: 'You selected a quantum chip, but it does NOT accelerate ' + w.name.toLowerCase() + ' — the O(N) data read-in wall, costly read-out (repeated sampling, up to O(N)), dequantization, and barren plateaus close that door. Its honest role is materials simulation, a different workload entirely.' });
     if (have.qpu && w.quantum === 'caveat')
       honesty.push({ tone: 'quantum', text: 'A quantum/annealing sampler MIGHT help here, but no broadly-proven advantage exists — treat any speedup as unproven until it clears the referee at iso-quality.' });
     if (have.qpu && w.quantum === 'genuine' && !isQuantum)

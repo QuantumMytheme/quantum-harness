@@ -2,7 +2,7 @@
 
 [![judge](https://img.shields.io/badge/score-machine--checked-2ea44f)](bench/quantum-judge/README.md)
 [![no self-report](https://img.shields.io/badge/numbers-re--verifiable-blue)](RUBRIC.md)
-[![phase 1](https://img.shields.io/badge/board-viewer%20live%20%C2%B7%20CI%20gated-2ea44f)](https://quantum-harness.pages.dev/#scoreboard)
+[![phase 1](https://img.shields.io/badge/board-viewer%20live%20%C2%B7%20CI%20gated-2ea44f)](https://quantummytheme.com/#scoreboard)
 
 The scoreboard is the public answer to one question: **on this exact problem, which
 design currently leads — and can I re-derive that for myself?** It exists because a
@@ -162,9 +162,9 @@ merge gate; no maintainer scores anything by taste. The flow mirrors
      `verified_metric.value` **matches the judge's recompute** (an entry whose metric
      the judge cannot recompute FAILs — it would be self-reported), and the claimed
      `resource_costs` match the judge's `checks.structure`, **and**
-   - the regression suites stay green: `python3 bench/quantum-judge/test_judge.py`
-     (`38/38`), `python3 scoreboard/test_verify.py` (`30/30`), and
-     `node --test test/*.test.mjs`.
+   - the regression suites stay green — `python3 bench/quantum-judge/test_judge.py`,
+     `python3 scoreboard/test_verify.py`, and `node --test test/*.test.mjs` all pass
+     with `0` failures (each run prints its live count).
 4. **Re-verification, not negotiation.** No human reviewer overrides a REJECT into a
    merge. If the judge accepts and the suite is green, the row earns its place; the
    ranking follows mechanically from (b).
@@ -261,7 +261,7 @@ party). A hardware overlay **never outranks** the sim score; it shows *"validate
 **Phase 1 is now partly shipped.** An **aggregator** (`scoreboard/build.mjs`) ranks
 `scoreboard/entries.json` per problem (the rules in (b)) and generates the data the
 **viewer renders** — the live board is the Scoreboard section at
-<https://quantum-harness.pages.dev/#scoreboard>. CI
+<https://quantummytheme.com/#scoreboard>. CI
 (`.github/workflows/scoreboard.yml`) is the merge gate: `scoreboard/verify.py` re-verifies
 every entry — **including entries whose bundle lives in an external run repo, which it
 fetches and re-runs against the canonical hidden references** — **binds each entry to its
