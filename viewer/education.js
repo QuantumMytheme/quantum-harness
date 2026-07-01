@@ -182,17 +182,9 @@
   }
 
   // ---- controls -------------------------------------------------------------
-  var modeChip = document.createElement("span");
-  modeChip.className = "chip";
-  modeChip.textContent = "learning…";
-  var replayBtn = document.createElement("button");
-  replayBtn.className = "btn"; replayBtn.type = "button"; replayBtn.textContent = "replay";
-  var hint = document.createElement("span");
-  hint.className = "chip";
-  hint.textContent = "hover / click canvas: rules ↔ learned";
-  controls.appendChild(modeChip);
-  controls.appendChild(replayBtn);
-  controls.appendChild(hint);
+  var modeChip = K.chip(controls, "learning…");
+  var replayBtn = K.btn(controls, "replay", function () { if (K.reduced) showStatic("learned"); else startTimeline(); });
+  K.chip(controls, "hover / click canvas: rules ↔ learned");
 
   // ---- timeline state -------------------------------------------------------
   var t = 0, last = 0, holdUntil = 0, stop = null;
@@ -352,7 +344,6 @@
   });
   canvas.addEventListener("mouseenter", function () { if (snapMode === "rules") showStatic("learned"); });
   canvas.addEventListener("mouseleave", function () { if (snapMode === "learned") showStatic("rules"); });
-  replayBtn.addEventListener("click", function () { if (K.reduced) showStatic("learned"); else startTimeline(); });
 
   // ---- theme + reduced motion ----------------------------------------------
   K.onTheme(function () {
@@ -538,8 +529,7 @@
   row.appendChild(togWrap);
 
   // ============================ STATE / FIT ============================
-  var fitState = K.fit();
-  var ctx = fitState.ctx, W = fitState.w, H = fitState.h;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(0); });
   var userControlled = false;
   var t = 0.3;
   function now() { return (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now(); }
@@ -741,13 +731,6 @@
     ctx.fillText("flexibility", scaleX0, scaleY + 16);
   }
 
-  // theme change: refit canvas + re-read colors on the next frame
-  K.onTheme(function () {
-    var fs = K.fit();
-    ctx = fs.ctx; W = fs.w; H = fs.h;
-    if (K.reduced) draw(0);
-  });
-
   if (K.reduced) {
     // one representative static frame: moderate flexibility near best generalization
     userControlled = true;
@@ -763,7 +746,7 @@
 
   // ───── big-data ─────
   EDU["big-data"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, w = f.w, h = f.h;
+  var ctx, w, h; K.frame(function (r, redraw) { ctx = r.ctx; w = r.w; h = r.h; if (redraw) { build(); if (K.reduced) draw(0, 0.7); } });
 
   // ---- deterministic RNG (mulberry32) so layout is stable across reloads ----
   function mulberry32(a) {
@@ -1005,12 +988,6 @@
   });
   canvas.addEventListener('pointerleave', function () { scrubbing = false; last = -1; });
 
-  // ---- theme + resize via K -------------------------------------------------
-  K.onTheme(function () {
-    var ff = K.fit(); ctx = ff.ctx; w = ff.w; h = ff.h; build();
-    if (K.reduced) draw(0, 0.7);
-  });
-
   if (K.reduced) {
     // representative mid-state: knobs faded, lattice formed, error well down
     draw(0, 0.7);
@@ -1125,7 +1102,7 @@
   forward();
 
   // ---- geometry ------------------------------------------------------------
-  var fit = K.fit(), ctx = fit.ctx, W = fit.w, H = fit.h;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) { readColors(); if (K.reduced) draw(0); } });
   function pos(l, i) {
     var padX = 46, padY = 28;
     var x = padX + l * (W - 2 * padX) / Math.max(L - 1, 1);
@@ -1192,24 +1169,14 @@
 
   // ---- controls ------------------------------------------------------------
   if (controls) {
-    var trainBtn = document.createElement('button');
-    trainBtn.className = 'btn';
-    trainBtn.type = 'button';
-    trainBtn.textContent = 'Train one step';
-    trainBtn.addEventListener('click', function (e) {
+    K.btn(controls, 'Train one step', function (e) {
       e.preventDefault();
       trainMode = true;
       trainStep();
       restart(); // replay the pass so the lower loss is visible
       if (K.reduced) draw(0); // no loop in reduced motion; redraw the static frame
     });
-    controls.appendChild(trainBtn);
-
-    var resetBtn = document.createElement('button');
-    resetBtn.className = 'btn';
-    resetBtn.type = 'button';
-    resetBtn.textContent = 'Reset weights';
-    resetBtn.addEventListener('click', function (e) {
+    K.btn(controls, 'Reset weights', function (e) {
       e.preventDefault();
       seed = 0x6d2b79f5; w = []; b = [];
       for (var l = 0; l < L - 1; l++) { var Wl = []; for (var i = 0; i < layers[l]; i++) { var rw = []; for (var j = 0; j < layers[l + 1]; j++) rw.push(r11()); Wl.push(rw); } w.push(Wl); }
@@ -1217,12 +1184,7 @@
       trainMode = false; forward(); restart();
       if (K.reduced) draw(0);
     });
-    controls.appendChild(resetBtn);
-
-    var hint = document.createElement('span');
-    hint.className = 'chip';
-    hint.textContent = 'click canvas: replay · hover a neuron: value';
-    controls.appendChild(hint);
+    K.chip(controls, 'click canvas: replay · hover a neuron: value');
   }
 
   function restart() {
@@ -1254,7 +1216,6 @@
   canvas.addEventListener('mouseleave', function () { hoverL = -1; hover = -1; if (K.reduced) draw(0); });
   canvas.style.cursor = 'pointer';
 
-  K.onTheme(function () { var f = K.fit(); ctx = f.ctx; W = f.w; H = f.h; readColors(); if (K.reduced) draw(0); });
 
   // ---- drawing -------------------------------------------------------------
   function draw(now) {
@@ -1427,7 +1388,7 @@
   note.textContent = 'illustrative weights — not a trained model';
 
   // --- layout / geometry (computed each fit) --------------------------------
-  var f = K.fit(), ctx = f.ctx, w = f.w, h = f.h;
+  var ctx, w, h; K.frame(function (r, redraw) { ctx = r.ctx; w = r.w; h = r.h; if (redraw) { relayout(ctx); needFrame = true; if (K.reduced) draw(); } });
   var chip = [];     // {x,y,w,h,cx,bx,by} per token (top strip)
   var gx, gy, gridW, cell; // grid origin + size
   var pad = 14;
@@ -1690,9 +1651,6 @@
   }
 
   // --- theme + loop ---------------------------------------------------------
-  K.onTheme(function () {
-    var nf = K.fit(); ctx = nf.ctx; w = nf.w; h = nf.h; relayout(ctx); needFrame = true; if (K.reduced) draw();
-  });
 
   if (K.reduced) {
     hover = -1;
@@ -1713,7 +1671,7 @@
 
   // ───── slm-llm ─────
   EDU["slm-llm"] = function (canvas, controls, K) {
-  var fit = K.fit(), ctx = fit.ctx, W = fit.w, H = fit.h;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(); });
 
   // ---- state -------------------------------------------------------------
   var s = 0.35;            // model size 0..1
@@ -1790,8 +1748,6 @@
   canvas.addEventListener('pointercancel', endDrag);
   canvas.addEventListener('pointerleave', endDrag);
 
-  // ---- theme: refit + recache geometry on toggle -------------------------
-  K.onTheme(function () { var f = K.fit(); ctx = f.ctx; W = f.w; H = f.h; if (K.reduced) draw(); });
 
   // ---- drawing helpers ---------------------------------------------------
   function rr(x, y, w, h, r) {
@@ -1965,7 +1921,7 @@
 
   // ───── pretrain-posttrain ─────
   EDU["pretrain-posttrain"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) { hasRR = typeof ctx.roundRect === 'function'; layout(); } });
 
   // ---- palette (re-read each frame so both themes track) -------------------
   function pal() {
@@ -2240,12 +2196,6 @@
       : 'pretraining → base model → post-training (ordered behavior)';
   }
 
-  // ---- refit on theme toggle (re-read cached ctx/size + geometry) ----------
-  K.onTheme(function () {
-    var ff = K.fit(); ctx = ff.ctx; W = ff.w; H = ff.h;
-    hasRR = typeof ctx.roundRect === 'function';
-    layout();
-  });
 
   // ---- run -----------------------------------------------------------------
   if (K.reduced) {
@@ -2279,7 +2229,7 @@
 
   // ───── inference-zoo ─────
   EDU["inference-zoo"] = function (canvas, controls, K) {
-  var fit = K.fit(), ctx = fit.ctx, w = fit.w, h = fit.h;
+  var ctx, w, h; K.frame(function (r, redraw) { ctx = r.ctx; w = r.w; h = r.h; if (redraw) { box = build(); if (K.reduced) { cycleKey = null; draw(0, false); } } });
 
   // ---- layout (all sizes derive from canvas size) --------------------------
   var nodes, agent, paths;
@@ -2492,11 +2442,6 @@
   }
 
   // ---- run -----------------------------------------------------------------
-  K.onTheme(function () {
-    var f = K.fit(); ctx = f.ctx; w = f.w; h = f.h; box = build();
-    if (K.reduced) { cycleKey = null; draw(0, false); }
-  });
-
   if (K.reduced) {
     // static representative frame: agent node + all paths shown faintly, no motion
     // (spec: reduced motion shows the grid at rest, no highlighted spokes)
@@ -2525,7 +2470,7 @@
 
   // ───── classical-stack ─────
   EDU["classical-stack"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) layout(); });
 
   // ---- helpers --------------------------------------------------------------
   function easeInOutQuad(u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
@@ -2630,11 +2575,6 @@
     grid = { x: gridX, y: gridY, size: gridSide, cell: Math.max(0, cell), gap: gap };
   }
   layout();
-
-  function refit() {
-    var ff = K.fit(); ctx = ff.ctx; W = ff.w; H = ff.h; layout();
-  }
-  K.onTheme(refit);
 
   // ---- arrows ---------------------------------------------------------------
   function arrow(ax, ay, bx, by, col) {
@@ -2855,8 +2795,7 @@
 
   // ───── quantum-sim ─────
   EDU["quantum-sim"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; });
+  var ctx, W, H; K.frame(function (r) { ctx = r.ctx; W = r.w; H = r.h; });
   var S2 = 1 / Math.sqrt(2);
   var a0 = K.C(1, 0), a1 = K.C(0, 0);                 // true single-qubit state
   function gate(name) {
@@ -2887,10 +2826,9 @@
 
   // ---- controls ----
   function btn(label, primary, fn) {
-    var b = document.createElement('button'); b.type = 'button';
-    b.className = primary ? 'btn primary' : 'btn'; b.textContent = label;
-    b.addEventListener('click', function () { fn(); if (K.reduced) snap(); });
-    controls.appendChild(b); return b;
+    var b = K.btn(controls, label, function () { fn(); if (K.reduced) snap(); });
+    if (primary) b.className = 'btn primary';
+    return b;
   }
   ['H', 'X', 'Z', 'S', 'T', 'Rx'].forEach(function (g) { btn(g, false, function () { apply(gate(g)); }); });
   btn('Reset', true, function () { a0 = K.C(1, 0); a1 = K.C(0, 0); });
@@ -2898,7 +2836,7 @@
   function snap() { var b = blochOf(); disp = b; dp0 = K.cabs(a0) * K.cabs(a0); dp1 = K.cabs(a1) * K.cabs(a1); render(); }
 
   function render() {
-    var ink = K.v('--ink'), faint = K.v('--faint'), rule = K.v('--rule-2'), ink2 = K.v('--ink-2'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, faint = P.faint, rule = P.rule, ink2 = P.ink2, mono = P.mono;
     ctx.clearRect(0, 0, W, H);
     ctx.textBaseline = 'alphabetic';
 
@@ -3083,9 +3021,7 @@
   }
 
   // ---- sizing ----
-  var fitR = K.fit();
-  var ctx = fitR.ctx, W = fitR.w, H = fitR.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; });
+  var ctx, W, H; K.frame(function (r) { ctx = r.ctx; W = r.w; H = r.h; });
 
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 

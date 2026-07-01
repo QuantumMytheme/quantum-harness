@@ -118,12 +118,20 @@ function makeEl(tag) {
   return e;
 }
 
+// key-sorted copy: property/attribute SET ORDER is not behavior (setting .type then
+// .className is identical to the reverse) — only names and final values are.
+function sorted(o) {
+  const out = {};
+  for (const k of Object.keys(o).sort()) out[k] = o[k];
+  return out;
+}
+
 function snapEl(e) {
   const s = e.__state;
   if (!s) return '<foreign>';
   const listeners = {};
   for (const k of Object.keys(s.listeners).sort()) listeners[k] = s.listeners[k].length;
-  return { t: s.tag, p: s.props, a: s.attrs, st: s.style, cls: s.cls, l: listeners, c: s.children.map(snapEl) };
+  return { t: s.tag, p: sorted(s.props), a: sorted(s.attrs), st: sorted(s.style), cls: s.cls, l: listeners, c: s.children.map(snapEl) };
 }
 
 // ---- events ---------------------------------------------------------------------
@@ -286,7 +294,7 @@ function runPass(reducedMotion) {
     out[id] = {
       ops: logs[id],
       controls: snapEl(controlsByld[id]),
-      canvas: { style: canvasById[id].style, attrs: canvasById[id].__canvasState.attrs },
+      canvas: { style: sorted(canvasById[id].style), attrs: sorted(canvasById[id].__canvasState.attrs) },
     };
   }
   return out;
