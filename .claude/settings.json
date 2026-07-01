@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --test:*)",
+      "Bash(npm test)",
+      "Bash(npm run judge:*)",
+      "Bash(python3 bench/quantum-judge/judge_verify.py:*)",
+      "Bash(python3 bench/quantum-judge/test_judge.py:*)",
+      "Bash(python3 bench/quantum-judge/capture.py:*)",
+      "Bash(node bin/autonomy-scorecard.mjs:*)",
+      "Bash(node bin/prepare-transcript.mjs:*)",
+      "Bash(pip install -r bench/quantum-judge/requirements.txt)"
+    ]
+  }
+}

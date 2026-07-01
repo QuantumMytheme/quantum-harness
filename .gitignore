@@ -19,4 +19,4 @@ _tmp_*.json
 # you hold ground truth OUT of the model's repo and point the judge at it with
 # QH_REFERENCES_DIR=/secret/refs. To do that, uncomment:
 # bench/quantum-judge/references/
-.claude/
+.claude/worktrees/
