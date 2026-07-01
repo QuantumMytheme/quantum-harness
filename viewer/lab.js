@@ -31,10 +31,10 @@
   var MODELS = [['mythos', 'Claude Mythos', 'built for', 'Deep exploration — point it at the hardest briefs'], ['fable5', 'Fable 5', 'built for', 'Long autonomous runs against the rubric'], ['opus', 'Opus 4.8', 'today', 'Runs every worked problem today'], ['byo', 'Bring your own', 'open', 'Any capable model — compare what holds']];
   var STEPS = [
     ['1', 'Pick a brief', 'Choose a committed problem, or remix the current best.', 'bin/new-run.sh run-ghz3 --remix ghz3'],
-    ['2', 'Mint a run repo', 'One click forks a fresh public repo into the QuantumMytheme org.', 'gh repo create --template QuantumMytheme/quantum-harness'],
-    ['3', 'Point your model at it', 'Mythos, Fable 5, or any capable model self-corrects against the rubric.', 'claude --kickoff KICKOFF.md'],
+    ['2', 'Mint a run repo', 'A fresh public repo under your own GitHub account — no org membership needed (members can pass --org QuantumMytheme).', 'gh repo create run-ghz3 --template QuantumMytheme/quantum-harness --public --clone'],
+    ['3', 'Point your model at it', 'Mythos, Fable 5, or any capable model self-corrects against the rubric.', 'claude "$(cat KICKOFF.md)"'],
     ['4', 'Let the judge grade it', 'A hermetic numpy sim re-simulates — ACCEPT (exit 0) or REJECT.', 'python3 judge_verify.py my-bundle.json'],
-    ['5', 'Commit & push', 'Proof bundle, scorecard, scrubbed transcript — auto-registers.', 'git push  # the judge is the merge gate'],
+    ['5', 'Commit & push', 'Proof bundle, scorecard, scoreboard-entry.json — the topic-tagged repo auto-registers, re-judged before it ranks.', 'git push  # the crawler re-verifies, then it ranks'],
   ];
   var BRIEFS = [
     ['ghz3', 'GHZ₃', 'state_prep', '3-qubit GHZ under a linear [0–1–2] coupling map.', 'ghz3 reference (fid 1.000)'],
@@ -44,28 +44,38 @@
     ['h2vqe', 'H₂ molecule', 'vqe', 'Reach the H₂ ground state past the mean-field baseline.', 'h2vqe (gap 4e-4)'],
   ];
   var FILT = [['all', 'All'], ['quantum', 'Quantum chips'], ['classical', 'Classical chips'], ['llm', 'LLM architectures']];
-  var GAL = [
-    ['ghz3', 'state_prep', 'linear-chain GHZ', 'fidelity 1.000', 'opus-4.8', 'quantum', 'chipQuantum', 'ok'],
-    ['isingbell2', 'vqe', 'Bell ansatz', 'energy −2.000', 'opus-4.8', 'quantum', 'chipQuantum', 'ok'],
-    ['tfim3', 'vqe', 'QAOA p=2', 'energy −3.0089', 'opus-4.8', 'quantum', 'chipQuantum', 'ok'],
-    ['h2vqe', 'vqe', 'Ry-CX ansatz', 'gap 4e-4', 'reference', 'quantum', 'chipQuantum', 'ok'],
-    ['aiaccel4', 'architecture', 'ring topology', 'routes 2 · cost 2', 'opus-4.8', 'classical', 'chipClassical', 'ok'],
-    ['qml_sign1', 'classify', 'Ry(x) feature map', 'test acc 1.00', 'opus-4.8', 'llm', 'archLLM', 'ok'],
-  ];
-  var STATS = [
-    ['Accepted bundles', '8', 'live · re-verifiable', '▲ live', [20, 35, 30, 48, 60, 75, 90]],
-    ['Open problems', '8', 'state·vqe·pops·arch·classify', '', [40, 40, 60, 60, 80, 80, 100]],
-    ['Judge regression', '38/38', 'forgeries rejected', 'green', [38, 38, 38, 38, 38, 38, 38]],
-    ['Re-verifiable', '100%', 'recompute it yourself', '', [90, 92, 95, 96, 98, 99, 100]],
-  ];
-  var REG = [
-    [1, 'tfim3', 'QAOA p=2', 'E −3.0089', 'opus-4.8', 'ok', 'ACCEPT', [20, 30, 28, 40, 52, 66, 90], '2026·06·14'],
-    [2, 'tfim3', '1-layer HWE', 'gap 0.0143', 'opus-4.8', 'ok', 'ACCEPT', [18, 22, 30, 28, 40, 44, 60], '2026·06·11'],
-    [1, 'h2vqe', 'Ry-CX ansatz', 'gap 4e-4', 'reference', 'ok', 'ACCEPT', [22, 30, 44, 55, 66, 78, 92], '2026·06·16'],
-    [1, 'ghz3', 'linear GHZ', 'fid 1.000', 'opus-4.8', 'ok', 'ACCEPT', [40, 55, 60, 70, 80, 90, 98], '2026·05·29'],
-    [1, 'bell_pops2', '|Φ⁺⟩', '⟨X₀X₁⟩ +1', 'opus-4.8', 'ok', 'ACCEPT', [25, 35, 48, 60, 72, 80, 92], '2026·06·07'],
-    ['—', 'bell_pops2', '|Φ⁻⟩ impostor', 'exit 6', '—', 'err', 'REJECT', [60, 40, 30, 20, 12, 8, 4], '2026·06·07'],
-  ];
+  // Gallery / logbook / stats all RENDER FROM the generated scoreboard (scoreboard-data.js,
+  // loaded on this page) — one source of truth, no hand-maintained copy to drift.
+  var SB = window.SCOREBOARD_DATA || { generated: '', count: 0, problems: [], rows: [] };
+  var TASK_FILTER = { state_prep: 'quantum', vqe: 'quantum', populations: 'quantum', architecture: 'classical', classify: 'llm' };
+  var TASK_ANIM = { architecture: 'chipClassical', classify: 'archLLM' };
+  var QUALITY_AXES = ['correctness', 'margin', 'efficiency', 'robustness', 'novelty'];
+  function qualitySpark(q) { return q ? QUALITY_AXES.map(function (k) { return Math.round((q[k] || 0) * 100); }) : []; }
+  function galCards() {  // rank-1 board row per problem → a gallery card
+    var seen = {};
+    return SB.rows.filter(function (r) { return r.rank === 1 && !seen[r.problem_id] && (seen[r.problem_id] = 1); }).map(function (r) {
+      return { id: r.problem_id, task: r.task, paradigm: r.paradigm_short, metric: r.metricName + ' ' + r.metricValue, model: r.model, filter: TASK_FILTER[r.task] || 'quantum', anim: TASK_ANIM[r.task] || 'chipQuantum' };
+    });
+  }
+  function statsPanels() {
+    var tasks = []; SB.rows.forEach(function (r) { if (tasks.indexOf(r.task) < 0) tasks.push(r.task); });
+    var withBundle = SB.rows.filter(function (r) { return r.bundleUrl; }).length;
+    var reverif = SB.rows.length ? Math.round(withBundle / SB.rows.length * 100) : 0;
+    return [
+      ['Verified runs', String(SB.count || SB.rows.length), 'board generated ' + (SB.generated || '—'), '▲ live', SB.rows.map(function (r) { return Math.round(((r.quality || {}).score || 0) * 100); })],
+      ['Problems on the board', String(SB.problems.length), tasks.join(' · ') || '—', '', []],
+      ['Judge regression', '38/38', 'forgeries rejected (bench suite)', 'green', []],
+      ['Re-verifiable', reverif + '%', 'every row links its bundle', '', []],
+    ];
+  }
+  function regRows() {  // board rows, ranked — spark = the 5-axis quality profile, not a fake trend
+    var rows = SB.rows.map(function (r) {
+      return [r.rank, r.problem_id, r.paradigm_short, r.metricName + ' ' + r.metricValue, r.model, 'ok', 'ACCEPT', qualitySpark(r.quality), 'grade ' + ((r.quality || {}).grade || '—')];
+    });
+    // the one thing the board can't express: a REJECT. A committed forgery fixture, kept as the teaching example.
+    rows.push(['—', 'bell_pops2', '|Φ⁻⟩ impostor · committed forgery fixture', 'exit 6', '—', 'err', 'REJECT', [], 'judge fixture']);
+    return rows;
+  }
   var ARC = ['Rules', 'Learning', 'Scale', 'Attention', 'Silicon', 'Quantum', 'Prove-then-run', 'Landmarks', 'The frontier'];
 
   // committed circuits + reference data — the runner re-simulates these and
@@ -120,26 +130,26 @@
 
   function secAtlas() {
     var filters = FILT.map(function (f) { var on = state.filter === f[0]; return '<button class="chip" data-filter="' + f[0] + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + f[1] + '</button>'; }).join('');
-    var cards = GAL.filter(function (g) { return state.filter === 'all' || g[5] === state.filter; }).map(function (g, i) {
-      var runnable = !!window.QMRunner.RUNS[g[0]], badge = g[7] === 'ok' ? 'badge-ok' : 'badge-err', verdict = g[7] === 'ok' ? 'ACCEPT' : 'REJECT';
-      return '<button class="lab-gcard" ' + (runnable ? 'data-run="' + g[0] + '"' : 'disabled') + '><canvas data-anim="' + g[6] + '" data-key="gal-' + g[0] + '" data-seed="' + i + '" style="height:120px;"></canvas>' +
-        '<div style="padding:12px 13px 13px;flex:1;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:500;">' + g[0] + '</span><span class="mono" style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);">' + g[1] + '</span></div>' +
-        '<div style="font-size:14px;color:var(--ink-2);margin:4px 0 9px;">' + g[2] + '</div>' +
-        '<div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><span class="mono" style="font-size:12px;color:var(--accent);">' + g[3] + '</span><span class="' + badge + '">' + verdict + '</span></div>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:8px;"><span class="mono" style="font-size:9px;color:var(--faint);">' + g[4] + '</span>' + (runnable ? '<span class="lab-runhint">re-run ▸</span>' : '') + '</div></div></button>';
-    }).join('');
+    var cards = galCards().filter(function (g) { return state.filter === 'all' || g.filter === state.filter; }).map(function (g, i) {
+      var runnable = !!window.QMRunner.RUNS[g.id];
+      return '<button class="lab-gcard" ' + (runnable ? 'data-run="' + esc(g.id) + '"' : 'disabled') + '><canvas data-anim="' + g.anim + '" data-key="gal-' + esc(g.id) + '" data-seed="' + i + '" style="height:120px;"></canvas>' +
+        '<div style="padding:12px 13px 13px;flex:1;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><span class="mono" style="font-size:13px;color:var(--ink);font-weight:500;">' + esc(g.id) + '</span><span class="mono" style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);">' + esc(g.task) + '</span></div>' +
+        '<div style="font-size:14px;color:var(--ink-2);margin:4px 0 9px;">' + esc(g.paradigm) + '</div>' +
+        '<div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;"><span class="mono" style="font-size:12px;color:var(--accent);">' + esc(g.metric) + '</span><span class="badge-ok">ACCEPT</span></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:8px;"><span class="mono" style="font-size:9px;color:var(--faint);">' + esc(g.model) + '</span>' + (runnable ? '<span class="lab-runhint">re-run ▸</span>' : '') + '</div></div></button>';
+    }).join('') || '<p class="mono" style="color:var(--faint)">no verified runs on the board yet — scoreboard data unavailable</p>';
     return '<div class="lab-sheet">' + head('§ 04 · Results', 'Catalog of verified circuits', 'Chips · topologies<br>architectures') +
       '<p style="max-width:680px;">Each card is a proof bundle — quantum chips, classical floorplans, and software architectures discovered by pressure-testing patterns. <b>Click a card to re-run the exact simulation the judge ran</b> in your browser and recompute the metric.</p>' +
       '<div class="controls" style="margin:18px 0;">' + filters + '</div><div class="lab-gal">' + cards + '</div></div>';
   }
 
   function secRegister() {
-    var stats = STATS.map(function (s) { var trend = s[3] ? '<span class="mono" style="font-size:9.5px;padding:1px 6px;border-radius:4px;color:var(--pass);background:color-mix(in srgb,var(--pass) 14%,transparent);">' + s[3] + '</span>' : ''; return '<div class="panel" style="padding:15px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span class="eyebrow" style="font-size:9.5px;">' + s[0] + '</span>' + trend + '</div><div style="font-family:var(--serif);font-weight:700;font-size:29px;letter-spacing:-.02em;color:var(--ink);line-height:1;">' + s[1] + '</div><div class="mono" style="font-size:10.5px;color:var(--faint);margin-top:6px;">' + s[2] + '</div><span class="spark" style="margin-top:10px;">' + sparkHTML(s[4]) + '</span></div>'; }).join('');
-    var rows = REG.map(function (r) { var badge = r[5] === 'ok' ? 'badge-ok' : 'badge-err'; return '<div class="lab-trow"><span style="font-family:var(--serif);font-weight:700;font-size:16px;color:var(--accent);">' + r[0] + '</span><span><span class="mono" style="display:block;font-size:13px;color:var(--ink);">' + r[1] + '</span><span class="mono" style="display:block;font-size:8.5px;color:var(--faint);margin-top:2px;">logged ' + r[8] + '</span></span><span style="font-size:14px;color:var(--ink-2);">' + r[2] + '</span><span class="mono" style="font-size:12.5px;color:var(--accent);">' + r[3] + '</span><span class="mono" style="font-size:11px;color:var(--ink-2);">' + r[4] + '</span><span class="spark">' + sparkHTML(r[7], r[5]) + '</span><span style="text-align:right;"><span class="' + badge + '">' + r[6] + '</span></span></div>'; }).join('');
+    var stats = statsPanels().map(function (s) { var trend = s[3] ? '<span class="mono" style="font-size:9.5px;padding:1px 6px;border-radius:4px;color:var(--pass);background:color-mix(in srgb,var(--pass) 14%,transparent);">' + s[3] + '</span>' : ''; return '<div class="panel" style="padding:15px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span class="eyebrow" style="font-size:9.5px;">' + s[0] + '</span>' + trend + '</div><div style="font-family:var(--serif);font-weight:700;font-size:29px;letter-spacing:-.02em;color:var(--ink);line-height:1;">' + s[1] + '</div><div class="mono" style="font-size:10.5px;color:var(--faint);margin-top:6px;">' + esc(s[2]) + '</div><span class="spark" style="margin-top:10px;">' + sparkHTML(s[4]) + '</span></div>'; }).join('');
+    var rows = regRows().map(function (r) { var badge = r[5] === 'ok' ? 'badge-ok' : 'badge-err'; return '<div class="lab-trow"><span style="font-family:var(--serif);font-weight:700;font-size:16px;color:var(--accent);">' + r[0] + '</span><span><span class="mono" style="display:block;font-size:13px;color:var(--ink);">' + esc(r[1]) + '</span><span class="mono" style="display:block;font-size:8.5px;color:var(--faint);margin-top:2px;">' + esc(r[8]) + '</span></span><span style="font-size:14px;color:var(--ink-2);">' + esc(r[2]) + '</span><span class="mono" style="font-size:12.5px;color:var(--accent);">' + esc(r[3]) + '</span><span class="mono" style="font-size:11px;color:var(--ink-2);">' + esc(r[4]) + '</span><span class="spark">' + sparkHTML(r[7], r[5]) + '</span><span style="text-align:right;"><span class="' + badge + '">' + r[6] + '</span></span></div>'; }).join('');
     return '<div class="lab-sheet">' + head('§ 05 · Logbook', 'Best results to date, ranked by verified metric', 'Re-verifiable<br>judge = gate') +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0 26px;" class="lab-stats">' + stats + '</div>' +
-      '<div class="lab-tablewrap"><div class="lab-trow h"><span>#</span><span>Problem</span><span>Paradigm</span><span>Metric</span><span>Author</span><span>Trend</span><span style="text-align:right;">Result</span></div>' + rows + '</div>' +
-      '<p class="mono" style="font-size:10px;color:var(--ink-2);margin-top:14px;">No maintainer scores correctness — the judge is the merge gate. Anyone can re-run <span style="color:var(--accent);">judge_verify.py</span> on a committed bundle and reproduce the ranking.</p></div>';
+      '<div class="lab-tablewrap"><div class="lab-trow h"><span>#</span><span>Problem</span><span>Paradigm</span><span>Metric</span><span>Author</span><span>Quality</span><span style="text-align:right;">Result</span></div>' + rows + '</div>' +
+      '<p class="mono" style="font-size:10px;color:var(--ink-2);margin-top:14px;">Rendered from the generated scoreboard (one source of truth); the quality bars are the run\'s 5-axis profile. No maintainer scores correctness — the judge is the merge gate. Anyone can re-run <span style="color:var(--accent);">judge_verify.py</span> on a committed bundle and reproduce the ranking.</p></div>';
   }
 
   function secPrimer() {
@@ -306,7 +316,7 @@
     var inner = '<p class="eyebrow">Recipe → repository</p><h2 style="font-family:var(--serif);margin:6px 0 4px">' + repo + '</h2>' +
       '<p style="font-size:14px;color:var(--ink-2)">A <b>full-stack design</b> — ' + esc(hardwareSpec().chips.map(function (c) { return c.name; }).join(', ') || 'no hardware chosen') + ' running <b>' + esc((window.QMKnowledge.WORKLOADS[studio.workload] || {}).name || studio.workload) + '</b>, with a software recipe of ' + Object.keys(recipe.ings).length + ' verified ingredient(s) targeting <b>' + recipe.target + '</b>. Minting creates the repo AND writes this RECIPE.json into it (the Desktop <span class="mono">mint_recipe</span> tool does both); a model implements the design and the judge grades the result.' + (hardwareSpec().attestable ? ' The hardware names a <b>referee-pinned</b> generation, so an efficiency claim on it is attestable — not just correctness.' : ' The hardware is not referee-pinned, so only correctness is attestable.') + '</p>' +
       '<p class="eyebrow" style="margin-top:14px">RECIPE.json</p><div class="qm-cmd"><code>' + esc(recipeJSON()) + '</code><button class="qm-copy" data-copy>copy</button></div>' +
-      '<p class="eyebrow" style="margin-top:12px">Mint the repo</p>' + cmdBlock('gh repo create QuantumMytheme/' + repo + ' --template QuantumMytheme/quantum-harness --public --clone') + cmdBlock(recipeCmd()) +
+      '<p class="eyebrow" style="margin-top:12px">Mint the repo · lands under your own GitHub account</p>' + cmdBlock('gh repo create ' + repo + ' --template QuantumMytheme/quantum-harness --public --clone') + cmdBlock(recipeCmd()) +
       '<p style="margin-top:6px"><a class="btn" href="https://github.com/QuantumMytheme/quantum-harness/generate" target="_blank" rel="noopener">Use this template ↗</a></p>' + window.QMRunner.ghWidget(repo) + window.QMRunner.anonSubmitWidget(recipeJSON(), recipe.target);
     window.QMRunner.openOverlay('modal', inner);
   }
@@ -350,10 +360,13 @@
     var roleRows = a.roles.map(function (r) {
       var col = r.role === 'idle' ? 'var(--faint)' : (r.role === 'quantum-sim' || r.role === 'quantum-engine' ? 'var(--accent-2)' : 'var(--accent)');
       var chips = (picked[r.substrate] || []).join(', ');
+      // why this substrate got this role: engines/orchestrators show what they're good at;
+      // support + idle show the honest weakness that kept them off the engine seat.
+      var why = (r.role === 'idle' || r.role === 'support') ? r.sub.weak : r.sub.good;
       return '<div style="display:flex;gap:11px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--rule)">' +
         '<span style="flex:0 0 118px"><span class="mono" style="font-size:12px;font-weight:600;color:var(--ink)">' + esc(r.sub.name) + '</span>' + (chips ? '<br><span class="mono" style="font-size:8.5px;color:var(--faint)">' + esc(chips) + '</span>' : '') + '</span>' +
         '<span class="mono" style="flex:0 0 auto;font-size:10px;color:' + col + ';border:1px solid ' + col + ';border-radius:5px;padding:2px 7px">' + esc(r.label) + '</span>' +
-        '<span style="font-size:13px;color:var(--ink-2);line-height:1.35">' + esc(r.why) + '</span></div>';
+        '<span style="font-size:13px;color:var(--ink-2);line-height:1.35">' + esc(why) + '</span></div>';
     }).join('') || '<p class="mono" style="color:var(--faint);padding:10px 0">pick at least one chip above</p>';
     var toneName = { incumbent: 'most-used ≠ best', quantum: 'quantum reality', gap: 'gap' };
     var toneCol = { incumbent: '#c4880c', quantum: 'var(--accent-2)', gap: 'var(--reject)' };
@@ -441,31 +454,30 @@
   function renderSubmit() {
     var c = document.getElementById('qm-sub'); if (!c) return;
     var b = BRIEFS.filter(function (x) { return x[0] === sub.brief; })[0] || BRIEFS[0];
-    var repo = 'run-' + b[0] + '-2026-06-16';
+    var repo = 'run-' + b[0] + '-' + new Date().toISOString().slice(0, 10);
     var pills = BRIEFS.map(function (x) { var on = sub.brief === x[0]; return '<button class="chip" data-subbrief="' + x[0] + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + x[1] + '</button>'; }).join('');
     var modelName = (MODELS.filter(function (m) { return m[0] === state.model; })[0] || MODELS[0])[1];
     var pathTabs = '<div class="qm-pathtab"><button data-path="web" aria-pressed="' + (sub.path === 'web') + '">Web (Use this template)</button><button data-path="cli" aria-pressed="' + (sub.path === 'cli') + '">CLI (gh)</button></div>';
     var createBody = sub.path === 'web'
-      ? '<p>Open the template generator and name the repo <span class="mono">' + repo + '</span> under the <span class="mono">QuantumMytheme</span> org (public):</p>' +
-        '<div class="qm-cmd"><code>github.com/QuantumMytheme/quantum-harness → "Use this template" → Create a new repository</code><button class="qm-copy" data-copy>copy</button></div>' +
+      ? '<p>Open the template generator and name the repo <span class="mono">' + repo + '</span> under <b>your own account</b> (public) — no org membership needed. Then add the repo topic <span class="mono">quantum-harness-run</span> so the board discovers it:</p>' +
+        '<div class="qm-cmd"><code>github.com/QuantumMytheme/quantum-harness → "Use this template" → owner: you → Public</code><button class="qm-copy" data-copy>copy</button></div>' +
         '<p style="margin-top:8px;"><a class="btn primary" href="https://github.com/QuantumMytheme/quantum-harness/generate" target="_blank" rel="noopener">Open template generator ↗</a></p>'
-      : cmdBlock('gh repo create QuantumMytheme/' + repo + ' --template QuantumMytheme/quantum-harness --public --clone') +
-        '<p style="margin-top:6px;font-size:13px;color:var(--ink-2);">Then scaffold the run (optionally remixing the current best):</p>' +
-        cmdBlock('cd ' + repo + ' && bin/new-run.sh ' + repo + ' --remix ' + b[0]);
+      : '<p style="font-size:13px;color:var(--ink-2);">One command — mints the repo under <b>your account</b>, tags it for discovery, clones it, and pre-loads the current frontier (org members can add <span class="mono">--org QuantumMytheme</span>):</p>' +
+        cmdBlock('bin/new-run.sh ' + repo + ' --remix ' + b[0]);
     c.innerHTML =
       '<p class="eyebrow">Submission flow</p><h2 style="font-family:var(--serif);margin:6px 0 4px;">Start a verified run</h2>' +
       '<p style="font-size:14px;color:var(--ink-2);margin:0 0 14px;">Pick a brief, set up before GitHub, mint the repo, run your model, and let the judge merge it. Every command is copy-ready.</p>' +
       '<div class="controls" style="margin-bottom:18px;">' + pills + '</div>' +
       '<div class="qm-step"><span class="num">0</span><div><h4>Before you start · prerequisites</h4>' +
-        '<ul class="qm-checklist"><li><span class="mk">▸</span><span>A <b>GitHub account</b> (the run repo lives in the public QuantumMytheme org or your own).</span></li>' +
+        '<ul class="qm-checklist"><li><span class="mk">▸</span><span>A <b>GitHub account</b> (the public run repo lives under <b>your</b> account; QuantumMytheme members can mint into the org).</span></li>' +
         '<li><span class="mk">▸</span><span>A <b>capable model</b> — your pick: <b>' + modelName + '</b> (subscription or API). Mythos / Fable 5 / Opus 4.8 / bring your own.</span></li>' +
         '<li><span class="mk">▸</span><span><b>Python 3 + numpy</b> to judge locally (the bench is numpy-only, no QPU):</span></li></ul>' +
         cmdBlock('python3 -m pip install numpy') +
         '<p style="font-size:12.5px;">Optional but recommended — the <b>GitHub CLI</b> for one-command repo creation:</p>' + cmdBlock('gh auth login') + '</div></div>' +
-      '<div class="qm-step"><span class="num">1</span><div><h4>Create your run repo</h4><p>Two paths — both fork the template <span class="mono">QuantumMytheme/quantum-harness</span> into a fresh public repo.</p>' + pathTabs + createBody + window.QMRunner.ghWidget(repo) + '</div></div>' +
-      '<div class="qm-step"><span class="num">2</span><div><h4>Point your model at the brief</h4><p>Run the kickoff with <b>' + modelName + '</b> (or paste <span class="mono">KICKOFF.md</span> into your model). It self-corrects against the rubric until every gate is green.</p>' + cmdBlock('claude --kickoff KICKOFF.md   # brief: ' + b[0]) + '</div></div>' +
+      '<div class="qm-step"><span class="num">1</span><div><h4>Create your run repo</h4><p>Two paths — both fork the template <span class="mono">QuantumMytheme/quantum-harness</span> into a fresh public repo under your account.</p>' + pathTabs + createBody + window.QMRunner.ghWidget(repo) + '</div></div>' +
+      '<div class="qm-step"><span class="num">2</span><div><h4>Point your model at the brief</h4><p>Run the kickoff with <b>' + modelName + '</b> (or paste <span class="mono">KICKOFF.md</span> into your model). It self-corrects against the rubric until every gate is green.</p>' + cmdBlock('claude "$(cat KICKOFF.md)"   # brief: ' + b[0]) + '</div></div>' +
       '<div class="qm-step"><span class="num">3</span><div><h4>Judge it — locally and in the browser</h4><p>The hermetic numpy judge re-simulates the circuit and returns ACCEPT (exit 0) or REJECT. You can also <a href="#" data-run="' + (window.QMRunner.RUNS[b[0]] ? b[0] : 'ghz3') + '">re-run a reference circuit in the browser ▸</a>.</p>' + cmdBlock('python3 bench/quantum-judge/judge_verify.py quantum-proof-' + b[0] + '.json') + '</div></div>' +
-      '<div class="qm-step"><span class="num">4</span><div><h4>Commit &amp; push — the judge is the merge gate</h4><p>Push the proof bundle, scorecard, and a scrubbed transcript; it auto-registers on the public board.</p>' + cmdBlock('git add -A && git commit -m "' + b[0] + ' run" && git push') + '</div></div>';
+      '<div class="qm-step"><span class="num">4</span><div><h4>Commit &amp; push — the judge is the merge gate</h4><p>Push the proof bundle, a <span class="mono">scoreboard-entry.json</span>, and a scrubbed transcript. With the <span class="mono">quantum-harness-run</span> topic set, the crawler discovers it and the board re-judges it before it ranks — no PR, no org membership.</p>' + cmdBlock('git add -A && git commit -m "' + b[0] + ' run" && git push') + '</div></div>';
   }
 
   // ─────────────────────────── ANIMATION LOOP ───────────────────────────

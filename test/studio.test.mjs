@@ -83,6 +83,29 @@ test('the "pretend you have a superpod" what-if is present and honestly labelled
   assert.ok(K.CHIPS.find(c => c.id === 'tpu-8t' && c.pinned), 'TPU 8t is pinned for FP4')
 })
 
+test('Studio allocation rows never render the literal "undefined"', () => {
+  // Regression: lab.js used to render r.why, which allocate() never emits — every
+  // row's description column showed the string "undefined". lab.js now derives the
+  // description from the substrate's own good/weak text; assert (a) the old bug is
+  // gone at the source and (b) the derivation is total for every workload × role.
+  const labSrc = readFileSync(fileURLToPath(new URL('../viewer/lab.js', import.meta.url)), 'utf8')
+  assert.doesNotMatch(labSrc, /esc\(r\.why\)/, 'lab.js must not render the non-existent r.why')
+  assert.match(labSrc, /r\.sub\.weak : r\.sub\.good/, 'lab.js derives the row text from sub.good/sub.weak')
+  for (const s of Object.values(K.SUBSTRATES)) {
+    assert.ok(typeof s.good === 'string' && s.good.length, `${s.name}: sub.good present`)
+    assert.ok(typeof s.weak === 'string' && s.weak.length, `${s.name}: sub.weak present`)
+  }
+  for (const id of Object.keys(K.WORKLOADS)) {
+    const a = K.allocate({ cpu: true, gpu: true, tpu: true, qpu: true }, id)
+    for (const r of a.roles) {
+      const why = (r.role === 'idle' || r.role === 'support') ? r.sub.weak : r.sub.good // mirrors lab.js
+      assert.equal(typeof why, 'string', `${id}/${r.substrate}: description is a string`)
+      assert.ok(why.length > 0 && !/\bundefined\b/.test(why), `${id}/${r.substrate}: no "undefined" in the row`)
+      assert.ok(typeof r.label === 'string' && r.label.length, `${id}/${r.substrate}: role label present`)
+    }
+  }
+})
+
 test('transformer inference is flagged as most-used, not best, with real alternatives', () => {
   const a = K.allocate({ cpu: true, tpu: true }, 'transformer-infer')
   assert.ok(K.WORKLOADS['transformer-infer'].dominant, 'transformer-infer is the dominant workload')
