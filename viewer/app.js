@@ -403,6 +403,34 @@ function renderLeague() {
     'until then it renders greyed as an anecdote. Fill an untested cell (the wanted board has the exact mint command) and the sample grows.</p>';
 }
 
+/* ------------------------ frontier changelog ------------------------------ */
+/* Timeline of the last ~10 typed ledger events (window.SCOREBOARD_DATA.changelog,
+   newest first) + a link to the Atom feed. Dates are each entry's verified_at —
+   the ledger never invents timestamps at build time. */
+function renderChangelog() {
+  const d = window.SCOREBOARD_DATA, el = document.getElementById('sb-changelog'), K = window.QMKnowledge;
+  if (!el || !d || !d.changelog || !d.changelog.length) return;
+  const esc = K ? K.esc : (s => String(s));
+  const chip = t => `<span class="chtype chtype-${esc(String(t).toLowerCase().replace(/_/g, ''))}">${esc(String(t).replace(/_/g, ' '))}</span>`;
+  const items = d.changelog.map(e =>
+    `<li class="chlog-item">` +
+    `<span class="chdate mono">${esc(e.date || '—')}</span>${chip(e.type)}` +
+    (e.problem_id ? ` <b class="mono">${esc(e.problem_id)}</b>` : '') +
+    ` <span class="chdetail">${esc(e.detail)}</span>` +
+    (e.genesis ? ` <span class="chgen" title="backfilled from the board state when the ledger was created — the true event order predates the ledger">genesis</span>` : '') +
+    (e.run_repo ? ` <a href="${esc(e.run_repo)}">run ↗</a>` : '') +
+    `</li>`).join('');
+  el.innerHTML =
+    '<h3>Frontier changelog — what moved, and when</h3>' +
+    '<p class="lead">Typed events appended by the scoreboard build whenever the verified frontier moves: a rank-1 dethroned, ' +
+    'a Pareto expansion, a new paradigm or board, a runner-up closing the gap. Append-only, every number judge-emitted. ' +
+    '<a href="feed.xml" type="application/atom+xml">Subscribe — Atom feed ↗</a></p>' +
+    `<ol class="chlog">${items}</ol>` +
+    '<p class="figcap"><b>Dates, honestly.</b> Each event is dated by the triggering entry\'s <span class="mono">verified_at</span> ' +
+    '(the submitter\'s last judge re-run) — never by the build clock. The full append-only ledger is ' +
+    '<a href="https://github.com/QuantumMytheme/quantum-harness/blob/main/scoreboard/frontier-history.json">scoreboard/frontier-history.json ↗</a>.</p>';
+}
+
 // scoreboard interactions: sort / filter / open the problem + quality card
 document.addEventListener('click', (e) => {
   const sortBtn = e.target.closest('[data-sbsort]');
@@ -418,6 +446,6 @@ document.addEventListener('click', (e) => {
 
 /* -------------------------------- boot ----------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
-  setupTheme(); ambient(); pipeline(); blochSection(); topologySection(); classifierSection(); renderScoreboard(); renderLeague();
+  setupTheme(); ambient(); pipeline(); blochSection(); topologySection(); classifierSection(); renderScoreboard(); renderLeague(); renderChangelog();
   const y = document.getElementById('year'); if (y) y.textContent = '2026';
 });

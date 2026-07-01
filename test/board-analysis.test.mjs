@@ -1,18 +1,24 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, cpSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { spawnSync } from 'node:child_process'
 
 // ---------------------------------------------------------------------------
 // Panel-judged board analysis layers:
 //   1. Paradigm League — (paradigm family × task) rollup with the n<3
 //      "anecdote, not evidence" honesty gate.
-// Pure file/function checks — no network.
+//   2. Frontier Log + Ledger — append-only typed events (diffed against the
+//      committed frontier-history.json) + Atom feed; byte-stable no-event
+//      rebuilds (dates come from verified_at, never the build clock).
+// Pure file/function/spawn checks — no network.
 // ---------------------------------------------------------------------------
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const v = p => join(ROOT, 'viewer', p)
-const { buildParadigms } = await import(new URL('../scoreboard/build.mjs', import.meta.url))
+const { buildParadigms, frontierSnapshot, genesisEvents, diffFrontier, atomFeed, buildAll } =
+  await import(new URL('../scoreboard/build.mjs', import.meta.url))
 
 const sbData = () => {
   const s = readFileSync(v('scoreboard-data.js'), 'utf8')
@@ -102,4 +108,195 @@ test('league viewer wiring: container, renderer, grey anecdote badge, CSP-clean'
   assert.doesNotMatch(app, /on(click|mouseover|load)\s*=/i, 'no inline handlers — CSP-clean')
   const css = readFileSync(v('style.css'), 'utf8')
   for (const cls of ['.sb-league', '.anecbadge', 'tr.league-row.anecdote']) assert.ok(css.includes(cls), `style.css styles ${cls}`)
+})
+
+/* --------------------- 2 · frontier log + ledger -------------------------- */
+const vqe = (pid, para, value, twoq, repo) => ({
+  problem_id: pid, task: 'vqe', paradigm_short: para, model: 'm', verified_at: '2026-06-20',
+  run_repo: repo || `https://github.com/x/${pid}-${para}`, proof_bundle: 'b.json',
+  verified_metric: { value, gap_budget: 0.05 },
+  resource_costs: { two_qubit_gates: twoq, depth: 2, n_qubits: 2 },
+})
+
+test('genesisEvents backfills the current state: NEW_PROBLEM per board, NEW_LEADER only for contested boards, all genesis-flagged', () => {
+  const byProblem = {
+    p1: [vqe('p1', 'qaoa', 0.001, 4), vqe('p1', 'hwe', 0.01, 2)],
+    p2: [vqe('p2', 'ring', 0.02, 2)],
+  }
+  const ev = genesisEvents(frontierSnapshot(byProblem), byProblem)
+  assert.deepEqual(ev.map(e => e.type), ['NEW_PROBLEM', 'NEW_LEADER', 'NEW_PROBLEM'])
+  for (const e of ev) {
+    assert.equal(e.genesis, true, 'genesis events are labeled — the true order predates the ledger')
+    assert.equal(e.date, '2026-06-20', 'event dates come from verified_at')
+    assert.ok(!('observed' in e), 'no observed stamp unless the operator passes --now')
+  }
+  assert.match(ev[1].detail, /qaoa holds rank 1 of 2/)
+})
+
+test('diffFrontier: a synthetic rank flip fires exactly one NEW_LEADER with judge-emitted numbers', () => {
+  const before = { p1: [vqe('p1', 'hwe', 0.01, 2)] }
+  const after = { p1: [vqe('p1', 'hwe', 0.01, 2), vqe('p1', 'qaoa', 0.001, 2)] }
+  const ev = diffFrontier(frontierSnapshot(before), frontierSnapshot(after), after)
+  assert.deepEqual(ev.map(e => e.type), ['NEW_LEADER'], 'the dethroning point never double-fires PARETO_EXPANSION')
+  assert.equal(ev[0].problem_id, 'p1')
+  assert.match(ev[0].detail, /qaoa took rank 1 from hwe — metric 0\.01 → 0\.001/)
+  assert.equal(ev[0].date, '2026-06-20')
+})
+
+test('diffFrontier: a no-change rebuild emits nothing', () => {
+  const byProblem = { p1: [vqe('p1', 'qaoa', 0.001, 4), vqe('p1', 'hwe', 0.01, 2)] }
+  assert.deepEqual(diffFrontier(frontierSnapshot(byProblem), frontierSnapshot(byProblem), byProblem), [])
+})
+
+test('diffFrontier: PARETO_EXPANSION fires for a new non-dominated non-leader point', () => {
+  const before = { p1: [vqe('p1', 'qaoa', 0.001, 4)] }
+  const after = { p1: [vqe('p1', 'qaoa', 0.001, 4), vqe('p1', 'hwe', 0.01, 2)] } // worse metric, cheaper → non-dominated
+  const ev = diffFrontier(frontierSnapshot(before), frontierSnapshot(after), after)
+  assert.deepEqual(ev.map(e => e.type), ['PARETO_EXPANSION'])
+  assert.match(ev[0].detail, /hwe/)
+})
+
+test('diffFrontier: GAP_NARROWED fires when the runner-up closes in without a dethrone; never on no-change', () => {
+  const before = { p1: [vqe('p1', 'lead', 0.001, 2), vqe('p1', 'hwe', 0.01, 1)] }
+  // new dominated entry (worse metric, more gates) that still becomes the closer runner-up
+  const after = { p1: [...before.p1, vqe('p1', 'qaoa', 0.005, 3)] }
+  const ev = diffFrontier(frontierSnapshot(before), frontierSnapshot(after), after)
+  assert.deepEqual(ev.map(e => e.type), ['GAP_NARROWED'])
+  assert.match(ev[0].detail, /0\.009 → 0\.004/)
+  // a farther entry of a known paradigm narrows nothing and fires nothing
+  const far = { p1: [...before.p1, vqe('p1', 'hwe', 0.02, 3)] }
+  assert.deepEqual(diffFrontier(frontierSnapshot(before), frontierSnapshot(far), far), [])
+})
+
+test('diffFrontier: NEW_PARADIGM fires on an existing board, and is suppressed when it only rides in on a NEW_PROBLEM', () => {
+  const before = { p1: [vqe('p1', 'qaoa', 0.001, 2)] }
+  // dominated newcomer (worse metric, more gates) → no PARETO event, only the paradigm is new
+  const after = { p1: [vqe('p1', 'qaoa', 0.001, 2), vqe('p1', 'brickwork', 0.01, 4)] }
+  const ev = diffFrontier(frontierSnapshot(before), frontierSnapshot(after), after)
+  assert.deepEqual(ev.map(e => e.type), ['NEW_PARADIGM'])
+  assert.match(ev[0].detail, /brickwork/)
+  // a paradigm arriving only with a brand-new board is already named by NEW_PROBLEM
+  const fresh = { p2: [vqe('p2', 'heavy-hex', 0.01, 2)] }
+  const ev2 = diffFrontier(frontierSnapshot(before), frontierSnapshot({ ...before, ...fresh }), { ...before, ...fresh })
+  assert.deepEqual(ev2.map(e => e.type), ['NEW_PROBLEM'])
+})
+
+test('--now stamps observed ONLY on genuinely-appended events (and is omitted by default)', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'qh-ledger-'))
+  try {
+    for (const dir of ['scoreboard', 'bench/quantum-judge', 'bench/kernel-judge/references'])
+      cpSync(join(ROOT, dir), join(tmp, dir), { recursive: true })
+    mkdirSync(join(tmp, 'viewer'), { recursive: true })
+    rmSync(join(tmp, 'scoreboard', 'frontier-history.json'), { force: true })   // force genesis
+    const a = buildAll(tmp, { now: '2026-07-01' })
+    assert.ok(a.pendingEvents.length >= 7, 'genesis appends events')
+    for (const e of a.pendingEvents) {
+      assert.equal(e.observed, '2026-07-01')
+      assert.notEqual(e.date, '2026-07-01', 'date stays the entry verified_at — observed never overwrites it')
+    }
+    const b = buildAll(tmp)   // no --now
+    for (const e of b.pendingEvents) assert.ok(!('observed' in e))
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
+})
+
+test('a no-event rebuild is byte-stable: build twice, all three generated files identical; --check exits 0', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'qh-stable-'))
+  try {
+    for (const dir of ['scoreboard', 'bench/quantum-judge', 'bench/kernel-judge/references'])
+      cpSync(join(ROOT, dir), join(tmp, dir), { recursive: true })
+    mkdirSync(join(tmp, 'viewer'), { recursive: true })
+    const build = () => spawnSync(process.execPath, [join(tmp, 'scoreboard', 'build.mjs')], { encoding: 'utf8' })
+    const snap = () => ['viewer/scoreboard-data.js', 'scoreboard/frontier-history.json', 'viewer/feed.xml']
+      .map(f => readFileSync(join(tmp, f), 'utf8'))
+    const r1 = build(); assert.equal(r1.status, 0, r1.stderr)
+    const s1 = snap()
+    const r2 = build(); assert.equal(r2.status, 0, r2.stderr)
+    assert.match(r2.stdout, /no new events/)
+    const s2 = snap()
+    // scoreboard-data may differ only in the generated date; history + feed must be byte-identical
+    const strip = s => s.replace(/"generated":\s*"[^"]*",?\n?/, '')
+    assert.equal(strip(s2[0]), strip(s1[0]), 'scoreboard-data.js is stable (modulo the generated date)')
+    assert.equal(s2[1], s1[1], 'frontier-history.json is byte-identical — no clock reads')
+    assert.equal(s2[2], s1[2], 'feed.xml is byte-identical — no clock reads')
+    const c = spawnSync(process.execPath, [join(tmp, 'scoreboard', 'build.mjs'), '--check'], { encoding: 'utf8' })
+    assert.equal(c.status, 0, `--check is green after a rebuild\n${c.stderr}`)
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
+})
+
+test('the COMMITTED board, history and feed are fresh (build.mjs --check green in-repo)', () => {
+  const c = spawnSync(process.execPath, [join(ROOT, 'scoreboard', 'build.mjs'), '--check'], { encoding: 'utf8' })
+  assert.equal(c.status, 0, c.stderr)
+})
+
+// minimal well-formedness checker (no XML parser in node's stdlib): balanced
+// tags, quoted attributes, no unescaped < or & in text nodes.
+function assertWellFormedXml(xml) {
+  assert.match(xml, /^<\?xml version="1\.0" encoding="utf-8"\?>\n/)
+  const body = xml.replace(/^<\?xml[^>]*\?>/, '')
+  const tagRe = /<(\/?)([A-Za-z][\w:-]*)((?:\s+[\w:-]+="[^"<>]*")*)\s*(\/?)>/g
+  const stack = []
+  let m, last = 0
+  while ((m = tagRe.exec(body))) {
+    const text = body.slice(last, m.index)
+    assert.doesNotMatch(text, /</, 'no stray < in text')
+    assert.doesNotMatch(text, /&(?!amp;|lt;|gt;|quot;|apos;|#\d+;)/, 'no unescaped & in text')
+    last = tagRe.lastIndex
+    if (m[4] === '/') continue
+    if (m[1] === '/') assert.equal(stack.pop(), m[2], `</${m[2]}> matches its opener`)
+    else stack.push(m[2])
+  }
+  assert.doesNotMatch(body.slice(last), /[<&]/)
+  assert.deepEqual(stack, [], 'all tags closed')
+}
+
+test('feed.xml is a valid Atom feed: well-formed, absolute quantummytheme.com URLs, unique ids, ≤50 entries', () => {
+  const xml = readFileSync(v('feed.xml'), 'utf8')
+  assertWellFormedXml(xml)
+  assert.match(xml, /<feed xmlns="http:\/\/www\.w3\.org\/2005\/Atom">/)
+  for (const el of ['<title>', '<id>', '<updated>', 'rel="self"']) assert.ok(xml.includes(el), `feed carries ${el}`)
+  const entries = xml.split('<entry>').slice(1)
+  assert.ok(entries.length >= 1 && entries.length <= 50)
+  const ids = entries.map(e => (e.match(/<id>([^<]+)<\/id>/) || [])[1])
+  for (const id of ids) assert.match(id, /^https:\/\/quantummytheme\.com\//, 'entry ids are absolute site URLs')
+  assert.equal(new Set(ids).size, ids.length, 'entry ids are unique')
+  for (const e of entries) for (const el of ['<title>', '<updated>', '<link ']) assert.ok(e.includes(el), `every entry carries ${el}`)
+  for (const href of [...xml.matchAll(/href="([^"]+)"/g)].map(x => x[1]))
+    assert.match(href, /^https:\/\/quantummytheme\.com\//, 'all links are absolute site URLs')
+  // dates come from verified_at (or --now observed) — the build clock is never used
+  assert.doesNotMatch(readFileSync(join(ROOT, 'scoreboard', 'build.mjs'), 'utf8'),
+    /Date\.now|new Date\(\)[^\n]*(atomFeed|event)/i, 'no clock reads in the ledger path')
+})
+
+test('atomFeed truncates to the last 50 events, newest first', () => {
+  const events = Array.from({ length: 60 }, (_, i) => ({
+    seq: i + 1, type: 'NEW_PROBLEM', problem_id: `p${i + 1}`, date: '2026-06-20',
+    detail: `board opened <${i + 1}> & counting`, run_repo: 'https://github.com/x/y', proof_bundle: 'b.json',
+  }))
+  const xml = atomFeed({ events })
+  assertWellFormedXml(xml)
+  const got = [...xml.matchAll(/<id>https:\/\/quantummytheme\.com\/feed\.xml#e(\d+)<\/id>/g)].map(x => +x[1])
+  assert.equal(got.length, 50)
+  assert.equal(got[0], 60, 'newest first')
+  assert.equal(got[49], 11, 'oldest retained is seq 11')
+})
+
+test('ledger + changelog viewer wiring: committed history is append-only-labeled, payload carries last events newest-first, UI + feed link present', () => {
+  const hist = JSON.parse(readFileSync(join(ROOT, 'scoreboard', 'frontier-history.json'), 'utf8'))
+  assert.equal(hist.schema, 'quantummytheme/frontier-history@1')
+  assert.match(hist.note, /Append-only/i)
+  assert.ok(Array.isArray(hist.events) && hist.events.length >= 7)
+  hist.events.forEach((e, i) => {
+    assert.equal(e.seq, i + 1, 'seq is dense and append-ordered')
+    assert.ok(['NEW_LEADER', 'PARETO_EXPANSION', 'NEW_PARADIGM', 'NEW_PROBLEM', 'GAP_NARROWED'].includes(e.type))
+  })
+  const d = sbData()
+  assert.ok(Array.isArray(d.changelog) && d.changelog.length >= 1 && d.changelog.length <= 10)
+  for (let i = 1; i < d.changelog.length; i++) assert.ok(d.changelog[i - 1].seq > d.changelog[i].seq, 'newest first')
+  const html = readFileSync(v('index.html'), 'utf8')
+  assert.match(html, /id="sb-changelog"/)
+  assert.match(html, /<link rel="alternate" type="application\/atom\+xml"[^>]*href="https:\/\/quantummytheme\.com\/feed\.xml"/)
+  const app = readFileSync(v('app.js'), 'utf8')
+  assert.match(app, /renderChangelog/)
+  assert.match(app, /never[^<]*build clock|never by the build clock/i, 'the date-honesty rule is stated in the UI')
+  assert.ok(readFileSync(v('style.css'), 'utf8').includes('.chlog'))
 })

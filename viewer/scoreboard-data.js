@@ -909,5 +909,87 @@ window.SCOREBOARD_DATA = {
       ],
       "evidence": false
     }
+  ],
+  "changelog": [
+    {
+      "type": "NEW_LEADER",
+      "problem_id": "tfim3",
+      "date": "2026-06-16",
+      "detail": "qaoa holds rank 1 of 2 verified designs (metric 0.000103138); backfilled at genesis — the dethrone order predates this ledger",
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "genesis": true,
+      "seq": 8
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "tfim3",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: qaoa (metric 0.000103138); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+      "proof_bundle": "quantum-proof-tfim3.json",
+      "genesis": true,
+      "seq": 7
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "qml_sign1",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: low-frequency-encoding (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-qml.json",
+      "genesis": true,
+      "seq": 6
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "isingbell2",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: minimal-bell-ansatz (metric 0); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-vqe.json",
+      "genesis": true,
+      "seq": 5
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "h2vqe",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: hardware-efficient-h2 (metric 0.000404711); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-h2.json",
+      "genesis": true,
+      "seq": 4
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "ghz3",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: chain-cascade (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-poc.json",
+      "genesis": true,
+      "seq": 3
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "bell_pops2",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: phase-correct-bell (metric 1); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-pops.json",
+      "genesis": true,
+      "seq": 2
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "aiaccel4",
+      "date": "2026-06-16",
+      "detail": "board opened — leading design: ring (metric 2); backfilled at genesis from the current board state",
+      "run_repo": "https://github.com/QuantumMytheme/quantum-harness",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-arch.json",
+      "genesis": true,
+      "seq": 1
+    }
   ]
 };

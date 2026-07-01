@@ -286,6 +286,36 @@ An untested cell is **untried** — the league never claims a gap is impossible 
 
 ---
 
+## (c3) The frontier ledger — an append-only log of "the frontier moved"
+
+Every rebuild diffs the freshly-computed board against the committed
+[`scoreboard/frontier-history.json`](scoreboard/frontier-history.json) and **appends**
+typed events — `NEW_LEADER` (a rank-1 dethroned), `PARETO_EXPANSION` (a new
+non-dominated point), `NEW_PARADIGM` (a design family's first appearance, when no
+other event already names it), `NEW_PROBLEM` (a board opened), `GAP_NARROWED` (the
+runner-up closed on the leader). Three surfaces, all generated from the same ledger:
+
+- **the history file** — append-only (`events` are never rewritten; the `snapshot`
+  is just the cache the next diff runs against), committed alongside the board;
+- **[`viewer/feed.xml`](https://quantummytheme.com/feed.xml)** — an Atom feed of the
+  last ~50 events, so "check the site weekly" becomes "subscribe once". Every event
+  body carries the judge-emitted numbers and the exact re-verify command
+  (`python3 bench/quantum-judge/judge_verify.py <bundle>`) — an alert is a claim a
+  stranger can recheck;
+- **the "Frontier changelog" timeline** under the scoreboard (last ~10 events).
+
+**Dates, honestly.** An event's `date` is the triggering entry's `verified_at` (the
+submitter's last judge re-run) — the build **never** stamps events with its own
+clock, so a no-event rebuild is byte-stable under the `--check` staleness gate. If
+the operator wants a "when observed" stamp they pass `--now YYYY-MM-DD`, which is
+stored as `observed` only on genuinely-appended events; by default the field is
+omitted. The first ledger entries were **backfilled at genesis** from the
+then-current board state and are flagged `genesis: true` — the true opening order
+predates the ledger, and the events say so rather than pretending to a history the
+file wasn't there to witness.
+
+---
+
 ## (f) Status — honest
 
 **Phase 1 is now partly shipped.** An **aggregator** (`scoreboard/build.mjs`) ranks

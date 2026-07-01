@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>QuantumMytheme — frontier ledger</title>
+  <subtitle>Typed events appended by scoreboard/build.mjs whenever the verified frontier moves. Every number is judge-emitted; event dates are each entry's verified_at (the submitter's last judge re-run), never a build-time clock read.</subtitle>
+  <id>https://quantummytheme.com/feed.xml</id>
+  <link href="https://quantummytheme.com/feed.xml" rel="self" type="application/atom+xml"/>
+  <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+  <updated>2026-06-16T00:00:00Z</updated>
+  <author><name>QuantumMytheme scoreboard build</name></author>
+  <entry>
+    <title>NEW_LEADER · tfim3 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e8</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">qaoa holds rank 1 of 2 verified designs (metric 0.000103138); backfilled at genesis — the dethrone order predates this ledger · run repo: https://github.com/QuantumMytheme/run-tfim3-qaoa · re-verify: python3 bench/quantum-judge/judge_verify.py quantum-proof-tfim3.json (bundle from https://github.com/QuantumMytheme/run-tfim3-qaoa)</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · tfim3 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e7</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: qaoa (metric 0.000103138); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/run-tfim3-qaoa · re-verify: python3 bench/quantum-judge/judge_verify.py quantum-proof-tfim3.json (bundle from https://github.com/QuantumMytheme/run-tfim3-qaoa)</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · qml_sign1 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e6</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: low-frequency-encoding (metric 1); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/quantum-harness · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-qml.json</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · isingbell2 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e5</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: minimal-bell-ansatz (metric 0); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/quantum-harness · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-vqe.json</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · h2vqe (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e4</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: hardware-efficient-h2 (metric 0.000404711); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/quantum-harness · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-h2.json</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · ghz3 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e3</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: chain-cascade (metric 1); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/quantum-harness · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-poc.json</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · bell_pops2 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e2</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: phase-correct-bell (metric 1); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/quantum-harness · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-pops.json</content>
+  </entry>
+  <entry>
+    <title>NEW_PROBLEM · aiaccel4 (genesis backfill)</title>
+    <id>https://quantummytheme.com/feed.xml#e1</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-06-16T00:00:00Z</updated>
+    <content type="text">board opened — leading design: ring (metric 2); backfilled at genesis from the current board state · run repo: https://github.com/QuantumMytheme/quantum-harness · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-arch.json</content>
+  </entry>
+</feed>
