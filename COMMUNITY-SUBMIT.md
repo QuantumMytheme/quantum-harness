@@ -58,3 +58,60 @@ To turn it off, delete `MINT_TOKEN` (or `TURNSTILE_SECRET`) and redeploy.
   be silently lost in an empty shell repo), the just-created repo is **deleted and the
   request fails with a 502** — no junk `community-*` repos, no false "✓ submitted", and
   the rate-limit slot is not consumed.
+
+---
+
+# Replication Census — "replicated in-browser ×N"
+
+An anonymous, Turnstile-gated, rate-limited **counter** of successful in-browser
+re-verifications. When a visitor re-runs the real judge in their browser (the lab's
+Pyodide runner) and it ACCEPTs a committed bundle, they can click **"Record it"** and the
+bundle's public counter ticks: scoreboard rows then show a subtle
+**"replicated in-browser ×N · <date>"** chip.
+
+## What it is — and, more importantly, what it is NOT
+
+- **It is NOT verification.** The judge verdict is the authority — anyone can re-run the
+  judge themselves; the census merely counts that people did. The chip's hover text says
+  exactly this: *"anonymous in-browser re-runs; the judge verdict is the authority."*
+- **It is distinct from "reproduced ×N (attested)".** That's the separate PR-based
+  attestation layer in `scoreboard/` where a named person commits a reproduction. The
+  census is the complementary lightweight anonymous tier, and is always worded
+  **"replicated in-browser ×N"** so the two are never conflated.
+- **It can be inflated — but only as far as the caps allow.** It's an anonymous counter
+  behind Turnstile with a per-IP daily cap (5) and a global daily cap (500). Treat the
+  number as "how much friendly traffic re-ran this", not as evidence. Counts are coarse:
+  a concurrent-click race can *drop* an increment (KV is last-write-wins), never
+  over-count.
+
+## What's stored (in the `SUBMIT_RATE` KV namespace, distinct `repl` key prefixes)
+
+| Key | Value | Lifetime |
+|---|---|---|
+| `repl:<sha256>` | `{"n": <count>, "last": "YYYY-MM-DD"}` — count + last date **only** | persistent |
+| `repl-day:<ip>:<day>` | per-IP daily-cap counter — the **only transient PII**, never joined to a bundle hash | expires in 48 h |
+| `repl-day:all:<day>` | global daily-cap counter | expires in 48 h |
+
+No accounts, no names, no user agents, no per-replication log — a hash, a count, a date.
+
+## Endpoints (in `viewer/_worker.js`)
+
+- `GET /api/replications` → `{ enabled, sitekey, counts }` — also the UI's enabled-probe.
+  With `?hashes=<sha256>,<sha256>,…` (≤ 30) returns `counts: { <sha256>: { n, last } }`
+  for the recorded ones. Cached 5 minutes. **When Turnstile or the KV binding is missing
+  it returns `{ enabled: false }`** and `viewer/census.js` renders nothing at all.
+- `POST /api/replications` `{ sha256, problem_id, turnstile_token }` → verifies Turnstile,
+  validates the sha256 shape + `problem_id` against the known problem set, enforces the
+  caps, increments the counter, returns `{ ok, sha256, n, last }`. **Fail-closed: 503**
+  with provisioning instructions when unconfigured.
+
+## One-time setup (site owner)
+
+1. **Turnstile**: reuse (or create) the widget from the anonymous-submit setup above —
+   `TURNSTILE_SECRET` (encrypted) + `TURNSTILE_SITEKEY` (plaintext) on the Pages project.
+2. **KV**: bind the `SUBMIT_RATE` KV namespace (required for the census — it holds the
+   counters, not just the caps).
+3. Redeploy. `GET /api/replications` flips to `{ enabled: true }`; until then the site
+   shows no census UI anywhere (dark-safe).
+
+Note the census needs **no `MINT_TOKEN`** — it never writes to GitHub.
