@@ -8,37 +8,54 @@
 
 Order ≈ priority. Status: ☐ todo · ◐ in progress · ☑ done.
 
-## ☐ 1. Hardware-efficient ansatz study (state_prep under a real native set)
+## ☑ 1. Hardware-efficient ansatz study (state_prep under a real native set) — ghz3_he is LIVE
 Constrain prep to a fixed hardware-efficient layer pattern (rz/rx/cz only) and ask the model
 to hit the GHZ target through transpilation, not by emitting the textbook h/cx circuit.
-- **Do:** add problem `ghz3_he` (task state_prep): same 3-qubit GHZ target, linear [0-1-2]
-  coupling, but `native_gates:["rz","rx","cz"]` and a tighter `max_depth`; the model must
-  decompose h and cx into the native set itself.
-- **Done =** `judge_verify.py <bundle>` exits 0 on a circuit using ONLY {rz,rx,cz}, fidelity
-  ≥ 0.99 vs the held-out `references/ghz3_he.json`, and STRUCTURE (exit 3) rejects any bundle
-  that emits a non-native gate.
-- Ref: bench/quantum-judge/references/ghz3.json, sim.py native-gate gate set.
+- **Did:** added problem `ghz3_he` (task state_prep): same 3-qubit GHZ target as ghz3, linear
+  [0-1-2] coupling, `native_gates:["rz","rx","cz"]`, `max_depth: 12` (the worked decomposition
+  is depth 11, vs ghz3's 2× slack). The worked bundle derives the transpilation itself:
+  h = rz(π/2)·rx(π/2)·rz(π/2) (= −i·H, a global phase) and cx(c,t) = (I⊗H)·cz·(I⊗H) with each
+  H decomposed likewise — 17 native ops, 2 cz, fidelity 1.0 vs the held-out reference.
+- **Done =** `quantum-proof-ghz3he.json` ACCEPTs (exit 0, fidelity 1.0 ≥ 0.99 vs
+  `references/ghz3_he.json`) and the textbook h/cx circuit answering the same brief is REJECTED
+  at STRUCTURE (exit 3) on the first non-native gate (`quantum-proof-ghz3he-NONNATIVE.json`);
+  `test_judge.py` asserts both plus a single-smuggled-cx variant (41/41, was 38/38).
+- Ref: bench/quantum-judge/references/ghz3_he.json, quantum-proof-ghz3he.json,
+  quantum-proof-ghz3he-NONNATIVE.json.
 
-## ☐ 2. Error-mitigation-aware design (depth/2q-count is the lever)
+## ☑ 2. Error-mitigation-aware design (depth/2q-count is the lever) — reference-pinned cap + 2q-cost gate LIVE
 Reward circuits that reach the target with FEWER two-qubit gates, since 2q gates dominate
 real error budgets — make the rubric prefer the shallower of two correct solutions.
-- **Do:** tighten `max_two_qubit_gates` on an existing problem (e.g. ghz3 → cap 2) and add a
-  PERFORMANCE sub-check that the claimed fidelity holds when each 2q gate is treated as the
-  cost unit beaten against the classical baseline.
-- **Done =** a 3-cx GHZ variant is REJECTED at STRUCTURE (exit 3) by the cap, the 2-cx
-  reference still ACCEPTs (exit 0), and `test_judge.py` gains a regression asserting both.
-- Ref: bench/quantum-judge/judge_verify.py STRUCTURE gate, max_two_qubit_gates.
+- **Did:** references can now pin `constraints` HOST-SIDE (`_effective_constraints`: numeric
+  budgets merge as the TIGHTER of reference and bundle; identity keys like native_gates /
+  coupling_map override), so a bundle can no longer self-declare a looser budget. ghz3 is
+  pinned at `max_two_qubit_gates: 2` (the provably-optimal count) and ghz3_he's full brief
+  (native set, coupling, depth 12, cap 2) is pinned too. Added the PERFORMANCE sub-check:
+  when the reference prices 2q gates (`thresholds.two_qubit_cost`, ghz3/ghz3_he: 0.05), the
+  fidelity must still beat the classical baseline after paying that cost per 2q gate.
+- **Done =** the 3-cx GHZ variant (`quantum-proof-ghz3-3CX.json` — exact GHZ state, honest
+  claim, self-declared loose budget 4) is REJECTED at STRUCTURE (exit 3) by the reference cap;
+  the 2-cx reference solution still ACCEPTs (exit 0); and a priced run whose cost-adjusted
+  fidelity drops below the baseline is REJECTED at exit 5. `test_judge.py` asserts all four
+  (45/45, was 41/41).
+- Ref: bench/quantum-judge/judge_verify.py `_effective_constraints` + the two_qubit_cost
+  sub-check in `verify_state_prep`, references/ghz3.json, quantum-proof-ghz3-3CX.json.
 
-## ☐ 3. Larger GHZ / graph-state prep under sparse coupling
+## ☑ 3. Larger GHZ / graph-state prep under sparse coupling — ghz5_line is LIVE
 Scale state_prep past the 3-qubit toy to a 5-qubit GHZ (or a ring graph state) where a sparse
 coupling map forces SWAP routing or a cascade order.
-- **Do:** add problem `ghz5_line` (task state_prep): 5-qubit GHZ, linear [0-1-2-3-4] coupling,
-  threshold fidelity 0.99, classical baseline 0.5; ship the held-out reference + a worked
-  cascade solution (h q0; cx 0,1; cx 1,2; cx 2,3; cx 3,4).
-- **Done =** `judge_verify.py` exits 0 on the cascade reaching fidelity ≥ 0.99 vs
-  `references/ghz5_line.json`, and a bundle that violates the coupling map (e.g. cx 0,4) is
-  REJECTED at STRUCTURE (exit 3).
-- Ref: bench/quantum-judge/references/ghz3.json (as the n=3 prior).
+- **Did:** added problem `ghz5_line` (task state_prep): 5-qubit GHZ, threshold fidelity 0.99,
+  classical baseline 0.5, and the linear [0-1-2-3-4] coupling map pinned HOST-SIDE in the
+  reference (with `max_two_qubit_gates: 4` and `two_qubit_cost: 0.05` from item 2), so a
+  bundle cannot self-declare a denser map. No simulator change was needed — `sim.py` is
+  n-qubit generic and the judge verified the full 32-amplitude statevector at n=5.
+- **Done =** the worked cascade (h q0; cx 0,1; cx 1,2; cx 2,3; cx 3,4 — depth 5, 4 entangling
+  gates) ACCEPTs (exit 0, fidelity 1.0 vs `references/ghz5_line.json`,
+  `quantum-proof-ghz5line.json`); a shortcut `cx 0,4` between the line's ends is REJECTED at
+  STRUCTURE (exit 3, `quantum-proof-ghz5line-COUPLING.json`), including when the bundle
+  declares [0,4] in its own coupling map. `test_judge.py` asserts all three (48/48, was 45/45).
+- Ref: bench/quantum-judge/references/ghz5_line.json, quantum-proof-ghz5line.json,
+  quantum-proof-ghz5line-COUPLING.json.
 
 ## ☑ 4. Quantum feature-map for a small classification task — task=classify is LIVE
 A problem class where the circuit ENCODES a classical input and the judge scores a

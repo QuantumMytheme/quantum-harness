@@ -1,0 +1,24 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "ghz3_he",
+  "task": "state_prep",
+  "_attack": "Native-set evasion: this bundle answers the hardware-efficient brief with the TEXTBOOK h/cx circuit instead of decomposing into the native set {rz, rx, cz}. The state (and the claimed fidelity 1.0) are perfectly correct — but the chip cannot run 'h' or 'cx' natively, so judge_verify.py must REJECT at STRUCTURE (exit 3) on the first non-native gate. This is the fixture that proves the ghz3_he problem actually forces transpilation.",
+  "circuit": {
+    "n_qubits": 3,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "cx", "q": [1, 2] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 3,
+    "max_depth": 12,
+    "native_gates": ["rz", "rx", "cz"],
+    "coupling_map": [[0, 1], [1, 2]],
+    "max_two_qubit_gates": 2
+  },
+  "claim": { "fidelity": 1.0 },
+  "classical_baseline": { "fidelity": 0.5 },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

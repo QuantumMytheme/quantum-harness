@@ -28,9 +28,9 @@ regression suite, or an emitted metric — nothing grades on prose.
 
 | gate | exit | what it proves |
 |------|------|----------------|
-| STRUCTURE       | 3 | circuit parses; respects n_qubits, depth budget, native gate set, coupling map, 2q-gate cap |
+| STRUCTURE       | 3 | circuit parses; respects n_qubits, depth budget, native gate set, coupling map, 2q-gate cap — constraints the hidden reference pins are merged in host-side (tighter budget wins), so a bundle cannot self-declare a looser one |
 | REPRODUCIBILITY | 4 | re-simulating reproduces the CLAIMED number within tolerance (catches fabrication) |
-| PERFORMANCE     | 5 | the *recomputed* result meets the rubric threshold AND beats/ties the classical baseline |
+| PERFORMANCE     | 5 | the *recomputed* result meets the rubric threshold AND beats/ties the classical baseline; when the reference prices 2q gates (`thresholds.two_qubit_cost`), the fidelity must still beat the baseline after paying that cost per 2q gate |
 | ANTI-OVERFIT    | 6 | held-out generalization check — fires when the problem declares a held-out check the model was never told |
 | (other) schema 2 · ACCEPT 0 |||
 
@@ -44,7 +44,7 @@ is REJECTED at exit 6 — having passed structure/reproducibility/performance an
 held-out check. Ground truth always lives ONLY in the hidden reference
 (`references/<problem_id>.json`, relocatable via `QH_REFERENCES_DIR`), never in the bundle, and
 the circuit IR cannot embed a target state. So for problems that do NOT declare a holdout block
-(`ghz3`, `isingbell2`) anti-overfit ALSO holds by construction — a circuit must genuinely build
+(`ghz3`, `ghz3_he`, `ghz5_line`, `isingbell2`) anti-overfit ALSO holds by construction — a circuit must genuinely build
 the state from gates, a number it placed in its own bundle is caught at reproducibility (4) /
 performance (5), and exit 6 is simply not triggered for them.
 
@@ -119,7 +119,7 @@ check — anti-overfit.
       `quantum-proof-qml-OVERFIT.json` exits 6. Ground truth always lives ONLY in
       `references/<problem_id>.json`, NEVER in the bundle, and ACCEPTs unchanged when the
       references are relocated via `QH_REFERENCES_DIR` outside the builder's tree. For problems
-      that declare no holdout block (`ghz3`, `isingbell2`) anti-overfit holds by construction —
+      that declare no holdout block (`ghz3`, `ghz3_he`, `ghz5_line`, `isingbell2`) anti-overfit holds by construction —
       the IR cannot embed a target, so a bundle-embedded answer is caught at reproducibility (4)
       / performance (5) and exit 6 is simply not triggered.
       Regression: `test_judge.py` proves each overfit fixture exits 6 (and `quantum-proof-OVERFIT.json`

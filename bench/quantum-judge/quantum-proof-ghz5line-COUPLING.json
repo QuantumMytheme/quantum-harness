@@ -1,0 +1,26 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "ghz5_line",
+  "task": "state_prep",
+  "_attack": "Coupling-map violation (IMPROVEMENTS item 3): this bundle 'finishes' the GHZ cascade with a direct cx 0,4 between the two ENDS of the line — a pair the chip cannot couple. The state it would produce is correct and the claim is honest, but qubits 0 and 4 are four hops apart on the [0-1-2-3-4] chain, so the sparse topology demands the cascade (or SWAP routing) instead. judge_verify.py must REJECT at STRUCTURE (exit 3); the reference pins the coupling map host-side, so declaring a denser map bundle-side cannot evade it.",
+  "circuit": {
+    "n_qubits": 5,
+    "ops": [
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "cx", "q": [1, 2] },
+      { "gate": "cx", "q": [2, 3] },
+      { "gate": "cx", "q": [0, 4] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 5,
+    "max_depth": 8,
+    "native_gates": ["h", "cx", "rz", "rx", "ry", "sx", "x", "cz"],
+    "coupling_map": [[0, 1], [1, 2], [2, 3], [3, 4]],
+    "max_two_qubit_gates": 4
+  },
+  "claim": { "fidelity": 1.0 },
+  "classical_baseline": { "fidelity": 0.5 },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

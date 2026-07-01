@@ -13,6 +13,13 @@
     [0.0, 0.0],
     [0.7071067811865476, 0.0]
   ],
-  "thresholds": { "fidelity": 0.99 },
+  "constraints": {
+    "_comment": "HOST-AUTHORITATIVE cap (IMPROVEMENTS item 2): 2q gates dominate real error budgets, so ghz3 is capped at the provably-optimal 2 entangling gates. Merged as the TIGHTER of this and the bundle's self-declared budget, so a bundle cannot loosen it.",
+    "max_two_qubit_gates": 2
+  },
+  "thresholds": {
+    "fidelity": 0.99,
+    "two_qubit_cost": 0.05
+  },
   "tolerance": { "fidelity_reproduce": 1e-06 }
 }

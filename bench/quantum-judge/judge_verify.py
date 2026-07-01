@@ -12,11 +12,17 @@ each bound to a rubric criterion:
 
   STRUCTURE       (exit 3) — circuit parses; respects declared n_qubits, depth
                             budget, native gate set, coupling map, 2q-gate cap.
+                            Constraints pinned in the hidden reference are merged
+                            in host-side (tighter budget wins), so a bundle
+                            cannot self-declare a looser budget.
   REPRODUCIBILITY (exit 4) — re-simulating the circuit reproduces the CLAIMED
                             result within tolerance. The model cannot fabricate
                             a number; the judge recomputes it. (anti-overclaim)
   PERFORMANCE     (exit 5) — the verified result meets the rubric threshold AND
-                            beats/ties the stated classical baseline.
+                            beats/ties the stated classical baseline. When the
+                            reference prices 2q gates (thresholds.two_qubit_cost),
+                            the fidelity must still beat the baseline after
+                            paying that cost per 2q gate (error-mitigation-aware).
   ANTI-OVERFIT    (exit 6) — the HELD-OUT generalization check. Fires for problems
                             whose reference declares a `holdout` block (an
                             observable / target the model was NEVER told). A
@@ -87,6 +93,26 @@ def _statevector_from_ref(ref):
     return np.array([complex(re, im) for re, im in pairs], dtype=complex)
 
 
+def _effective_constraints(bundle, ref):
+    """Merge the bundle's self-declared constraints with the HOST-AUTHORITATIVE
+    constraints the hidden reference may pin (ref["constraints"]).
+
+    Constraints in the bundle are self-declared (copied from the BRIEF), so a
+    dishonest bundle could simply declare a looser budget. When the reference
+    pins a constraint it cannot be gamed: numeric budgets (max_depth,
+    max_two_qubit_gates) take the TIGHTER of the two, and identity keys
+    (n_qubits, native_gates, coupling_map) from the reference override the
+    bundle outright. References without a constraints block are unaffected.
+    """
+    merged = dict(bundle.get("constraints", {}) or {})
+    for key, val in (ref.get("constraints", {}) or {}).items():
+        if key in ("max_depth", "max_two_qubit_gates"):
+            merged[key] = min(int(merged[key]), int(val)) if key in merged else int(val)
+        else:
+            merged[key] = val
+    return merged
+
+
 # ---------------------------------------------------------------------------
 # Gate 1: STRUCTURE
 # ---------------------------------------------------------------------------
@@ -129,7 +155,7 @@ def check_structure(circuit, constraints, checks):
 # ---------------------------------------------------------------------------
 def verify_state_prep(bundle, ref, checks):
     circuit = bundle["circuit"]
-    check_structure(circuit, bundle.get("constraints", {}), checks)
+    check_structure(circuit, _effective_constraints(bundle, ref), checks)
     state = sim.simulate(circuit)
 
     # ANTI-OVERFIT spine: ground truth comes from the HIDDEN reference, not the
@@ -159,6 +185,24 @@ def verify_state_prep(bundle, ref, checks):
         raise Reject(EXIT_PERFORMANCE, f"fidelity {actual:.6f} below classical baseline {baseline}")
     checks["performance"] = {"threshold": threshold, "baseline": baseline, "achieved": actual}
 
+    # Error-mitigation-aware sub-check: on real hardware each 2q gate dominates
+    # the error budget, so when the reference prices one (thresholds.two_qubit_cost)
+    # the fidelity must STILL beat the classical baseline after paying that cost
+    # per 2q gate — the shallower of two correct solutions wins, a 2q-heavy one
+    # loses its margin. References without the key skip this (ideal-only grading).
+    twoq_cost = float(ref.get("thresholds", {}).get("two_qubit_cost", 0.0))
+    if twoq_cost > 0.0:
+        twoq = checks["structure"]["two_qubit_gates"]
+        adjusted = actual - twoq_cost * twoq
+        checks["performance"]["two_qubit_cost"] = twoq_cost
+        checks["performance"]["cost_adjusted_fidelity"] = round(adjusted, 9)
+        if adjusted + 1e-12 < baseline:
+            raise Reject(
+                EXIT_PERFORMANCE,
+                f"cost-adjusted fidelity {adjusted:.6f} (= {actual:.6f} - {twoq} x 2q-gate cost "
+                f"{twoq_cost}) no longer beats the classical baseline {baseline}",
+            )
+
     # OPTIONAL re-verifiable noisy device prediction (only if the ref declares one).
     check_noisy_prediction(bundle, ref, circuit, checks, "fidelity", target=target)
 
@@ -167,7 +211,7 @@ def verify_state_prep(bundle, ref, checks):
 
 def verify_vqe(bundle, ref, checks):
     circuit = bundle["circuit"]
-    check_structure(circuit, bundle.get("constraints", {}), checks)
+    check_structure(circuit, _effective_constraints(bundle, ref), checks)
     state = sim.simulate(circuit)
     n = int(circuit["n_qubits"])
 
@@ -285,7 +329,7 @@ def verify_populations(bundle, ref, checks):
     population distribution (many states satisfy it), and a HELD-OUT observable
     pins down the intended one. This is where the anti-overfit gate has teeth."""
     circuit = bundle["circuit"]
-    check_structure(circuit, bundle.get("constraints", {}), checks)
+    check_structure(circuit, _effective_constraints(bundle, ref), checks)
     state = sim.simulate(circuit)
     n = int(circuit["n_qubits"])
     probs = (np.abs(state) ** 2).real

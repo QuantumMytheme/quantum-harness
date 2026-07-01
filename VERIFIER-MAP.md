@@ -19,7 +19,7 @@ held-out form depends on the task: a held-out OBSERVABLE (state tasks; e.g. `bel
 `<X0X1>`), a held-out WORKLOAD (architecture; the topology must also route a second interaction set
 within budget), or a held-out TEST SET (classify; the feature map must classify unseen data). A
 submission that matches the VISIBLE spec but fails the HIDDEN held-out check is REJECTED at exit 6.
-For problems that declare no `holdout` block (ghz3, isingbell2), anti-overfit ALSO holds by
+For problems that declare no `holdout` block (ghz3, ghz3_he, ghz5_line, isingbell2), anti-overfit ALSO holds by
 construction — ground truth lives only in the hidden reference, never the bundle, and the circuit IR
 cannot embed a target state — so exit 6 is simply not triggered for them (an overfit number a model
 placed in its own bundle is caught at the reproducibility (4) / performance (5) gates).
