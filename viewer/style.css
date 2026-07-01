@@ -345,6 +345,48 @@ html[data-theme="dark"] .pcard-h h4 { font-family: var(--mono); font-weight: 600
 html[data-theme="dark"] .sb-chip { background: rgba(20,26,56,0.7); }
 html[data-theme="dark"] .sb-chip.on { color: #06070f; }
 
+/* ============ frontier section: wanted board + Pareto atlas ============ */
+/* emulated overlays are visually distinct from real hardware links */
+.hwlink.simlink { color: var(--faint) !important; border-bottom: 1px dashed var(--rule-2); text-decoration: none; }
+
+.wanted-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.wanted-card { border: 1px solid var(--rule); border-radius: var(--r); padding: 14px 16px; background: var(--panel); }
+.wanted-card.untried { border-left: 3px solid var(--accent-2); }
+.wanted-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.wanted-head b.mono { font-size: 14px; }
+.wanted-src { margin-left: auto; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.wanted-tried { margin-top: 8px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; }
+.gap-list { list-style: none; margin-top: 10px; display: grid; gap: 9px; }
+.gap-line { display: grid; gap: 3px; padding-left: 12px; border-left: 2px solid var(--rule); }
+.gap-kind { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.gap-label { font-family: var(--sans); font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.gap-cmd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.gap-none { font-family: var(--sans); font-size: 12.5px; color: var(--pass); margin-top: 10px; }
+code.mint { font-family: var(--mono); font-size: 11.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--rule-2); border-radius: 4px; padding: 3px 8px; overflow-wrap: anywhere; }
+.copybtn { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--rule-2); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.copybtn:hover { border-color: var(--accent); color: var(--accent); }
+.dimnum { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+/* structured lineage tags on scoreboard rows (remix_of / remixed-by credit) */
+.lineage { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-top: 5px; white-space: nowrap; }
+.lineage a { color: var(--accent-2); font-size: 10.5px; }
+
+.fr-head { margin: 34px 0 18px; }
+.fr-head h3 { font-size: 19px; margin-bottom: 8px; }
+.fr-panel { padding: 16px 18px; margin-top: 16px; }
+.fr-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.fr-title b.mono { font-size: 14px; }
+.fr-canvas { height: 240px; }
+.fr-hover { font-size: 11px; color: var(--faint); margin: 8px 0 0; min-height: 16px; }
+.fr-pts { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 0; }
+.fr-pts a { font-family: var(--mono); font-size: 11.5px; }
+.fr-pts a.fr-dom { color: var(--faint); }
+.fr-panel .figcap { margin-top: 10px; }
+
+html[data-theme="dark"] .wanted-card { border-color: var(--rule-2); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+html[data-theme="dark"] code.mint { background: rgba(10,13,32,0.6); }
+html[data-theme="dark"] .copybtn { background: rgba(20,26,56,0.7); }
+@media (max-width: 860px) { .wanted-grid { grid-template-columns: 1fr; } }
+
 /* clickable rows + quality legend */
 table.results tr.sb-row { cursor: pointer; }
 table.results tr.sb-row:hover td { background: rgba(40, 72, 158, 0.045); }
