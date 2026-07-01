@@ -20,8 +20,9 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const JUDGE = path.join(ROOT, 'bench', 'quantum-judge', 'judge_verify.py')
+const JUDGE = path.join(ROOT, 'bench', 'judge.py')   // unified router → quantum-judge + kernel-judge, dispatched by task
 const REFS = path.join(ROOT, 'bench', 'quantum-judge', 'references')
+const KERNEL_REFS = path.join(ROOT, 'bench', 'kernel-judge', 'references')
 const TEMPLATE = { owner: 'QuantumMytheme', repo: 'quantum-harness' }
 const SERVER = { name: 'quantum-harness', version: '0.1.0' }
 
@@ -39,6 +40,9 @@ const LABELS = {
   aiaccel4:   { task: 'architecture', label: 'AI-Accel — route a workload over a coupling map within budget' },
   qml_sign1:  { task: 'classify',     label: 'Sign classifier — a feature map that generalizes to held-out points' },
   bellnoisy2: { task: 'state_prep',   label: 'Bell (noisy) — re-verifiable prediction under a depolarizing channel' },
+  // TPU kernel Oracle-Diff Gate (bench/kernel-judge) — routed by task through bench/judge.py.
+  gemm_bf16_tile1: { task: 'kernel-correctness-oracle', label: 'Tiled bf16 GEMM — MXU output vs an fp64 reference within the bf16-derived tolerance (Oracle-Diff Gate)' },
+  gemm_int8_tile1: { task: 'kernel-correctness-oracle', label: 'Tiled int8 GEMM — bit-exact integer oracle (Oracle-Diff Gate)' },
 }
 
 // ---- tools --------------------------------------------------------------------------------
@@ -69,7 +73,7 @@ export const TOOLS = [
   },
   {
     name: 'verify_bundle',
-    description: 'Re-derive a proof bundle from scratch through the real numpy judge (four gates: structure → reproducibility → performance → anti-overfit) and return ACCEPT/REJECT with the exit code and per-gate detail. This exit code — not any claim in chat — is the result. Loop here until ACCEPT.',
+    description: 'Re-derive a proof bundle from scratch through the unified numpy judge (bench/judge.py) — routed by task to the quantum-circuit judge (structure → reproducibility → performance → anti-overfit) or the TPU kernel Oracle-Diff Gate (structure → reproducibility → anti-overfit) — and return ACCEPT/REJECT with the exit code and per-gate detail. This exit code — not any claim in chat — is the result. Loop here until ACCEPT.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -116,13 +120,14 @@ export const TOOLS = [
 // ---- tool implementations ----------------------------------------------------------------
 
 async function listProblems() {
-  const files = (await readdir(REFS)).filter(f => f.endsWith('.json'))
-  const problems = files.map(f => f.replace(/\.json$/, '')).sort().map(id => ({
+  const scan = async dir => (await readdir(dir).catch(() => [])).filter(f => f.endsWith('.json')).map(f => f.replace(/\.json$/, ''))
+  const ids = [...await scan(REFS), ...await scan(KERNEL_REFS)]
+  const problems = [...new Set(ids)].sort().map(id => ({
     problem_id: id,
     task: LABELS[id]?.task || 'unknown',
     label: LABELS[id]?.label || `${id} (${LABELS[id]?.task || 'task'})`,
   }))
-  return json({ problems, count: problems.length, note: 'Pick one, then call get_brief(problem_id).' })
+  return json({ problems, count: problems.length, note: 'Pick one, then call get_brief(problem_id). Quantum problems design a circuit; kernel-correctness-oracle problems attest a TPU kernel bundle.' })
 }
 
 async function getBrief({ problem_id }) {
