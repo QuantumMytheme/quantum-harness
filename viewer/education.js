@@ -5304,8 +5304,7 @@
 
 // ───── noise-qec (physical vs logical qubits) ─────
   EDU["noise-qec"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(0); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(0); });
 
   var d = 5;                 // code distance (odd)
   var p = 0.003;             // physical error rate
@@ -5329,8 +5328,7 @@
   mkSlider('physical error', 0.001, 0.03, 0.001, p, function (v) { return (v * 100).toFixed(1) + '%'; }, function (v) { p = v; });
 
   function draw(t) {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        col = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, col = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
 
     // ---- left: the surface-code patch (one logical qubit) ----
@@ -5384,8 +5382,7 @@
 
   // ───── hardware-zoo (quantum hardware modalities) ─────
   EDU["hardware-zoo"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, w = f.w, h = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; w = r.w; h = r.h; });
+  var ctx, w, h; K.frame(function (r) { ctx = r.ctx; w = r.w; h = r.h; });
 
   // DATA — modality nodes; x = qubit-count axis (0 few .. 1 many), y = gate-fidelity axis (0 lower .. 1 higher)
   // (reconciled against the verified 2026 hardware facts)
@@ -5417,8 +5414,8 @@
   function draw(tSec) {
     t0 = tSec || 0;
     if (!hover && ts() - lastIn >= 3) cyc = Math.floor(ts() / 2.6);
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule'),
-        col = K.v('--accent'), mono = K.v('--mono') || 'monospace', sans = K.v('--sans') || 'sans-serif';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = K.v('--rule'),
+        col = P.acc, mono = P.mono, sans = P.sans;
     ctx.clearRect(0, 0, w, h);
     // axes
     ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
@@ -5455,8 +5452,7 @@
 
   // ───── qubit-explorer (theoretical vs real qubit counts — two linked panels) ─────
   EDU["qubit-explorer"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(); });
 
   // DATA — real machines (physical qubit counts; reconciled with verified 2026 facts)
   var CHIPS = [
@@ -5503,8 +5499,7 @@
   function X(nn, x0, x1) { return x0 + (log10(nn) / 7) * (x1 - x0); }
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        col = K.v('--accent'), col2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, col = P.acc, col2 = P.acc2, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var x0 = 54, x1 = W - 20;
     var aT = 24, aB = H * 0.46;            // panel A (memory wall)
@@ -5574,8 +5569,7 @@
 
   // ───── history (timeline of inventions) ─────
   EDU["history"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; });
+  var ctx, W, H; K.frame(function (r) { ctx = r.ctx; W = r.w; H = r.h; });
 
   // DATA — milestones (reconciled with verified facts). lane 'c' = classical (above), 'q' = quantum (below).
   var EV = [
@@ -5614,8 +5608,8 @@
 
   function draw(tSec) {
     t0 = tSec || 0;
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        col = K.v('--accent'), col2 = K.v('--accent-2'), mono = K.v('--mono') || 'monospace', sans = K.v('--sans') || 'sans-serif';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule,
+        col = P.acc, col2 = P.acc2, mono = P.mono, sans = P.sans;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var axisY = H * 0.5;
     // axis + decade ticks
