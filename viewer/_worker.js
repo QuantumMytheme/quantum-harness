@@ -28,6 +28,11 @@ export default {
     }
     if (url.pathname === "/api/submit-config") return submitConfig(env);
     if (url.pathname === "/api/submit-run" && request.method === "POST") return submitRun(request, env);
+    if (url.pathname === "/api/replications") {
+      if (request.method === "GET") return replicationsGet(url, env);
+      if (request.method === "POST") return replicationsPost(request, env);
+      return json({ error: "method not allowed" }, 405);
+    }
     if (url.pathname.startsWith("/api/github/")) return github(request, url, env);
     return env.ASSETS.fetch(request);
   },
@@ -222,4 +227,96 @@ async function submitRun(request, env) {
   }
 
   return json({ ok: true, repo: repo.full_name, url: repo.html_url, attestable: v.attestable });
+}
+
+// ---- REPLICATION CENSUS — "replicated in-browser ×N" -----------------------------------
+//  An anonymous, Turnstile-gated, rate-limited COUNTER of successful in-browser
+//  re-verifications of a committed bundle. HONESTY: this is NOT verification — the judge
+//  verdict is the authority — and it is deliberately named "replicated in-browser ×N" so
+//  it is never conflated with the PR-based "reproduced ×N (attested)" layer in scoreboard/.
+//  Storage (SUBMIT_RATE KV, distinct key prefixes so it never collides with submit-run):
+//    repl:<sha256>          → {"n": <count>, "last": "YYYY-MM-DD"}   (count + last date ONLY)
+//    repl-day:<ip>:<day>    → per-IP daily cap counter, expires in 48h (the only transient
+//                             PII; never joined to a bundle hash)
+//    repl-day:all:<day>     → global daily cap counter, expires in 48h
+//  Fail-closed: OFF unless the operator provisions TURNSTILE_SECRET + TURNSTILE_SITEKEY
+//  AND binds the SUBMIT_RATE KV namespace. GET degrades to {enabled:false}; POST 503s.
+const CENSUS_SHA_RE = /^[a-f0-9]{64}$/;
+const CENSUS_PROBLEMS = new Set([
+  // quantum problems (bench/quantum-judge references / scoreboard rows)
+  "ghz3", "isingbell2", "bell_pops2", "aiaccel4", "qml_sign1", "h2vqe", "tfim3",
+  "bellnoisy2", "ghz3_he", "ghz5_line",
+  // TPU-kernel problems (bench/kernel-judge references / scoreboard rows)
+  "gemm_bf16_tile1", "gemm_int8_tile1", "roofline_8t_bf16", "roofline_gemm_8t",
+  "roofline_gemm_TPU7x", "roofline_gemm_v5e", "roofline_gemm_v5p", "roofline_gemm_v6e",
+  "roofline_unpinned",
+]);
+const CENSUS_IP_DAILY_CAP = 5;
+const CENSUS_GLOBAL_DAILY_CAP = 500;
+
+function censusEnabled(env) {
+  return !!(env.TURNSTILE_SECRET && env.TURNSTILE_SITEKEY && env.SUBMIT_RATE);
+}
+
+async function replicationsGet(url, env) {
+  // 5-minute public cache: counts are coarse by design and this keeps KV reads cheap.
+  const cache = { "Cache-Control": "public, max-age=300" };
+  if (!censusEnabled(env)) return json({ enabled: false }, 200, cache);
+  const hashes = String(url.searchParams.get("hashes") || "")
+    .split(",").map((s) => s.trim().toLowerCase())
+    .filter((h) => CENSUS_SHA_RE.test(h))
+    .slice(0, 30); // batch bound — the whole board is ~a dozen rows
+  const counts = {};
+  await Promise.all(hashes.map(async (h) => {
+    const raw = await env.SUBMIT_RATE.get("repl:" + h).catch(() => null);
+    if (!raw) return;
+    try {
+      const rec = JSON.parse(raw);
+      if (rec && Number.isFinite(rec.n) && rec.n > 0) counts[h] = { n: rec.n, last: String(rec.last || "") };
+    } catch (e) { /* corrupt record → treat as uncounted */ }
+  }));
+  return json({ enabled: true, sitekey: env.TURNSTILE_SITEKEY, counts }, 200, cache);
+}
+
+async function replicationsPost(request, env) {
+  // fail-closed, same pattern as submitRun: the census is OFF unless bot-protection AND
+  // the KV namespace both exist. No partial mode — a Turnstile-less counter is spammable.
+  if (!censusEnabled(env)) {
+    return json({ error: "the replication census is not enabled on this deployment",
+      how: "The site owner provisions a Cloudflare Turnstile widget (TURNSTILE_SECRET encrypted + TURNSTILE_SITEKEY plaintext env vars) and binds a KV namespace named SUBMIT_RATE on the Pages project, then redeploys. Until then, in-browser re-runs still verify — they just aren't counted." }, 503);
+  }
+  const ip = request.headers.get("CF-Connecting-IP") || "0";
+  const body = await request.json().catch(() => ({}));
+
+  // 1. validate the claim shape BEFORE spending a Turnstile verification
+  const sha = String(body.sha256 || "").toLowerCase();
+  if (!CENSUS_SHA_RE.test(sha)) return json({ error: "sha256 must be 64 lowercase hex characters (the SHA-256 of the verified bundle bytes)" }, 400);
+  const pid = String(body.problem_id || "");
+  if (!CENSUS_PROBLEMS.has(pid)) return json({ error: "unknown problem_id — the census only counts re-runs of known harness problems" }, 400);
+
+  // 2. bot protection — required (reuses the submit-run verifier)
+  if (!(await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstile_token, ip))) {
+    return json({ error: "bot-protection check failed — complete the challenge and retry" }, 403);
+  }
+
+  // 3. rate limits: per-IP daily cap + global daily cap (both keys expire in 48h)
+  const day = new Date().toISOString().slice(0, 10);
+  const ipN = parseInt((await env.SUBMIT_RATE.get(`repl-day:${ip}:${day}`)) || "0", 10);
+  if (ipN >= CENSUS_IP_DAILY_CAP) return json({ error: "daily replication-record limit reached for your address — your re-runs still verify, they just aren't counted again until tomorrow" }, 429);
+  const allN = parseInt((await env.SUBMIT_RATE.get(`repl-day:all:${day}`)) || "0", 10);
+  if (allN >= CENSUS_GLOBAL_DAILY_CAP) return json({ error: "the replication census is full for today — try again tomorrow" }, 429);
+
+  // 4. increment the counter. KV is last-write-wins, so two simultaneous clicks can drop
+  //    an increment — acceptable for an honest COARSE counter (never over-counts).
+  let rec = { n: 0, last: day };
+  try {
+    const raw = await env.SUBMIT_RATE.get("repl:" + sha);
+    if (raw) { const p = JSON.parse(raw); if (p && Number.isFinite(p.n) && p.n >= 0) rec = p; }
+  } catch (e) { /* corrupt record → restart the count rather than fail the request */ }
+  rec.n = (rec.n | 0) + 1; rec.last = day;
+  await env.SUBMIT_RATE.put("repl:" + sha, JSON.stringify(rec));
+  await env.SUBMIT_RATE.put(`repl-day:${ip}:${day}`, String(ipN + 1), { expirationTtl: 172800 }).catch(() => {});
+  await env.SUBMIT_RATE.put(`repl-day:all:${day}`, String(allN + 1), { expirationTtl: 172800 }).catch(() => {});
+
+  return json({ ok: true, sha256: sha, n: rec.n, last: rec.last });
 }
