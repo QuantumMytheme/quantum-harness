@@ -43,6 +43,20 @@ test('TPU is the dense matmul engine when present; GPU is the flexible engine ot
   assert.equal(gpuOnly.roles.find(r => r.substrate === 'gpu').role, 'matmul-flex')
 })
 
+test('a quantum chip IS genuinely for something — the honest shortlist + quantum workloads', () => {
+  assert.ok(Array.isArray(K.QUANTUM_USES) && K.QUANTUM_USES.length >= 4, 'QUANTUM_USES lists the genuine uses')
+  const keys = K.QUANTUM_USES.map(u => u.key)
+  for (const k of ['simulation', 'cryptanalysis', 'randomness', 'optimization']) assert.ok(keys.includes(k), `QUANTUM_USES.${k}`)
+  for (const id of ['cryptanalysis', 'certified-randomness']) {
+    const a = K.allocate({ cpu: true, tpu: true, qpu: true }, id)
+    assert.equal(a.roles.find(r => r.substrate === 'qpu').role, 'quantum-engine', `${id}: the QPU is the engine`)
+    const tpu = a.roles.find(r => r.substrate === 'tpu')
+    assert.equal(tpu.role, 'verify', `${id}: classical chips verify/simulate the quantum workload`)
+    const noq = K.allocate({ cpu: true, tpu: true }, id)
+    assert.ok(noq.honesty.some(h => h.tone === 'gap'), `${id}: without a QPU, flags it honestly (classical sim today)`)
+  }
+})
+
 test('transformer inference is flagged as most-used, not best, with real alternatives', () => {
   const a = K.allocate({ cpu: true, tpu: true }, 'transformer-infer')
   assert.ok(K.WORKLOADS['transformer-infer'].dominant, 'transformer-infer is the dominant workload')

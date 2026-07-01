@@ -214,8 +214,30 @@
   var ROLE_LABEL = {
     'matmul-dense': 'dense matmul engine', 'matmul-flex': 'matmul engine (flexible)',
     'orchestrate': 'orchestration & control', 'support': 'prefill / irregular / overflow',
-    'quantum-sim': 'quantum-simulation co-processor', 'idle': 'no role in this workload'
+    'quantum-sim': 'quantum-simulation co-processor', 'quantum-engine': 'quantum engine (the genuine workload)',
+    'verify': 'classical simulation / verification', 'idle': 'no role in this workload'
   };
+
+  // What a quantum chip is GENUINELY for — the honest answer to "not ML acceleration, so what?"
+  // A special-purpose engine that earns its place only where the classical cost is exponential.
+  var QUANTUM_USES = [
+    { key: 'simulation', name: 'Simulating quantum systems', maturity: 'the flagship — small instances today, hard cases fault-tolerant (10–20 yr)',
+      what: 'Chemistry & materials whose classical cost is 2ⁿ: catalysts (nitrogen fixation / FeMoco), battery electrolytes, high-Tc superconductors — and the materials for better classical chips.',
+      demonstrates: 'This IS what the bench’s VQE tasks are — h2vqe (a molecule’s ground-state energy), isingbell2 / tfim3 (condensed-matter models).',
+      src: 'Feynman 1982 · FeMoco ~4M physical qubits (resource estimates)' },
+    { key: 'cryptanalysis', name: 'Breaking today’s public-key crypto', maturity: 'real but far — ~millions of physical qubits, a decade+',
+      what: 'Shor’s algorithm factors integers / solves discrete-log in polynomial time → breaks RSA and elliptic-curve crypto. The impact is NOW: it is why the world is migrating to post-quantum cryptography (NIST ML-KEM / ML-DSA).',
+      demonstrates: 'The /education RSA→Shor slice runs the bridge live.',
+      src: 'Shor 1994 · Gidney–Ekerå 2021 · NIST PQC 2024' },
+    { key: 'randomness', name: 'Certified / verifiable randomness', maturity: 'a demonstrated near-term niche',
+      what: 'Random-circuit sampling yields entropy a third party can certify was genuinely quantum — a randomness beacon no classical box can fake.',
+      demonstrates: 'The TPU XEB-Referee (TPU-NATIVE-ARCHITECTURES.md) is the classical verifier for exactly this.',
+      src: 'Aaronson certified randomness · Google RCS 2023/2025' },
+    { key: 'optimization', name: 'Optimization & sampling', maturity: 'caveat — no broadly-proven advantage',
+      what: 'QAOA / annealing for combinatorial problems, and quantum-advantage sampling as a benchmark of raw quantum power. Treat any speedup claim as unproven until it clears a referee at iso-quality.',
+      demonstrates: 'The bench’s tfim3 QAOA run is a verifiable instance; the honesty gate is the point.',
+      src: 'Farhi 2014 (QAOA) · dequantization (Tang 2018)' }
+  ];
 
   // engine = preference order among matmul substrates for this workload; quantum = 'none'|'genuine'.
   var WORKLOADS = {
@@ -255,6 +277,12 @@
       note: 'Mostly a classical GPU/CPU workload (branch-and-bound, GPU heuristics). Quantum/annealing samplers exist but have no broadly-proven advantage — treat any speedup claim as unproven until refereed.',
       incumbent: 'Classical solvers are the incumbent and usually the right answer.',
       better: ['GPU-accelerated heuristics / simulated annealing', 'A quantum sampler ONLY with a refereed, iso-quality advantage — not a headline'] },
+    'cryptanalysis': { name: 'Breaking public-key crypto (Shor)', kind: 'quantum', engine: ['qpu'], quantum: 'genuine',
+      maturity: '~millions of physical qubits, a decade+ out',
+      note: 'Shor factors integers / solves discrete-log in polynomial time — breaking RSA & elliptic-curve crypto. The impact is NOW: it is why post-quantum cryptography (NIST ML-KEM / ML-DSA) is being rolled out today.' },
+    'certified-randomness': { name: 'Certified quantum randomness', kind: 'quantum', engine: ['qpu'], quantum: 'genuine',
+      maturity: 'a demonstrated near-term niche',
+      note: 'Random-circuit sampling yields entropy a third party can certify was genuinely quantum — a beacon no classical box can fake. A classical machine (the TPU XEB-Referee) does the verification.' },
     'classical-data': { name: 'Data / serving / orchestration', kind: 'systems', engine: ['cpu'], quantum: 'none',
       note: 'Control flow, tokenization, retrieval, batching, and serving glue — a CPU workload. Keep the accelerators fed; don’t burn a matmul engine on branchy code.',
       incumbent: 'The CPU is the right tool here — no accelerator needed for the glue.',
@@ -265,13 +293,15 @@
   function allocate(have, workloadId) {
     have = have || {};
     var w = WORKLOADS[workloadId] || WORKLOADS['transformer-infer'];
-    var engine = w.engine.filter(function (s) { return have[s]; })[0] || null;
+    var isQuantum = w.kind === 'quantum';
+    var engine = isQuantum ? null : (w.engine.filter(function (s) { return have[s]; })[0] || null);
     var orchestrator = have.cpu ? 'cpu' : null;
     var roles = [];
     ['tpu', 'gpu', 'cpu', 'qpu'].forEach(function (s) {
       if (!have[s]) return;
       var role;
-      if (s === 'qpu') role = (w.quantum === 'genuine') ? 'quantum-sim' : 'idle';
+      if (s === 'qpu') role = (w.quantum === 'genuine') ? (isQuantum ? 'quantum-engine' : 'quantum-sim') : 'idle';
+      else if (isQuantum) role = (s === 'cpu') ? 'orchestrate' : 'verify';   // classical chips verify/simulate a quantum workload
       else if (s === engine) role = (s === 'tpu') ? 'matmul-dense' : 'matmul-flex';
       else if (s === 'cpu' && orchestrator === 'cpu') role = 'orchestrate';
       else role = 'support';
@@ -284,21 +314,27 @@
       honesty.push({ tone: 'quantum', text: 'You selected a quantum chip, but it does NOT accelerate ' + w.name.toLowerCase() + ' — the O(N) data read-in / O(√N) read-out wall, dequantization, and barren plateaus close that door. Its honest role is materials simulation, a different workload entirely.' });
     if (have.qpu && w.quantum === 'caveat')
       honesty.push({ tone: 'quantum', text: 'A quantum/annealing sampler MIGHT help here, but no broadly-proven advantage exists — treat any speedup as unproven until it clears the referee at iso-quality.' });
-    if (have.qpu && w.quantum === 'genuine')
+    if (have.qpu && w.quantum === 'genuine' && !isQuantum)
       honesty.push({ tone: 'quantum', text: 'This is the honest home for a quantum chip — but fault-tolerant scale is 10–20 yr out; today the simulation runs classically on your TPU/GPU.' });
+    if (isQuantum) {
+      if (have.qpu) honesty.push({ tone: 'quantum', text: 'This genuinely needs a quantum chip — ' + (w.maturity || 'special-purpose') + '. ' + w.note });
+      else honesty.push({ tone: 'gap', text: 'No quantum chip selected. Today this runs as a classical simulation / verification on TPU/GPU (what this bench does); a fault-tolerant QPU is the future engine — ' + (w.maturity || '') + '.' });
+    }
     if (w.kind === 'ml' && !engine)
       honesty.push({ tone: 'gap', text: 'You have no matmul accelerator selected — a GPU or TPU carries the bulk compute for ' + w.name.toLowerCase() + '.' });
 
     var prove = (w.kind === 'ml')
       ? 'Think a different architecture wins on your hardware? Prove it: design it, run it, and let the referee re-derive an iso-quality energy/token (or tokens/s) verdict a stranger can reproduce — that is the whole point of the bench.'
-      : 'Any efficiency or advantage claim here should be refereed — re-derived from first principles, not asserted.';
+      : isQuantum
+        ? 'Any quantum-advantage claim here must be REFEREED — a classical verifier (this bench, or the TPU XEB-Referee) re-derives it from first principles. An unverified speedup is a headline, not a result.'
+        : 'Any efficiency or advantage claim here should be refereed — re-derived from first principles, not asserted.';
 
-    return { workload: w, roles: roles, engine: engine, honesty: honesty, better: w.better || [], prove: prove };
+    return { workload: w, roles: roles, engine: engine, honesty: honesty, better: w.better || [], prove: prove, quantumUses: QUANTUM_USES };
   }
 
   window.QMKnowledge = {
     GATES: GATES, TASKS: TASKS, PROBLEMS: PROBLEMS, QUALITY_AXES: QUALITY_AXES, GRADE_NOTE: GRADE_NOTE,
-    SUBSTRATES: SUBSTRATES, WORKLOADS: WORKLOADS, ROLE_LABEL: ROLE_LABEL, allocate: allocate,
+    SUBSTRATES: SUBSTRATES, WORKLOADS: WORKLOADS, ROLE_LABEL: ROLE_LABEL, allocate: allocate, QUANTUM_USES: QUANTUM_USES,
     esc: esc, gradeColor: gradeColor, taskColor: taskColor,
     profileBadge: profileBadge, profileDetail: profileDetail,
     taskOne: taskOne, taskChip: taskChip, problemCard: problemCard,
