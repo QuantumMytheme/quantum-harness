@@ -339,6 +339,11 @@
           '<div style="font-size:11.5px;color:var(--ink);line-height:1.4;margin-top:7px;border-top:1px dashed var(--rule);padding-top:6px">' + esc(u.demonstrates) + '</div>' +
           '<div class="mono" style="font-size:9px;color:var(--faint);margin-top:6px">' + esc(u.src) + '</div></div>';
       }).join('') + '</div></div>' : '';
+    var kr = (window.QMRunner && window.QMRunner.KERNEL_RUNS) || {};
+    var kernelVerifyPanel = '<div style="margin-top:26px;border-top:1px solid var(--rule);padding-top:20px"><p class="eyebrow" style="margin-bottom:4px">Verify a TPU-kernel claim — in your browser</p>' +
+      '<p style="font-size:13px;color:var(--ink-2);max-width:780px;margin-bottom:12px">The efficiency referee is real and runs right here: click a bundle and the <b>actual numpy kernel judge</b> (Oracle-Diff Gate + Roofline Notary) runs in your browser via WebAssembly — recomputing correctness against an fp64 reference and the roofline coordinate. Honest bundles ACCEPT; the forgeries are caught at the gate. No server; the judge is numpy-only.</p>' +
+      '<div class="controls" style="margin-bottom:10px">' + Object.keys(kr).map(function (k) { return '<button class="btn" data-kjudge="' + k + '">' + esc(kr[k].label) + ' · ' + esc(kr[k].expect) + '</button>'; }).join('') + '</div>' +
+      '<div id="qm-kwasm-out"></div></div>';
     return '<div class="lab-sheet">' + head('§ 08 · Studio', 'What should you build on the hardware you have?', 'Substrate mix<br>honest allocation') +
       '<p style="max-width:780px">Pick the substrates you actually have and a workload. The studio maps each chip to the role it is honestly good at — grounded in the <a href="education.html#m-efficiency">North Star</a>. Two things it will not let you pretend: that a <b>transformer is the best possible architecture</b> (it is the most-used, not the best), or that a <b>quantum chip accelerates your model</b> (it does not — its lever is materials simulation, a different workload).</p>' +
       '<p class="eyebrow" style="margin:20px 0 10px">1 · Hardware you have</p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" class="lab-models">' + subBtns + '</div>' +
@@ -348,7 +353,7 @@
       '<p style="font-size:13px;color:var(--ink-2);line-height:1.5;margin-top:12px"><b>' + esc(w.name) + '.</b> ' + esc(w.note) + '</p>' + better + '</div>' +
       '<div><p class="eyebrow" style="margin-bottom:8px">Honest constraints</p>' + (honesty || '<p class="mono" style="font-size:11px;color:var(--faint)">a clean mapping — no honesty flags for this mix</p>') +
       '<div class="panel" style="border-left:3px solid var(--pass);padding:12px 15px;margin-top:6px"><div style="font-weight:700;color:var(--ink);font-size:14px;margin-bottom:3px">Prove a better one</div><div style="font-size:13px;color:var(--ink-2);line-height:1.45">' + esc(a.prove) + '</div>' +
-      '<div class="controls" style="margin-top:10px"><button class="btn primary" data-goto="recipe">Design a recipe →</button><button class="btn" data-goto="field">Run your own →</button></div></div></div>' + quantumPanel + '</div>';
+      '<div class="controls" style="margin-top:10px"><button class="btn primary" data-goto="recipe">Design a recipe →</button><button class="btn" data-goto="field">Run your own →</button></div></div></div>' + kernelVerifyPanel + quantumPanel + '</div>';
   }
 
   var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer, recipe: secRecipe, studio: secStudio };

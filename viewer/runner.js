@@ -13,6 +13,15 @@
   var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var RAW = 'https://raw.githubusercontent.com/QuantumMytheme/quantum-harness/main/bench/quantum-judge/';
   var PY = ['sim.py', 'graph.py', 'density_matrix.py', 'judge_verify.py'];
+  var KRAW = 'https://raw.githubusercontent.com/QuantumMytheme/quantum-harness/main/bench/kernel-judge/';
+  // committed TPU-kernel bundles the real judge can verify in-browser (an honest ACCEPT + one forgery per class)
+  var KERNEL_RUNS = {
+    'gemm-ok':       { label: 'bf16 GEMM — honest', refId: 'gemm_bf16_tile1', bundle: 'bundle-gemm-bf16-OK.json', expect: 'ACCEPT' },
+    'gemm-swapped':  { label: 'bf16 GEMM — swapped output', refId: 'gemm_bf16_tile1', bundle: 'bundle-gemm-bf16-SWAPPED.json', expect: 'REJECT · 4' },
+    'gemm-inputfit': { label: 'bf16 GEMM — overfit held-out', refId: 'gemm_bf16_tile1', bundle: 'bundle-gemm-bf16-INPUTFIT.json', expect: 'REJECT · 6' },
+    'roofline-ok':   { label: 'roofline — honest coordinate', refId: 'roofline_gemm_v5e', bundle: 'bundle-roofline-OK.json', expect: 'ACCEPT' },
+    'roofline-lie':  { label: 'roofline — inflated %-of-peak', refId: 'roofline_gemm_v5e', bundle: 'bundle-roofline-PEAKLIE.json', expect: 'REJECT · 4' }
+  };
 
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function rv(n) { return getComputedStyle(root).getPropertyValue(n).trim(); }
@@ -153,6 +162,13 @@
       py.FS.mkdir('/judge'); py.FS.mkdir('/refs');
       for (var i = 0; i < PY.length; i++) { var src = await (await fetch(RAW + PY[i])).text(); py.FS.writeFile('/judge/' + PY[i], src); }
       py.runPython("import sys, os; sys.path.insert(0,'/judge'); os.environ['QH_REFERENCES_DIR']='/refs'");
+      // the TPU kernel judge (pure numpy) shares this interpreter — its own refs dir.
+      try {
+        py.FS.mkdir('/krefs');
+        var ksrc = await (await fetch(KRAW + 'judge_kernel.py')).text();
+        py.FS.writeFile('/judge/judge_kernel.py', ksrc);
+        py.runPython("os.environ['QK_REFERENCES_DIR']='/krefs'");
+      } catch (e) { /* kernel judge optional; quantum judge still works */ }
       return py;
     })();
     return pyReady;
@@ -184,6 +200,38 @@
     } catch (e) {
       logw('\nWASM judge unavailable (' + (e && e.message ? e.message : e) + ').\nThe instant JS preview above is exact and offline; the real judge needs network for Pyodide + GitHub raw.', true);
       if (btn) { btn.textContent = '⚙ Run real judge (WASM)'; btn.disabled = false; }
+    }
+  }
+
+  // ---------- WASM real KERNEL judge (Oracle-Diff Gate + Roofline Notary) ----------
+  function klogw(msg, append) { var el = document.getElementById('qm-kwasm-out') || document.getElementById('qm-wasm-out'); if (!el) return; var box = el.querySelector('.qm-wasm'); if (!box) { el.innerHTML = '<div class="qm-wasm"></div>'; box = el.querySelector('.qm-wasm'); } box.textContent = append ? (box.textContent + msg) : msg; box.scrollTop = box.scrollHeight; }
+  async function runRealKernelJudge(key) {
+    var K = KERNEL_RUNS[key]; if (!K) return;
+    var btn = document.querySelector('[data-kjudge="' + key + '"]'); if (btn) { btn.disabled = true; btn.textContent = '⚙ running…'; }
+    try {
+      var py = await getPyodide();
+      klogw('Fetching ' + K.bundle + ' + reference…\n', true);
+      var ref = await (await fetch(KRAW + 'references/' + K.refId + '.json')).text();
+      var bundle = await (await fetch(KRAW + K.bundle)).text();
+      py.FS.writeFile('/krefs/' + K.refId + '.json', ref);
+      py.globals.set('KBUNDLE_JSON', bundle);
+      klogw('Running judge_kernel.verify() …\n', true);
+      var code = "import json, importlib\n" +
+        "import judge_kernel; importlib.reload(judge_kernel)\n" +
+        "b = json.loads(KBUNDLE_JSON)\n" +
+        "try:\n  ch = judge_kernel.verify(b)\n  res = {'verdict':'ACCEPT','code':0,'checks':ch}\n" +
+        "except judge_kernel.Reject as r:\n  res = {'verdict':'REJECT','code':r.code,'reason':str(r)}\n" +
+        "json.dumps(res)";
+      var out = JSON.parse(py.runPython(code));
+      var accept = out.code === 0;
+      var summary = accept
+        ? '✓ ACCEPT · exit 0 — the REAL numpy kernel judge, in your browser via WebAssembly.\n\n' + JSON.stringify(out.checks, null, 1)
+        : '✕ REJECT · exit ' + out.code + '\n' + (out.reason || '');
+      klogw('— judge_kernel.py · ' + K.label + ' —\n' + summary, false);
+      if (btn) { btn.textContent = accept ? '✓ ACCEPT' : '✕ exit ' + out.code; btn.disabled = false; }
+    } catch (e) {
+      klogw('\nWASM kernel judge unavailable (' + (e && e.message ? e.message : e) + ').\nNeeds network for Pyodide + GitHub raw; the judge itself is numpy-only.', true);
+      if (btn) { btn.textContent = '⚙ verify (WASM)'; btn.disabled = false; }
     }
   }
 
@@ -258,17 +306,18 @@
 
   // ---------- global handlers (work on any page) ----------
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-close],[data-copy],[data-ghlogin],[data-ghcreate],[data-ghlogout]'); if (!el) return;
+    var el = e.target.closest('[data-run],[data-runsim],[data-realjudge],[data-kjudge],[data-close],[data-copy],[data-ghlogin],[data-ghcreate],[data-ghlogout]'); if (!el) return;
     if (el.hasAttribute('data-close')) { e.preventDefault(); return closeOverlay(); }
     if (el.hasAttribute('data-copy')) { e.preventDefault(); return copyText(el); }
     if (el.hasAttribute('data-run')) { e.preventDefault(); return openRunner(el.getAttribute('data-run')); }
     if (el.hasAttribute('data-runsim')) { var R = RUNS[el.getAttribute('data-runsim')]; if (R) runSim(R); return; }
     if (el.hasAttribute('data-realjudge')) { e.preventDefault(); return runRealJudge(el.getAttribute('data-realjudge')); }
+    if (el.hasAttribute('data-kjudge')) { e.preventDefault(); return runRealKernelJudge(el.getAttribute('data-kjudge')); }
     if (el.hasAttribute('data-ghlogin')) { e.preventDefault(); return githubLogin(); }
     if (el.hasAttribute('data-ghcreate')) { e.preventDefault(); return ghCreate(el.getAttribute('data-ghcreate')); }
     if (el.hasAttribute('data-ghlogout')) { e.preventDefault(); return ghLogout(); }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOverlay(); });
 
-  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, createRepo: createRepo, runRealJudge: runRealJudge, ghWidget: ghWidget };
+  window.QMRunner = { open: openRunner, openOverlay: openOverlay, closeOverlay: closeOverlay, copyText: copyText, esc: esc, RUNS: RUNS, KERNEL_RUNS: KERNEL_RUNS, createRepo: createRepo, runRealJudge: runRealJudge, runRealKernelJudge: runRealKernelJudge, ghWidget: ghWidget };
 })();

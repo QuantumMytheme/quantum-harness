@@ -114,6 +114,12 @@ test('shared in-browser runner + recipe builder wired on both pages', () => {
   assert.match(js, /function mintRecipe/)
   assert.ok(existsSync(v('og-lab.png')), 'viewer/og-lab.png (notebook social card) should exist')
   assert.match(lab, /og-lab\.png/)
+  // in-browser TPU kernel judge (WASM) — the efficiency referee runs in the Studio
+  assert.match(runner, /runRealKernelJudge/)
+  assert.match(runner, /KERNEL_RUNS\s*=/)
+  assert.match(runner, /judge_kernel/)                  // fetches + reloads the kernel judge in Pyodide
+  assert.match(js, /data-kjudge/)                       // studio kernel-verify buttons
+  assert.match(js, /Verify a TPU-kernel claim/)
 })
 
 test('every page carries the same top-bar nav (no links drop off across pages)', () => {
