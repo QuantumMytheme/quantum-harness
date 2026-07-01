@@ -183,8 +183,110 @@
   }
   function maxDegree(n, edges) { var d = new Array(n).fill(0); edges.forEach(function (e) { d[e[0]]++; d[e[1]]++; }); return Math.max.apply(null, d.concat([0])); }
 
+  // ---- Scenario Studio: given the hardware you HAVE, the honest best-architecture allocation.
+  // Numbers + sources are consistent with /education Part V (the North Star). The load-bearing
+  // honesty: (a) transformers are the MOST-USED GPU workload but NOT the best possible architecture;
+  // (b) a quantum chip does NOT accelerate transformer inference — its honest role is quantum
+  // simulation (materials -> better classical chips), fault-tolerant and a decade-plus out.
+  var SUBSTRATES = {
+    cpu: { name: 'CPU', tag: 'latency-optimized, branchy',
+      good: 'orchestration & control flow, tokenization, sampling, sparse/irregular ops, serving glue, data prep',
+      weak: 'not the matmul engine — low dense-linear-algebra throughput per watt',
+      note: 'huge cache, few fast cores — great at the glue, wrong tool for the bulk matmuls' },
+    gpu: { name: 'GPU', tag: 'massively-parallel SIMT',
+      good: 'training, large-batch inference, prefill, irregular/dynamic parallelism, flexible matmul — the ecosystem default',
+      weak: 'higher power; its flexibility costs efficiency vs a systolic array on regular dense matmul',
+      note: 'the incumbent for transformer inference — why "classic GPU inference" ≈ transformers today' },
+    tpu: { name: 'TPU', tag: 'sequential + wide systolic MXU',
+      good: 'large REGULAR dense matmuls kept VMEM-resident; best perf/W when the shape fills the 128×128 MXU and clears the ridge',
+      weak: 'sequential + irregular/branchy work maps poorly; needs tile-aligned shapes',
+      fact: 'roofline ridge ~240 ops/byte (v5e); VMEM-resident drops it to ~11; int8 ~2× peak',
+      src: '/education Part V · roofline',
+      note: 'wins the dense matmul when the workload fits it — otherwise the GPU is more forgiving' },
+    qpu: { name: 'Quantum chip', tag: 'simulation co-processor — NOT an accelerator',
+      good: 'simulating strongly-correlated quantum systems (chemistry/materials → better catalysts and classical chips)',
+      weak: 'does NOT accelerate LLM/transformer inference: the O(N) data read-in / O(√N) read-out wall, dequantization, and barren plateaus close that door',
+      fact: 'a catalyst like FeMoco needs ~4M physical qubits, fault-tolerant — 10–20 yr out',
+      src: '/education Part V · quantum-lever · Aaronson 2015 · Tang 2018',
+      note: 'the honest lever for BETTER CLASSICAL CHIPS, not for running today’s models faster' }
+  };
+
+  var ROLE_LABEL = {
+    'matmul-dense': 'dense matmul engine', 'matmul-flex': 'matmul engine (flexible)',
+    'orchestrate': 'orchestration & control', 'support': 'prefill / irregular / overflow',
+    'quantum-sim': 'quantum-simulation co-processor', 'idle': 'no role in this workload'
+  };
+
+  // engine = preference order among matmul substrates for this workload; quantum = 'none'|'genuine'.
+  var WORKLOADS = {
+    'transformer-infer': { name: 'Transformer inference', kind: 'ml', dominant: true, engine: ['tpu', 'gpu'], quantum: 'none',
+      note: 'The most-used classical GPU workload today. Decode is MEMORY-bound (batch-1 arithmetic intensity ~1–2 ops/byte, far left of the ~240 ridge) — bandwidth-bound, so the matmul array idles between weight loads.',
+      incumbent: 'A dense transformer is the incumbent — chosen by ecosystem momentum, not proven optimal.',
+      better: ['Sparse MoE — ~18× fewer active FLOPs/token (DeepSeek-V3)', 'SSM / Mamba hybrid — ~3.3× (IBM Granite 4.0); cuts latency, not energy/token', 'Quantization INT4/8 — ~6× memory (arXiv:2411.02355)', 'Speculative decoding — ~2.2× latency (EAGLE-3)'] },
+    'transformer-train': { name: 'Transformer training', kind: 'ml', engine: ['tpu', 'gpu'], quantum: 'none',
+      note: 'Large regular matmuls at high batch — compute-bound and a good fit for a systolic array, but the GPU’s flexibility helps with dynamic shapes and research iteration.',
+      incumbent: 'Dense transformer pretraining is the default — expensive and not obviously optimal.',
+      better: ['Sparse-MoE pretraining — train more capacity per FLOP', 'Distillation — ~10× cheaper inference downstream (Gemma 2)', 'Mixture-of-Depths — ~2× FLOPs (arXiv:2404.02258)'] },
+    'moe-infer': { name: 'Sparse-MoE inference', kind: 'ml', engine: ['tpu', 'gpu'], quantum: 'none',
+      note: 'Only a few experts fire per token — routing is dynamic/irregular. Intensity still lives left of the ridge at low batch; batching across tokens is what actually crosses it.',
+      incumbent: 'MoE already beats a dense transformer on active-FLOPs — a better architecture, verifiably.',
+      better: ['Expert batching to raise arithmetic intensity', 'Int4 weight-only for the resident expert bank', 'A referee-verified MoE-vs-dense energy/token comparison'] },
+    'ssm-infer': { name: 'SSM / state-space inference', kind: 'ml', engine: ['tpu', 'gpu'], quantum: 'none',
+      note: 'A recurrent O(1)-state scan — cuts latency vs attention, but the data-dependent gating is VPU-heavy, not pure matmul. Honest: it cuts latency, not necessarily energy/token.',
+      incumbent: 'An SSM/hybrid is a candidate BETTER-than-transformer architecture — but the win must be proven, not assumed.',
+      better: ['Pin the state dim to the MXU width (128/256)', 'Hybrid attention+SSM for recall + throughput', 'Prove the iso-quality tokens/s vs a tuned transformer in the referee'] },
+    'materials-sim': { name: 'Materials / chemistry simulation', kind: 'science', engine: ['tpu', 'gpu'], quantum: 'genuine',
+      note: 'The ONE place a quantum chip is the honest lever: strongly-correlated systems whose classical cost is 2ⁿ. Today you approximate them classically (tensor-network contraction) on TPU/GPU; a fault-tolerant QPU is the future engine.',
+      incumbent: 'Classical tensor-network / DFT approximations are the incumbent — a real QPU would surpass them, a decade-plus out.',
+      better: ['Tensor-network contraction on the MXU today', 'A QPU co-processor for the exact-correlation core (fault-tolerant, 10–20 yr)'] },
+    'combinatorial-opt': { name: 'Combinatorial optimization', kind: 'science', engine: ['gpu', 'tpu'], quantum: 'caveat',
+      note: 'Mostly a classical GPU/CPU workload (branch-and-bound, GPU heuristics). Quantum/annealing samplers exist but have no broadly-proven advantage — treat any speedup claim as unproven until refereed.',
+      incumbent: 'Classical solvers are the incumbent and usually the right answer.',
+      better: ['GPU-accelerated heuristics / simulated annealing', 'A quantum sampler ONLY with a refereed, iso-quality advantage — not a headline'] },
+    'classical-data': { name: 'Data / serving / orchestration', kind: 'systems', engine: ['cpu'], quantum: 'none',
+      note: 'Control flow, tokenization, retrieval, batching, and serving glue — a CPU workload. Keep the accelerators fed; don’t burn a matmul engine on branchy code.',
+      incumbent: 'The CPU is the right tool here — no accelerator needed for the glue.',
+      better: ['Overlap CPU orchestration with accelerator compute', 'Retrieval (RETRO-style) — ~25× (arXiv:2112.04426) to shrink the model that has to run'] }
+  };
+
+  // Given have = {cpu,gpu,tpu,qpu booleans} and a workload id, return the honest allocation.
+  function allocate(have, workloadId) {
+    have = have || {};
+    var w = WORKLOADS[workloadId] || WORKLOADS['transformer-infer'];
+    var engine = w.engine.filter(function (s) { return have[s]; })[0] || null;
+    var orchestrator = have.cpu ? 'cpu' : null;
+    var roles = [];
+    ['tpu', 'gpu', 'cpu', 'qpu'].forEach(function (s) {
+      if (!have[s]) return;
+      var role;
+      if (s === 'qpu') role = (w.quantum === 'genuine') ? 'quantum-sim' : 'idle';
+      else if (s === engine) role = (s === 'tpu') ? 'matmul-dense' : 'matmul-flex';
+      else if (s === 'cpu' && orchestrator === 'cpu') role = 'orchestrate';
+      else role = 'support';
+      roles.push({ substrate: s, role: role, label: ROLE_LABEL[role], sub: SUBSTRATES[s] });
+    });
+
+    var honesty = [];
+    if (w.kind === 'ml') honesty.push({ tone: 'incumbent', text: w.incumbent + ' Most-used is not the same as best possible — that gap is exactly what this platform exists to close.' });
+    if (have.qpu && w.quantum === 'none')
+      honesty.push({ tone: 'quantum', text: 'You selected a quantum chip, but it does NOT accelerate ' + w.name.toLowerCase() + ' — the O(N) data read-in / O(√N) read-out wall, dequantization, and barren plateaus close that door. Its honest role is materials simulation, a different workload entirely.' });
+    if (have.qpu && w.quantum === 'caveat')
+      honesty.push({ tone: 'quantum', text: 'A quantum/annealing sampler MIGHT help here, but no broadly-proven advantage exists — treat any speedup as unproven until it clears the referee at iso-quality.' });
+    if (have.qpu && w.quantum === 'genuine')
+      honesty.push({ tone: 'quantum', text: 'This is the honest home for a quantum chip — but fault-tolerant scale is 10–20 yr out; today the simulation runs classically on your TPU/GPU.' });
+    if (w.kind === 'ml' && !engine)
+      honesty.push({ tone: 'gap', text: 'You have no matmul accelerator selected — a GPU or TPU carries the bulk compute for ' + w.name.toLowerCase() + '.' });
+
+    var prove = (w.kind === 'ml')
+      ? 'Think a different architecture wins on your hardware? Prove it: design it, run it, and let the referee re-derive an iso-quality energy/token (or tokens/s) verdict a stranger can reproduce — that is the whole point of the bench.'
+      : 'Any efficiency or advantage claim here should be refereed — re-derived from first principles, not asserted.';
+
+    return { workload: w, roles: roles, engine: engine, honesty: honesty, better: w.better || [], prove: prove };
+  }
+
   window.QMKnowledge = {
     GATES: GATES, TASKS: TASKS, PROBLEMS: PROBLEMS, QUALITY_AXES: QUALITY_AXES, GRADE_NOTE: GRADE_NOTE,
+    SUBSTRATES: SUBSTRATES, WORKLOADS: WORKLOADS, ROLE_LABEL: ROLE_LABEL, allocate: allocate,
     esc: esc, gradeColor: gradeColor, taskColor: taskColor,
     profileBadge: profileBadge, profileDetail: profileDetail,
     taskOne: taskOne, taskChip: taskChip, problemCard: problemCard,

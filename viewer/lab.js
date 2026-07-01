@@ -21,7 +21,7 @@
   var state = { section: 'front', model: 'mythos', filter: 'all', picked: 'ghz3' };
 
   // ─────────────────────────── DATA ───────────────────────────
-  var TABS = [['front', 'Abstract', '01'], ['brief', 'Method', '02'], ['field', 'Protocol', '03'], ['atlas', 'Results', '04'], ['register', 'Logbook', '05'], ['primer', 'Theory', '06'], ['recipe', 'Recipe', '07']];
+  var TABS = [['front', 'Abstract', '01'], ['brief', 'Method', '02'], ['field', 'Protocol', '03'], ['atlas', 'Results', '04'], ['register', 'Logbook', '05'], ['primer', 'Theory', '06'], ['recipe', 'Recipe', '07'], ['studio', 'Studio', '08']];
   var GATES = [
     { exit: 3, name: 'Structure', body: 'Respects qubit count, depth, native gates, coupling map, 2-qubit cap.' },
     { exit: 4, name: 'Reproduce', body: 'Re-simulates the claim — fabrication caught.' },
@@ -153,6 +153,7 @@
   }
 
   // ─────────────────────────── RECIPE BUILDER (§07) ───────────────────────────
+  var studio = { have: { cpu: true, gpu: true, tpu: true, qpu: true }, workload: 'transformer-infer' };
   var recipe = { ings: { tfim3: 65, h2vqe: 40 }, target: 'tfim3', hi: null, params: { depth: 2, entangle: 'linear', optimizer: 'qaoa', novelty: 45, backend: 'noisy', noise: 0.5, twoq: 6, shots: 2048 } };
   var INGREDIENTS = [
     ['ghz3', 'GHZ₃', 'linear entanglement ladder', 'state_prep'],
@@ -296,11 +297,56 @@
     window.QMRunner.openOverlay('modal', inner);
   }
 
-  var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer, recipe: secRecipe };
+  // ─────────────────────────── SCENARIO STUDIO (§08) ───────────────────────────
+  function toggleSubstrate(s) { studio.have[s] = !studio.have[s]; render(); }
+  function setWorkload(id) { studio.workload = id; render(); }
+  function secStudio() {
+    var K = window.QMKnowledge;
+    if (!K || !K.allocate) return '<div class="lab-sheet">' + head('§ 08 · Studio', 'Scenario Studio', '') + '<p>knowledge base unavailable.</p></div>';
+    var have = studio.have;
+    var subBtns = ['cpu', 'gpu', 'tpu', 'qpu'].map(function (s) {
+      var on = have[s], S = K.SUBSTRATES[s];
+      return '<button class="lab-gcard" data-substrate="' + s + '" aria-pressed="' + on + '" style="padding:12px 13px;text-align:left;transition:opacity .15s,border-color .15s;' + (on ? 'border-color:var(--accent);' : 'opacity:.5;') + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span class="mono" style="font-size:14px;color:var(--ink);font-weight:600">' + esc(S.name) + '</span><span class="chip" style="font-size:8px">' + esc(S.tag) + '</span></div>' +
+        '<div style="font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.4">' + esc(S.good) + '</div>' +
+        '<div class="mono" style="font-size:9px;color:' + (on ? 'var(--accent)' : 'var(--faint)') + ';margin-top:7px">' + (on ? '✓ available — click to remove' : 'click to add') + '</div></button>';
+    }).join('');
+    var wlChips = Object.keys(K.WORKLOADS).map(function (id) {
+      var w = K.WORKLOADS[id], on = studio.workload === id;
+      return '<button class="chip" data-workload="' + id + '" style="cursor:pointer;' + (on ? 'border-color:var(--accent);color:#fff;background:var(--accent);' : '') + '">' + esc(w.name) + (w.dominant ? ' ★' : '') + '</button>';
+    }).join('');
+    var a = K.allocate(have, studio.workload), w = a.workload;
+    var roleRows = a.roles.map(function (r) {
+      var col = r.role === 'idle' ? 'var(--faint)' : (r.role === 'quantum-sim' ? 'var(--accent-2)' : 'var(--accent)');
+      return '<div style="display:flex;gap:11px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--rule)">' +
+        '<span class="mono" style="flex:0 0 92px;font-size:12px;font-weight:600;color:var(--ink)">' + esc(r.sub.name) + '</span>' +
+        '<span class="mono" style="flex:0 0 auto;font-size:10px;color:' + col + ';border:1px solid ' + col + ';border-radius:5px;padding:2px 7px">' + esc(r.label) + '</span>' +
+        '<span style="font-size:13px;color:var(--ink-2);line-height:1.35">' + esc(r.why) + '</span></div>';
+    }).join('') || '<p class="mono" style="color:var(--faint);padding:10px 0">select at least one substrate above</p>';
+    var toneName = { incumbent: 'most-used ≠ best', quantum: 'quantum reality', gap: 'gap' };
+    var toneCol = { incumbent: '#c4880c', quantum: 'var(--accent-2)', gap: 'var(--reject)' };
+    var honesty = a.honesty.map(function (h) {
+      var c = toneCol[h.tone] || 'var(--accent)';
+      return '<div class="panel" style="border-left:3px solid ' + c + ';padding:11px 14px;margin-bottom:10px"><span class="mono" style="font-size:9px;color:' + c + ';text-transform:uppercase;letter-spacing:.08em">' + esc(toneName[h.tone] || h.tone) + '</span><div style="font-size:13.5px;color:var(--ink-2);line-height:1.45;margin-top:4px">' + esc(h.text) + '</div></div>';
+    }).join('');
+    var better = a.better.length ? '<p class="eyebrow" style="margin:16px 0 8px">Candidate better-than-incumbent architectures on this hardware</p><div class="controls">' + a.better.map(function (b) { return '<span class="chip" style="border-color:var(--accent);color:var(--accent)">' + esc(b) + '</span>'; }).join('') + '</div>' : '';
+    return '<div class="lab-sheet">' + head('§ 08 · Studio', 'What should you build on the hardware you have?', 'Substrate mix<br>honest allocation') +
+      '<p style="max-width:780px">Pick the substrates you actually have and a workload. The studio maps each chip to the role it is honestly good at — grounded in the <a href="education.html#m-efficiency">North Star</a>. Two things it will not let you pretend: that a <b>transformer is the best possible architecture</b> (it is the most-used, not the best), or that a <b>quantum chip accelerates your model</b> (it does not — its lever is materials simulation, a different workload).</p>' +
+      '<p class="eyebrow" style="margin:20px 0 10px">1 · Hardware you have</p><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" class="lab-models">' + subBtns + '</div>' +
+      '<p class="eyebrow" style="margin:22px 0 10px">2 · Workload  <span class="mono" style="font-size:9px;color:var(--faint)">★ = the dominant classical GPU workload today</span></p><div class="controls">' + wlChips + '</div>' +
+      '<div class="lab-grid2" style="margin-top:24px"><div>' +
+      '<p class="eyebrow" style="margin-bottom:6px">Best-architecture allocation</p><div class="panel" style="padding:8px 14px 4px">' + roleRows + '</div>' +
+      '<p style="font-size:13px;color:var(--ink-2);line-height:1.5;margin-top:12px"><b>' + esc(w.name) + '.</b> ' + esc(w.note) + '</p>' + better + '</div>' +
+      '<div><p class="eyebrow" style="margin-bottom:8px">Honest constraints</p>' + (honesty || '<p class="mono" style="font-size:11px;color:var(--faint)">a clean mapping — no honesty flags for this mix</p>') +
+      '<div class="panel" style="border-left:3px solid var(--pass);padding:12px 15px;margin-top:6px"><div style="font-weight:700;color:var(--ink);font-size:14px;margin-bottom:3px">Prove a better one</div><div style="font-size:13px;color:var(--ink-2);line-height:1.45">' + esc(a.prove) + '</div>' +
+      '<div class="controls" style="margin-top:10px"><button class="btn primary" data-goto="recipe">Design a recipe →</button><button class="btn" data-goto="field">Run your own →</button></div></div></div></div></div>';
+  }
+
+  var SECTIONS = { front: secFront, brief: secBrief, field: secField, atlas: secAtlas, register: secRegister, primer: secPrimer, recipe: secRecipe, studio: secStudio };
 
   // ─────────────────────────── RENDER ───────────────────────────
   function renderTabs() { tabsEl.innerHTML = TABS.map(function (t) { var on = state.section === t[0]; return '<button class="lab-tab" data-tab="' + t[0] + '" role="tab" aria-selected="' + on + '"><span class="pl">§ ' + t[2] + '</span>' + t[1] + '</button>'; }).join(''); }
-  var VALID = { front: 1, brief: 1, field: 1, atlas: 1, register: 1, primer: 1, recipe: 1 };
+  var VALID = { front: 1, brief: 1, field: 1, atlas: 1, register: 1, primer: 1, recipe: 1, studio: 1 };
   function sectionFromHash() { var h = (location.hash || '').replace(/^#/, ''); return VALID[h] ? h : null; }
   function render() { renderTabs(); sheet.innerHTML = (SECTIONS[state.section] || secFront)(); registerCanvases(); drawAllOnce(); }
   function setState(patch) { for (var k in patch) state[k] = patch[k]; if (patch.section) { try { history.replaceState(null, '', '#' + patch.section); } catch (e) { location.hash = patch.section; } window.scrollTo(0, 0); } render(); }
@@ -309,9 +355,11 @@
   // ─────────────────────────── INTERACTIONS ───────────────────────────
   document.addEventListener('click', function (e) {
     if (e.target.closest('.ratio-row')) return;            // clicking a ratio slider must not toggle its parent ingredient (replaces an inline onclick — CSP-safe)
-    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam]');
+    var el = e.target.closest('[data-tab],[data-goto],[data-model],[data-brief],[data-filter],[data-submit],[data-submit-brief],[data-path],[data-subbrief],[data-ing],[data-recipe-mint],[data-rparam],[data-substrate],[data-workload]');
     if (!el) return;
     // runner / overlay / copy / github actions are owned by runner.js (window.QMRunner)
+    if (el.hasAttribute('data-substrate')) return toggleSubstrate(el.getAttribute('data-substrate'));
+    if (el.hasAttribute('data-workload')) return setWorkload(el.getAttribute('data-workload'));
     if (el.hasAttribute('data-ing')) return toggleIngredient(el.getAttribute('data-ing'));
     if (el.hasAttribute('data-recipe-mint')) return mintRecipe();
     if (el.hasAttribute('data-rparam')) return setRParam(el.getAttribute('data-rparam'));
