@@ -4107,8 +4107,8 @@
 
   // ───── simon (a hidden period found in O(n) queries) ─────
   EDU["simon"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h, NQ = 6, N = 3, DIM = 64;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var NQ = 6, N = 3, DIM = 64;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var s = 5;                                                // hidden period (n=3), nonzero
   function fval(x) { var y = x ^ s; return Math.min(x, y); }    // 2-to-1 with period s
   var ys = [], solved = null, queries = 0;
@@ -4132,13 +4132,13 @@
     var cand = []; for (var c = 1; c < 8; c++) { var ok = true; for (var k = 0; k < ys.length; k++) if (dot(ys[k], c)) { ok = false; break; } if (ok) cand.push(c); }
     solved = (cand.length === 1) ? cand[0] : null;
   }
-  function mk(t, fn, primary) { var b = document.createElement('button'); b.type = 'button'; b.className = primary ? 'btn primary' : 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); draw(); }); controls.appendChild(b); return b; }
+  function mk(t, fn, primary) { var b = K.btn(controls, t, function () { fn(); draw(); }); if (primary) b.className = 'btn primary'; return b; }
   mk('Run query', function () { query(); }, true);
   mk('Reset', function () { ys = []; solved = null; queries = 0; });
   mk('New secret', function () { s = 1 + ((s + 2) % 7); ys = []; solved = null; queries = 0; });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('A 2-to-1 function hides a period s (f(x)=f(x⊕s)). Each quantum query returns a y with y·s=0 — a few pin s down.', 14, 22);
@@ -4153,19 +4153,18 @@
     var rx = W * 0.56, ry = 70;
     ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('recovered period', rx, ry);
     if (solved != null) { ctx.fillStyle = pass; ctx.font = '600 22px ' + mono; ctx.fillText('s = ' + solved.toString(2).padStart(3, '0'), rx, ry + 28);
-      ctx.fillStyle = solved === s ? pass : K.v('--reject'); ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillText(solved === s ? '✓ matches the hidden secret' : '✗', rx, ry + 50); }
+      ctx.fillStyle = solved === s ? pass : P.reject; ctx.font = '11px ' + P.sans; ctx.fillText(solved === s ? '✓ matches the hidden secret' : '✗', rx, ry + 50); }
     else { ctx.fillStyle = ink2; ctx.font = '14px ' + mono; ctx.fillText(ys.length + ' / ' + (N - 1) + ' independent equations', rx, ry + 26);
-      ctx.fillStyle = faint; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillText('need ' + (N - 1) + ' to solve for s', rx, ry + 48); }
-    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('An exponential separation in the query model — and the trick (interference then linear algebra) that directly inspired Shor.', rx, ry + 78, W - rx - 16, 13);
+      ctx.fillStyle = faint; ctx.font = '11px ' + P.sans; ctx.fillText('need ' + (N - 1) + ' to solve for s', rx, ry + 48); }
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + P.sans; K.wrap(ctx, 'An exponential separation in the query model — and the trick (interference then linear algebra) that directly inspired Shor.', rx, ry + 78, W - rx - 16, 13);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── superdense (two classical bits on one qubit) ─────
   EDU["superdense"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h, DIM = 4;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var DIM = 4;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var b1 = 1, b2 = 0;                                       // Alice's two bits
   var S2 = 1 / Math.sqrt(2);
   function X(st, q) { var o = st.slice(), m = q === 0 ? 2 : 1; for (var i = 0; i < DIM; i++) o[i ^ m] = st[i]; return o; }
@@ -4180,13 +4179,13 @@
     var pr = st.map(function (a) { return a.re * a.re + a.im * a.im; }), best = 0; for (var i = 1; i < 4; i++) if (pr[i] > pr[best]) best = i;
     return { out: best, gate: (b1 ? 'Z' : '') + (b2 ? 'X' : '') || 'I' };
   }
-  function tg(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(b); draw(); }); controls.appendChild(b); return b; }
-  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'Alice sends'; controls.appendChild(lab);
+  function tg(t, fn) { var b = K.btn(controls, t, function () { fn(b); draw(); }); return b; }
+  K.chip(controls, 'Alice sends');
   var bb1 = tg('b₁=' + b1, function () { b1 ^= 1; bb1.textContent = 'b₁=' + b1; });
   var bb2 = tg('b₂=' + b2, function () { b2 ^= 1; bb2.textContent = 'b₂=' + b2; });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var res = decode(), recovered = res.out, rb1 = (recovered >> 1) & 1, rb2 = recovered & 1, ok = rb1 === b1 && rb2 === b2;
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
@@ -4206,8 +4205,8 @@
     // Bob
     ctx.fillStyle = ink; ctx.font = '600 12px ' + mono; ctx.fillText('BOB', bx, midY - 70);
     ctx.font = '11px ' + mono; ctx.fillStyle = ink2; ctx.fillText('Bell-measures, reads', bx, midY - 48);
-    ctx.fillStyle = ok ? pass : K.v('--reject'); ctx.font = '600 20px ' + mono; ctx.fillText(rb1 + '' + rb2 + (ok ? '  ✓' : ''), bx, midY - 22);
-    ctx.fillStyle = faint; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'center';
+    ctx.fillStyle = ok ? pass : P.reject; ctx.font = '600 20px ' + mono; ctx.fillText(rb1 + '' + rb2 + (ok ? '  ✓' : ''), bx, midY - 22);
+    ctx.fillStyle = faint; ctx.font = '11px ' + P.sans; ctx.textAlign = 'center';
     wrap('Alice’s gate rotates the shared Bell state into one of four orthogonal Bell states; Bob tells them apart with a single measurement — 2 bits per qubit.', W / 2, H - 28, W * 0.66, 14);
   }
   function wrap(text, x, y, mw, lh) { var words = text.split(' '), lines = [], line = ''; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { lines.push(line); line = words[i] + ' '; } else line = t; } lines.push(line); ctx.textAlign = 'center'; for (var k = 0; k < lines.length; k++) ctx.fillText(lines[k], x, y - (lines.length - 1 - k) * lh); }
@@ -4216,17 +4215,14 @@
 
   // ───── landauer (the energy cost of forgetting a bit) ─────
   EDU["landauer"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var kB = 1.380649e-23, LN2 = Math.LN2, T = 300, reversible = false;
   function energyJ() { return kB * T * LN2; }
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'temperature T ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = '1'; range.max = '1000'; range.step = '1'; range.value = String(T); range.style.marginLeft = '6px';
-  range.addEventListener('input', function () { T = parseInt(range.value, 10); draw(); }); lab.appendChild(range); controls.appendChild(lab);
-  var mb = document.createElement('button'); mb.type = 'button'; mb.className = 'btn'; mb.textContent = 'show reversible'; mb.addEventListener('click', function () { reversible = !reversible; mb.textContent = reversible ? 'show erase (irreversible)' : 'show reversible'; draw(); }); controls.appendChild(mb);
+  var range = K.slider(controls, 'temperature T ', { min: 1, max: 1000, step: 1, value: T }, function () { T = parseInt(range.value, 10); draw(); });
+  var mb = K.btn(controls, 'show reversible', function () { reversible = !reversible; mb.textContent = reversible ? 'show erase (irreversible)' : 'show reversible'; draw(); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('Forgetting is physical: erasing one bit must dump at least kT·ln2 of heat. Reversible logic has no such floor.', 14, 22);
@@ -4253,18 +4249,16 @@
     ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('Landauer limit at T = ' + T + ' K', rx, 70);
     ctx.fillStyle = ink; ctx.font = '600 17px ' + mono; ctx.fillText('kT·ln2 = ' + E.toExponential(2) + ' J', rx, 96);
     ctx.fillStyle = ink2; ctx.font = '12px ' + mono; ctx.fillText('= ' + (eV * 1000).toFixed(1) + ' meV  =  ' + eV.toExponential(2) + ' eV', rx, 116);
-    ctx.fillStyle = faint; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif');
-    wrap('At room temperature that is ~18 meV per erased bit — and today’s chips still spend thousands of times more. This is why reversible (and quantum, which is unitary and reversible) computing is the deep-efficiency frontier.', rx, 144, W - rx - 16, 14);
+    ctx.fillStyle = faint; ctx.font = '10px ' + P.sans;
+    K.wrap(ctx, 'At room temperature that is ~18 meV per erased bit — and today’s chips still spend thousands of times more. This is why reversible (and quantum, which is unitary and reversible) computing is the deep-efficiency frontier.', rx, 144, W - rx - 16, 14);
     ctx.fillStyle = ink2; ctx.font = '9.5px ' + mono; ctx.fillText('Landauer 1961 · Bennett 1973 · confirmed Bérut et al. 2012', rx, H - 16);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── rule110 (universal computation from one tiny rule) ─────
   EDU["rule110"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(); });
   var ruleN = 110, initMode = 'single', cols = 0, rows = 0, grid = null, t0 = 0, shown = 0;
   function ruleBit(n, lcr) { return (n >> lcr) & 1; }       // lcr = 4·L+2·C+R
   function seedRng(a) { var s = a >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
@@ -4280,8 +4274,8 @@
   }
   var cellPx = build();
 
-  function mk(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); cellPx = build(); shown = 0; t0 = 0; if (K.reduced) draw(); }); controls.appendChild(b); return b; }
-  var rlab = document.createElement('span'); rlab.className = 'chip'; rlab.textContent = 'rule'; controls.appendChild(rlab);
+  function mk(t, fn) { return K.btn(controls, t, function () { fn(); cellPx = build(); shown = 0; t0 = 0; if (K.reduced) draw(); }); }
+  K.chip(controls, 'rule');
   var rbtn = {}; [110, 30, 90, 184].forEach(function (n) { rbtn[n] = mk(String(n), function () { ruleN = n; sync(); }); });
   mk('single seed', function () { initMode = 'single'; });
   mk('random seed', function () { initMode = 'random'; });
@@ -4289,7 +4283,7 @@
   sync();
 
   function draw(t) {
-    var ink = K.v('--ink'), faint = K.v('--faint'), acc = K.v('--accent'), bg = K.v('--stage-bg') || K.v('--bg'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, faint = P.faint, acc = P.acc, bg = K.v('--stage-bg') || K.v('--bg'), mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     if (K.reduced) shown = rows; else { if (!t0) t0 = t; shown = Math.min(rows, Math.floor((t - t0) / 45) + 1); }
     var ox = (W - cols * cellPx) / 2, oy = 4;
@@ -4307,8 +4301,7 @@
 
 // ───── ghz-mermin (all-versus-nothing nonlocality — a single-shot contradiction) ─────
   EDU["ghz-mermin"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var S2 = 1 / Math.sqrt(2);
   // |GHZ⟩ = (|000⟩+|111⟩)/√2 over 8 amplitudes, index = 4b0+2b1+b2
   function ghz() { var st = []; for (var i = 0; i < 8; i++) st.push(K.C(0, 0)); st[0] = K.C(S2, 0); st[7] = K.C(S2, 0); return st; }
@@ -4329,13 +4322,12 @@
   var lhv = { X1: 1, X2: 1, X3: 1, Y1: 1, Y2: 1, Y3: -1 };
   function classicalRow(name) { var v = 1; for (var k = 0; k < 3; k++) v *= lhv[name[k] + (k + 1)]; return v; }
 
-  function mkb(key) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = key + '=' + (lhv[key] > 0 ? '+1' : '−1'); b.addEventListener('click', function () { lhv[key] = -lhv[key]; b.textContent = key + '=' + (lhv[key] > 0 ? '+1' : '−1'); draw(); }); controls.appendChild(b); return b; }
-  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'pre-set local values'; controls.appendChild(lab);
+  function mkb(key) { var b = K.btn(controls, key + '=' + (lhv[key] > 0 ? '+1' : '−1'), function () { lhv[key] = -lhv[key]; b.textContent = key + '=' + (lhv[key] > 0 ? '+1' : '−1'); draw(); }); return b; }
+  K.chip(controls, 'pre-set local values');
   ['X1', 'X2', 'X3', 'Y1', 'Y2', 'Y3'].forEach(mkb);
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('|GHZ⟩ = (|000⟩ + |111⟩)/√2.  Try to pre-assign definite ±1 values that reproduce all four quantum results at once.', 14, 22);
@@ -4362,17 +4354,15 @@
     ctx.fillStyle = reject; ctx.fillText('✗', col3, py);
 
     // verdict
-    ctx.textAlign = 'left'; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillStyle = reject;
-    wrap('Every local assignment forces the product to +1 (each value appears twice), but quantum mechanics demands −1. No pre-set values can match all four — local realism fails in a single shot, no inequality, no statistics.', x0, py + 26, W - x0 - 16, 15);
+    ctx.textAlign = 'left'; ctx.font = '11px ' + P.sans; ctx.fillStyle = reject;
+    K.wrap(ctx, 'Every local assignment forces the product to +1 (each value appears twice), but quantum mechanics demands −1. No pre-set values can match all four — local realism fails in a single shot, no inequality, no statistics.', x0, py + 26, W - x0 - 16, 15);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── bv (Bernstein–Vazirani — one query recovers the whole secret) ─────
   EDU["bv"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var n = 5, s = parseInt('10110', 2);                     // hidden string (n bits)
   function popcnt(x) { var c = 0; while (x) { c ^= (x & 1); x >>= 1; } return c; }    // parity
   function runBV() {                                        // returns recovered index (= s)
@@ -4387,14 +4377,13 @@
   }
   function bits(v) { var a = []; for (var i = n - 1; i >= 0; i--) a.push((v >> i) & 1); return a; }
 
-  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'hidden string s'; controls.appendChild(lab);
+  K.chip(controls, 'hidden string s');
   var sbtn = [];
-  for (var i = 0; i < n; i++) (function (i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; var bitpos = n - 1 - i;
-    b.textContent = String((s >> bitpos) & 1); b.addEventListener('click', function () { s ^= (1 << bitpos); b.textContent = String((s >> bitpos) & 1); draw(); }); controls.appendChild(b); sbtn.push(b); })(i);
+  for (var i = 0; i < n; i++) (function (i) { var bitpos = n - 1 - i;
+    var b = K.btn(controls, String((s >> bitpos) & 1), function () { s ^= (1 << bitpos); b.textContent = String((s >> bitpos) & 1); draw(); }); sbtn.push(b); })(i);
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var res = runBV(), recOK = res.rec === s;
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
@@ -4424,13 +4413,12 @@
       ctx.fillStyle = ink; ctx.font = '600 14px ' + mono; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(bs[k]), cx + cw / 2, yy + cw / 2); ctx.textBaseline = 'alphabetic'; }
     ctx.fillStyle = pass; ctx.font = '600 12px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('recovered s = ' + bits(s).join('') + (recOK ? '  ✓  (prob ' + (res.prob * 100).toFixed(0) + '%)' : ''), rx, top + 16 + cw + 22);
-    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
-    wrap('Hadamards spread every input at once; the oracle stamps each with the phase (−1)^{s·x}; a second layer of Hadamards focuses all of it onto the single answer |s⟩. One oracle call, n bits — where a classical computer needs n.', rx, top + 16 + cw + 48, W - rx - 16, 14);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + P.sans;
+    K.wrap(ctx, 'Hadamards spread every input at once; the oracle stamps each with the phase (−1)^{s·x}; a second layer of Hadamards focuses all of it onto the single answer |s⟩. One oracle call, n bits — where a classical computer needs n.', rx, top + 16 + cw + 48, W - rx - 16, 14);
     ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('quantum: 1 query     classical: ' + n + ' queries', rx, H - 14);
   }
   function rr(x, y, w, h, rad) { ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; } ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad); ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath(); }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
@@ -4439,8 +4427,7 @@
 
 // ───── hamming (Hamming(7,4) — the syndrome spells the error position) ─────
   EDU["hamming"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   // positions 1..7: parity at 1,2,4 · data at 3,5,6,7
   var d = { 3: 1, 5: 0, 6: 1, 7: 1 }, err = 0;            // err = flipped position (0 = none)
   function encode() {                                      // 1-indexed codeword [_, b1..b7]
@@ -4451,8 +4438,8 @@
   function syndrome(r) { var c1 = r[1] ^ r[3] ^ r[5] ^ r[7], c2 = r[2] ^ r[3] ^ r[6] ^ r[7], c4 = r[4] ^ r[5] ^ r[6] ^ r[7];
     return { c1: c1, c2: c2, c4: c4, pos: c1 + 2 * c2 + 4 * c4 }; }
 
-  function mkb(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); draw(); }); controls.appendChild(b); return b; }
-  var dlbl = document.createElement('span'); dlbl.className = 'chip'; dlbl.textContent = 'data bits'; controls.appendChild(dlbl);
+  function mkb(t, fn) { return K.btn(controls, t, function () { fn(); draw(); }); }
+  K.chip(controls, 'data bits');
   var dbtn = {};
   [3, 5, 6, 7].forEach(function (p) { dbtn[p] = mkb('d' + p + '=' + d[p], function () { d[p] ^= 1; dbtn[p].textContent = 'd' + p + '=' + d[p]; err = 0; }); });
   mkb('clear error', function () { err = 0; });
@@ -4463,8 +4450,7 @@
     for (var i = 0; i < cellHit.length; i++) { var c = cellHit[i]; if (px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.w) { err = (err === c.pos) ? 0 : c.pos; draw(); return; } } });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), panel = K.v('--panel'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, panel = K.v('--panel'), mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic'; cellHit = [];
     var r = received(), syn = syndrome(r), isParity = { 1: 1, 2: 1, 4: 1 };
 
@@ -4501,21 +4487,19 @@
     var sx = W * 0.62, sy = 70;
     ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('syndrome  c₄c₂c₁', sx, sy);
     ctx.fillStyle = ink; ctx.font = '600 17px ' + mono; ctx.fillText(syn.c4 + '' + syn.c2 + '' + syn.c1 + '  =  ' + syn.pos, sx, sy + 24);
-    ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    ctx.font = '11px ' + P.sans;
     if (syn.pos === 0) { ctx.fillStyle = ink2; ctx.fillText('0 → no error', sx, sy + 48); }
     else { ctx.fillStyle = pass; ctx.fillText('→ bit ' + syn.pos + ' flipped — flip it back to correct', sx, sy + 48);
       ctx.font = '600 12px ' + mono; ctx.fillText('codeword recovered ✓', sx, sy + 70); }
-    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('The three parity checks, read as a binary number, give the error’s position directly — the classical cousin of the qubit code’s syndrome.', sx, sy + 96, W - sx - 16, 13);
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + P.sans; K.wrap(ctx, 'The three parity checks, read as a binary number, give the error’s position directly — the classical cousin of the qubit code’s syndrome.', sx, sy + 96, W - sx - 16, 13);
   }
   function rr(x, y, w, h, rad) { ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; } ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad); ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath(); }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── sat3 (random 3-SAT — the satisfiability phase transition) ─────
   EDU["sat3"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var n = 12, K_INST = 10, A_LO = 2, A_HI = 7, seedBase = 9;
   var curve = [], alpha = 4.27;
 
@@ -4541,14 +4525,11 @@
   build();
   var maxCost = curve.reduce(function (a, b) { return Math.max(a, b.cost); }, 1);
 
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'ratio m/n ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = String(A_LO); range.max = String(A_HI); range.step = '0.1'; range.value = String(alpha); range.style.marginLeft = '6px';
-  range.addEventListener('input', function () { alpha = parseFloat(range.value); draw(); }); lab.appendChild(range); controls.appendChild(lab);
-  var rb = document.createElement('button'); rb.type = 'button'; rb.className = 'btn'; rb.textContent = 'resample'; rb.addEventListener('click', function () { seedBase = (seedBase * 7 + 3) % 9973; build(); maxCost = curve.reduce(function (a, b) { return Math.max(a, b.cost); }, 1); draw(); }); controls.appendChild(rb);
+  var range = K.slider(controls, 'ratio m/n ', { min: A_LO, max: A_HI, step: 0.1, value: alpha }, function () { alpha = parseFloat(range.value); draw(); });
+  K.btn(controls, 'resample', function () { seedBase = (seedBase * 7 + 3) % 9973; build(); maxCost = curve.reduce(function (a, b) { return Math.max(a, b.cost); }, 1); draw(); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), acc2 = K.v('--accent-2'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, acc2 = P.acc2, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('Random 3-SAT (' + n + ' variables, K=' + K_INST + ' per point), solved by brute force. As clauses pile up, satisfiability collapses.', 14, 20);
