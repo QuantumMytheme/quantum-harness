@@ -13,8 +13,10 @@ Run:  python3 test_judge.py   (exit 0 = all pass)
 import copy
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JUDGE = os.path.join(HERE, "judge_verify.py")
@@ -282,6 +284,42 @@ def main():
     b["circuit"]["ops"][6] = {"gate": "cx", "q": [0, 1]}
     record("single smuggled cx on ghz3_he REJECTed (exit 3)",
            verify_code(b) == judge_verify.EXIT_STRUCTURE)
+
+    # --- ERROR-MITIGATION-AWARE 2q COST: reference-pinned cap + cost-adjusted gate ---
+    # 22. a 3-cx GHZ variant (correct state, wasteful compilation, self-declared
+    #     loose budget) is REJECTED at STRUCTURE by the reference-pinned cap of 2.
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz3-3CX.json"))
+    record("3-cx GHZ variant REJECTed by the reference-pinned 2q cap (exit 3)",
+           code == judge_verify.EXIT_STRUCTURE, f"exit {code}: {out}")
+    # 23. the 2-cx reference solution still ACCEPTs under the tightened cap.
+    record("2-cx ghz3 reference solution still ACCEPTs under cap 2 (exit 0)",
+           verify_code(poc) == 0)
+    # 24. loosening the budget bundle-side cannot evade the reference cap (min-merge).
+    b = copy.deepcopy(poc)
+    b["constraints"]["max_two_qubit_gates"] = 99
+    b["circuit"]["ops"] = [{"gate": "cx", "q": [0, 1]}] + b["circuit"]["ops"]  # no-op cx on |000> -> 3 cx, state unchanged
+    record("bundle-declared loose 2q budget overridden by reference cap (exit 3)",
+           verify_code(b) == judge_verify.EXIT_STRUCTURE)
+    # 25. the 2q-cost PERFORMANCE sub-check: when each 2q gate is priced as the cost
+    #     unit, a circuit whose cost-adjusted fidelity no longer beats the classical
+    #     baseline is REJECTED at exit 5 (structure passes; the margin is eaten).
+    tmpd = tempfile.mkdtemp(prefix="qh-refs-")
+    try:
+        shutil.copytree(os.path.join(HERE, "references"), tmpd, dirs_exist_ok=True)
+        rp = os.path.join(tmpd, "ghz3.json")
+        with open(rp) as f:
+            r = json.load(f)
+        r["constraints"]["max_two_qubit_gates"] = 8                    # cap out of the way
+        r["thresholds"] = {"fidelity": 0.99, "two_qubit_cost": 0.3}    # price 2q gates heavily
+        with open(rp, "w") as f:
+            json.dump(r, f)
+        os.environ["QH_REFERENCES_DIR"] = tmpd
+        # poc: fidelity 1.0 with 2 cx -> adjusted 1.0 - 2*0.3 = 0.4 < baseline 0.5
+        record("2q-cost-adjusted fidelity below the classical baseline REJECTed (exit 5)",
+               verify_code(copy.deepcopy(poc)) == judge_verify.EXIT_PERFORMANCE)
+    finally:
+        os.environ.pop("QH_REFERENCES_DIR", None)
+        shutil.rmtree(tmpd)
 
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")

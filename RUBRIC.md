@@ -28,9 +28,9 @@ regression suite, or an emitted metric — nothing grades on prose.
 
 | gate | exit | what it proves |
 |------|------|----------------|
-| STRUCTURE       | 3 | circuit parses; respects n_qubits, depth budget, native gate set, coupling map, 2q-gate cap |
+| STRUCTURE       | 3 | circuit parses; respects n_qubits, depth budget, native gate set, coupling map, 2q-gate cap — constraints the hidden reference pins are merged in host-side (tighter budget wins), so a bundle cannot self-declare a looser one |
 | REPRODUCIBILITY | 4 | re-simulating reproduces the CLAIMED number within tolerance (catches fabrication) |
-| PERFORMANCE     | 5 | the *recomputed* result meets the rubric threshold AND beats/ties the classical baseline |
+| PERFORMANCE     | 5 | the *recomputed* result meets the rubric threshold AND beats/ties the classical baseline; when the reference prices 2q gates (`thresholds.two_qubit_cost`), the fidelity must still beat the baseline after paying that cost per 2q gate |
 | ANTI-OVERFIT    | 6 | held-out generalization check — fires when the problem declares a held-out check the model was never told |
 | (other) schema 2 · ACCEPT 0 |||
 

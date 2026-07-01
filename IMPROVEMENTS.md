@@ -23,15 +23,23 @@ to hit the GHZ target through transpilation, not by emitting the textbook h/cx c
 - Ref: bench/quantum-judge/references/ghz3_he.json, quantum-proof-ghz3he.json,
   quantum-proof-ghz3he-NONNATIVE.json.
 
-## ☐ 2. Error-mitigation-aware design (depth/2q-count is the lever)
+## ☑ 2. Error-mitigation-aware design (depth/2q-count is the lever) — reference-pinned cap + 2q-cost gate LIVE
 Reward circuits that reach the target with FEWER two-qubit gates, since 2q gates dominate
 real error budgets — make the rubric prefer the shallower of two correct solutions.
-- **Do:** tighten `max_two_qubit_gates` on an existing problem (e.g. ghz3 → cap 2) and add a
-  PERFORMANCE sub-check that the claimed fidelity holds when each 2q gate is treated as the
-  cost unit beaten against the classical baseline.
-- **Done =** a 3-cx GHZ variant is REJECTED at STRUCTURE (exit 3) by the cap, the 2-cx
-  reference still ACCEPTs (exit 0), and `test_judge.py` gains a regression asserting both.
-- Ref: bench/quantum-judge/judge_verify.py STRUCTURE gate, max_two_qubit_gates.
+- **Did:** references can now pin `constraints` HOST-SIDE (`_effective_constraints`: numeric
+  budgets merge as the TIGHTER of reference and bundle; identity keys like native_gates /
+  coupling_map override), so a bundle can no longer self-declare a looser budget. ghz3 is
+  pinned at `max_two_qubit_gates: 2` (the provably-optimal count) and ghz3_he's full brief
+  (native set, coupling, depth 12, cap 2) is pinned too. Added the PERFORMANCE sub-check:
+  when the reference prices 2q gates (`thresholds.two_qubit_cost`, ghz3/ghz3_he: 0.05), the
+  fidelity must still beat the classical baseline after paying that cost per 2q gate.
+- **Done =** the 3-cx GHZ variant (`quantum-proof-ghz3-3CX.json` — exact GHZ state, honest
+  claim, self-declared loose budget 4) is REJECTED at STRUCTURE (exit 3) by the reference cap;
+  the 2-cx reference solution still ACCEPTs (exit 0); and a priced run whose cost-adjusted
+  fidelity drops below the baseline is REJECTED at exit 5. `test_judge.py` asserts all four
+  (45/45, was 41/41).
+- Ref: bench/quantum-judge/judge_verify.py `_effective_constraints` + the two_qubit_cost
+  sub-check in `verify_state_prep`, references/ghz3.json, quantum-proof-ghz3-3CX.json.
 
 ## ☐ 3. Larger GHZ / graph-state prep under sparse coupling
 Scale state_prep past the 3-qubit toy to a 5-qubit GHZ (or a ring graph state) where a sparse

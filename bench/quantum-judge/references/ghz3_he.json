@@ -13,6 +13,17 @@
     [0.0, 0.0],
     [0.7071067811865476, 0.0]
   ],
-  "thresholds": { "fidelity": 0.99 },
+  "constraints": {
+    "_comment": "HOST-AUTHORITATIVE pin of the hardware-efficient brief: the native set, coupling map, and budgets are enforced from here (identity keys override the bundle; numeric budgets take the tighter of the two), so a bundle cannot self-declare 'h' as native or a looser budget.",
+    "n_qubits": 3,
+    "native_gates": ["rz", "rx", "cz"],
+    "coupling_map": [[0, 1], [1, 2]],
+    "max_depth": 12,
+    "max_two_qubit_gates": 2
+  },
+  "thresholds": {
+    "fidelity": 0.99,
+    "two_qubit_cost": 0.05
+  },
   "tolerance": { "fidelity_reproduce": 1e-06 }
 }

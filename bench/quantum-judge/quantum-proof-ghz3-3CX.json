@@ -1,0 +1,25 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "ghz3",
+  "task": "state_prep",
+  "_attack": "2q-budget evasion (IMPROVEMENTS item 2): a wastefully-compiled GHZ prep that spends THREE cx gates (the leading cx 0,1 acts on |000> so it is a no-op, then the textbook pair) and self-declares the old loose budget max_two_qubit_gates=4. The final state IS the exact GHZ state and the claimed fidelity 1.0 is honest — but 2q gates dominate real error budgets, and the hidden reference pins the cap at 2 (merged as the tighter of reference and bundle). judge_verify.py must REJECT at STRUCTURE (exit 3) on the 2q-gate count, proving the cap cannot be loosened bundle-side.",
+  "circuit": {
+    "n_qubits": 3,
+    "ops": [
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "h", "q": [0] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "cx", "q": [1, 2] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 3,
+    "max_depth": 6,
+    "native_gates": ["h", "cx", "rz", "rx", "ry", "sx", "x", "cz"],
+    "coupling_map": [[0, 1], [1, 2]],
+    "max_two_qubit_gates": 4
+  },
+  "claim": { "fidelity": 1.0 },
+  "classical_baseline": { "fidelity": 0.5 },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}
