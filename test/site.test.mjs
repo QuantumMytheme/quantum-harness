@@ -57,11 +57,11 @@ const EDU_IDS = [
   'qubit-explorer',
   'chsh', 'teleport', 'qec-code', 'ghz-mermin', 'bv', 'hamming', 'sat3', 'rsa-shor',
   'superdense', 'deutsch-jozsa', 'simon', 'rule110', 'landauer',
-  'efficiency', 'walls', 'levers', 'claim-checker', 'quantum-lever', 'metric',
+  'efficiency', 'walls', 'levers', 'claim-checker', 'quantum-lever', 'metric', 'roofline',
   'your-run',
 ]
 
-test('education page exists, is wired, and mounts all 39 module canvases', () => {
+test('education page exists, is wired, and mounts all 40 module canvases', () => {
   assert.ok(existsSync(v('education.html')), 'viewer/education.html should exist')
   assert.ok(existsSync(v('education.js')), 'viewer/education.js should exist')
   const edu = readFileSync(v('education.html'), 'utf8')
@@ -243,6 +243,6 @@ test('homepage advertises the full platform, not just the bench', () => {
   // and the retired overclaim must not creep back in.
   assert.match(html, /verifiable-efficiency referee/i)      // the project's stated intention is on the homepage
   assert.match(html, /North Star/i)                          // and points into the curriculum's North Star
-  assert.match(html, /thirty-nine-slice|39[- ]slice/i)      // curriculum card reflects the current arc, not "twenty"
+  assert.match(html, /forty-slice|40[- ]slice/i)      // curriculum card reflects the current arc (40 slices, Part V lesson 6 added)
   assert.doesNotMatch(html, /quantum-processing architectures for AI|quantum-native inference/i) // honest: quantum is not an AI accelerator
 })

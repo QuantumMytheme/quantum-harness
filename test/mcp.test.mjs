@@ -8,8 +8,10 @@ import path from 'node:path'
 import { TOOLS, callTool, handleMessage } from '../mcp/server.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const refIds = readdirSync(path.join(ROOT, 'bench/quantum-judge/references'))
-  .filter(f => f.endsWith('.json')).map(f => f.replace(/\.json$/, '')).sort()
+// the unified door (bench/judge.py) lists BOTH judges' problems, so list_problems
+// mirrors the union of the quantum-judge and kernel-judge reference directories.
+const readRefs = d => readdirSync(path.join(ROOT, d)).filter(f => f.endsWith('.json')).map(f => f.replace(/\.json$/, ''))
+const refIds = [...new Set([...readRefs('bench/quantum-judge/references'), ...readRefs('bench/kernel-judge/references')])].sort()
 const parse = r => JSON.parse(r.content[0].text)
 
 test('exposes exactly the six harness tools, each with an input schema', () => {

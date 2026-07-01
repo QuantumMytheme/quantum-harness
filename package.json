@@ -14,7 +14,12 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "judge": "python3 bench/quantum-judge/judge_verify.py",
+    "test:all": "bash bin/test-all.sh",
+    "test:site": "node viewer/test-education.mjs",
+    "test:kernel": "python3 bench/kernel-judge/test_kernel.py",
+    "test:router": "python3 bench/test_router.py",
+    "judge": "python3 bench/judge.py",
+    "judge:quantum": "python3 bench/quantum-judge/judge_verify.py",
     "judge:test": "python3 bench/quantum-judge/test_judge.py"
   }
 }
