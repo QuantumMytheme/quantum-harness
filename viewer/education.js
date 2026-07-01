@@ -4567,8 +4567,7 @@
 
   // ───── rsa-shor (RSA, and the one hard step a quantum computer speeds up) ─────
   EDU["rsa-shor"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   function gcd(a, b) { while (b) { var t = b; b = a % b; a = t; } return a; }
   function modpow(b, e, m) { var r = 1; b %= m; while (e > 0) { if (e & 1) r = (r * b) % m; b = (b * b) % m; e >>= 1; } return r; }
   function egcd(a, b) { if (!b) return [a, 1, 0]; var r = egcd(b, a % b); return [r[0], r[2], r[1] - Math.floor(a / b) * r[2]]; }
@@ -4587,18 +4586,16 @@
     var fp = gcd(t - 1, N), fq = gcd(t + 1, N); return { r: rr, ok: true, half: t, p: fp, q: fq }; }
   setupKeys();
 
-  function mkbtns(labelTxt, items, getCur, set) { var s = document.createElement('span'); s.className = 'chip'; s.textContent = labelTxt; controls.appendChild(s);
-    items.forEach(function (it) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = it.t; b.setAttribute('data-k', it.v);
-      b.addEventListener('click', function () { set(it.v); draw(); }); controls.appendChild(b); }); }
+  function mkbtns(labelTxt, items, getCur, set) { K.chip(controls, labelTxt);
+    items.forEach(function (it) { K.btn(controls, it.t, function () { set(it.v); draw(); }).setAttribute('data-k', it.v); }); }
   mkbtns('N = p·q', SEMIS.map(function (s, i) { return { t: (s[0] * s[1]) + '', v: i }; }), function () { return ni; }, function (v) { ni = v; setupKeys(); });
   var ml = document.createElement('label'); ml.className = 'chip'; ml.style.marginLeft = '8px'; ml.textContent = 'message ';
   var mr = document.createElement('input'); mr.type = 'range'; mr.min = '2'; mr.max = '34'; mr.step = '1'; mr.value = String(msg); mr.style.marginLeft = '6px';
   mr.addEventListener('input', function () { msg = Math.min(N - 1, parseInt(mr.value, 10)); draw(); }); ml.appendChild(mr); controls.appendChild(ml);
-  var ab = document.createElement('button'); ab.type = 'button'; ab.className = 'btn'; ab.textContent = 'try base a'; ab.addEventListener('click', function () { do { base = 2 + ((base) % (N - 2)); } while (gcd(base, N) !== 1); draw(); }); controls.appendChild(ab);
+  K.btn(controls, 'try base a', function () { do { base = 2 + ((base) % (N - 2)); } while (gcd(base, N) !== 1); draw(); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, acc2 = P.acc2, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var splitX = Math.round(W * 0.46);
     ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(splitX, 30); ctx.lineTo(splitX, H - 40); ctx.stroke();
@@ -4613,7 +4610,7 @@
     line('private  d = ' + d + '   (e·d ≡ 1 mod φ)');
     line('encrypt   ' + msg + '^' + e + ' mod ' + N + ' = ' + c, acc);
     line('decrypt   ' + c + '^' + d + ' mod ' + N + ' = ' + back + (back === msg ? '  ✓' : ''), back === msg ? pass : reject);
-    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('Security rests on one thing: factoring N back into p·q. Easy here; for a 2048-bit N, the best classical method would outlast the universe.', 16, ly + 6, splitX - 30, 13);
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + P.sans; K.wrap(ctx, 'Security rests on one thing: factoring N back into p·q. Easy here; for a 2048-bit N, the best classical method would outlast the universe.', 16, ly + 6, splitX - 30, 13);
 
     // ===== factor via period-finding (right) =====
     var rx = splitX + 16;
@@ -4635,10 +4632,9 @@
         ctx.fillStyle = pass; ctx.font = '600 13px ' + mono; ctx.fillText('N = ' + res.p + ' × ' + res.q + '  — cracked', rx, fy); }
       else { ctx.fillStyle = reject; ctx.font = '11px ' + mono; ctx.fillText(res.trivial ? 'a^(r/2) ≡ −1 — unlucky base, press “try base a”' : 'odd period — press “try base a”', rx, fy); } }
     else { ctx.fillStyle = reject; ctx.fillText('gcd(a,N) ≠ 1 — press “try base a”', rx, fy); }
-    ctx.fillStyle = faint; ctx.font = '9.5px ' + (K.v('--sans') || 'sans-serif'); wrap('The one hard step is finding the period r. Shor’s quantum algorithm finds it efficiently; turning r into the factors (the gcd) is ordinary classical math.', rx, H - 30, W - rx - 16, 13);
+    ctx.fillStyle = faint; ctx.font = '9.5px ' + P.sans; K.wrap(ctx, 'The one hard step is finding the period r. Shor’s quantum algorithm finds it efficiently; turning r into the factors (the gcd) is ordinary classical math.', rx, H - 30, W - rx - 16, 13);
   }
   function rr(x, y, w, h, rad) { ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(x, y, w, h, rad); return; } ctx.moveTo(x + rad, y); ctx.arcTo(x + w, y, x + w, y + h, rad); ctx.arcTo(x + w, y + h, x, y + h, rad); ctx.arcTo(x, y + h, x, y, rad); ctx.arcTo(x, y, x + w, y, rad); ctx.closePath(); }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
@@ -4647,8 +4643,7 @@
 
 // ───── chsh (Bell / CHSH inequality — S climbs past 2 to 2√2) ─────
   EDU["chsh"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(); });
   var SQ = 1 / Math.sqrt(2), T2 = 2 * SQ;                 // Tsirelson bound 2√2 ≈ 2.828
   var psi = [SQ, 0, 0, SQ];                                // |Φ+⟩ amplitudes, index = 2·b0 + b1 (real)
   function Mmat(th) { var c = Math.cos(th), s = Math.sin(th); return [[c, s], [s, -c]]; }   // cosθ·Z + sinθ·X
@@ -4661,21 +4656,16 @@
   var phi = Math.PI / 4;                                    // Bob's angle (slider) — optimal at 45°
   var dispS = 2;
 
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px';
-  lab.textContent = 'Bob angle φ ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = '90'; range.step = '1'; range.value = '45';
-  range.style.marginLeft = '6px'; range.setAttribute('aria-label', 'Bob measurement angle'); lab.appendChild(range);
-  range.addEventListener('input', function () { phi = parseFloat(range.value) * Math.PI / 180; if (K.reduced) draw(); });
-  controls.appendChild(lab);
-  function mkb(t, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); if (K.reduced) draw(); }); controls.appendChild(b); return b; }
+  var range = K.slider(controls, 'Bob angle φ ', { min: 0, max: 90, step: 1, value: 45 }, function () { phi = parseFloat(range.value) * Math.PI / 180; if (K.reduced) draw(); });
+  range.setAttribute('aria-label', 'Bob measurement angle');
+  function mkb(t, fn) { return K.btn(controls, t, function () { fn(); if (K.reduced) draw(); }); }
   mkb('Optimal (45°)', function () { phi = Math.PI / 4; range.value = '45'; });
   mkb('Aligned (0°)', function () { phi = 0; range.value = '0'; });
 
   function Svalue() { var b = phi, bp = -phi; return corr(a0, b) + corr(a0, bp) + corr(a1, b) - corr(a1, bp); }
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var S = Svalue();
     if (K.reduced) dispS = S; else dispS += (S - dispS) * 0.18;
@@ -4703,7 +4693,7 @@
     var violated = Math.abs(dispS) > 2.0001;
     ctx.textAlign = 'left'; ctx.fillStyle = violated ? pass : ink2; ctx.font = '600 30px ' + mono;
     ctx.fillText('S = ' + dispS.toFixed(3), W * 0.52, 70);
-    ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    ctx.font = '11px ' + P.sans;
     ctx.fillStyle = violated ? pass : faint;
     ctx.fillText(violated ? 'beyond 2 — no local-hidden-variable theory can explain this' : 'within ±2 — explainable by local realism', W * 0.52, 90);
 
@@ -4727,8 +4717,7 @@
 
   // ───── teleport (quantum teleportation — recover |ψ⟩, fidelity 1) ─────
   EDU["teleport"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) render(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) render(); });
   var N = 3, DIM = 8;
   function bit(i, q) { return (i >> (N - 1 - q)) & 1; }
   function H1(st, q) { var o = st.slice(), s = 1 / Math.sqrt(2), m = 1 << (N - 1 - q);
@@ -4766,7 +4755,7 @@
   function go() { run(Math.random(), Math.random()); stage = 1; anim = 0; }
   run(0, 0);                                                // initial: outcome 00
 
-  function mk(t, fn, primary) { var b = document.createElement('button'); b.type = 'button'; b.className = primary ? 'btn primary' : 'btn'; b.textContent = t; b.addEventListener('click', function () { fn(); if (K.reduced) render(); }); controls.appendChild(b); return b; }
+  function mk(t, fn, primary) { var b = K.btn(controls, t, function () { fn(); if (K.reduced) render(); }); if (primary) b.className = 'btn primary'; return b; }
   mk('Run teleport', function () { go(); }, true);
   var tl = document.createElement('label'); tl.className = 'chip'; tl.style.margin = '0 8px'; tl.textContent = 'message θ ';
   var tr = document.createElement('input'); tr.type = 'range'; tr.min = '0'; tr.max = '180'; tr.step = '1'; tr.value = String(Math.round(theta * 180 / Math.PI)); tr.style.marginLeft = '6px';
@@ -4783,8 +4772,7 @@
   }
   var dispOut = { x: 0, y: 0, z: 1 };
   function render() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, acc2 = P.acc2, pass = P.pass, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var msg = msgAmp(), mb = blochOf(msg[0], msg[1]);
     var shown = (stage >= 1) ? outBloch : { x: 0, y: 0, z: 1 };
@@ -4816,8 +4804,7 @@
 
   // ───── qec-code (3-qubit bit-flip code — syndrome localizes & corrects) ─────
   EDU["qec-code"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var N = 3, DIM = 8;
   function bit(i, q) { return (i >> (N - 1 - q)) & 1; }
   function CX(st, c, t) { var o = st.slice(), mc = 1 << (N - 1 - c), mt = 1 << (N - 1 - t); for (var i = 0; i < DIM; i++) o[i] = (i & mc) ? st[i ^ mt] : st[i]; return o; }
@@ -4836,17 +4823,16 @@
     var q = (s1 && !s2) ? 0 : (s1 && s2) ? 1 : (!s1 && s2) ? 2 : -1;
     return { s1: s1, s2: s2, q: q }; }
 
-  function mk(t, fn, on) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; if (on) b.setAttribute('aria-pressed', 'true'); b.textContent = t; b.addEventListener('click', function () { fn(); draw(); }); controls.appendChild(b); return b; }
+  function mk(t, fn, on) { return K.btn(controls, t, function () { fn(); draw(); }, on ? { pressed: 'true' } : undefined); }
   var ebtns = {};
-  controls.appendChild(Object.assign(document.createElement('span'), { className: 'chip', textContent: 'flip' }));
+  K.chip(controls, 'flip');
   ['none', '0', '1', '2'].forEach(function (e) { ebtns[e] = mk(e === 'none' ? 'no error' : 'q' + e, function () { errQ = e === 'none' ? -1 : parseInt(e, 10); sync(); }); });
   var typeBtn = mk('X error', function () { errType = errType === 'X' ? 'Z' : 'X'; typeBtn.textContent = errType + ' error'; sync(); });
   function sync() { for (var e in ebtns) ebtns[e].setAttribute('aria-pressed', ((e === 'none' && errQ < 0) || e === String(errQ)) ? 'true' : 'false'); }
   sync();
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var st = encoded();
     if (errQ >= 0) st = errType === 'X' ? X1(st, errQ) : Z1(st, errQ);
@@ -4882,13 +4868,12 @@
     ctx.textAlign = 'left'; ctx.font = '11px ' + mono;
     ctx.fillStyle = faint; ctx.fillText('syndrome', rx, ry);
     ctx.fillStyle = ink; ctx.font = '600 16px ' + mono; ctx.fillText('(' + syn.s1 + ', ' + syn.s2 + ')', rx, ry + 22);
-    ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    ctx.font = '11px ' + P.sans;
     if (errQ < 0) { ctx.fillStyle = ink2; ctx.fillText('no error · syndrome 0,0', rx, ry + 46); }
-    else if (undetected) { ctx.fillStyle = acc; wrap('a Z (phase) error commutes with Z-checks → syndrome 0,0, undetected. The 9-qubit code is needed for phase errors.', rx, ry + 46, W - rx - 16, 15); }
+    else if (undetected) { ctx.fillStyle = acc; K.wrap(ctx, 'a Z (phase) error commutes with Z-checks → syndrome 0,0, undetected. The 9-qubit code is needed for phase errors.', rx, ry + 46, W - rx - 16, 15); }
     else { ctx.fillStyle = pass; ctx.fillText('→ points to q' + syn.q + ' · apply X to correct', rx, ry + 46);
       ctx.font = '600 12px ' + mono; ctx.fillText('logical |ψ⟩ recovered ✓', rx, ry + 70); }
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var test = line + words[i] + ' '; if (ctx.measureText(test).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = test; } ctx.fillText(line, x, yy); }
   draw();
 };
 
@@ -4897,8 +4882,7 @@
 
 // ───── bit (what is a bit? — logic-gate playground) ─────
   EDU["bit"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(0); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(0); });
 
   var A = 1, B = 0;                       // input bits
   var gate = 'AND';                       // AND OR XOR NAND
@@ -4910,14 +4894,13 @@
 
   // ---- controls ----
   function mk(label, fn, cls) {
-    var b = document.createElement('button'); b.type = 'button';
-    b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = label;
-    b.addEventListener('click', function () { fn(b); if (K.reduced) draw(0); });
-    controls.appendChild(b); return b;
+    var b = K.btn(controls, label, function () { fn(b); if (K.reduced) draw(0); });
+    if (cls) b.className = 'btn ' + cls;
+    return b;
   }
   var aBtn = mk('A = 1', function () { A ^= 1; aBtn.textContent = 'A = ' + A; });
   var bBtn = mk('B = 0', function () { B ^= 1; bBtn.textContent = 'B = ' + B; });
-  var sep = document.createElement('span'); sep.className = 'chip'; sep.textContent = 'gate'; controls.appendChild(sep);
+  K.chip(controls, 'gate');
   var gbtns = {};
   ['AND', 'OR', 'XOR', 'NAND'].forEach(function (g) {
     gbtns[g] = mk(g, function () { gate = g; syncGates(); });
@@ -4973,8 +4956,7 @@
   }
 
   function draw(t) {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'),
-        col = K.v('--accent'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, col = P.acc, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
 
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
@@ -5043,8 +5025,7 @@
 
   // ───── architectures (beyond attention: SSMs & hybrids) ─────
   EDU["architectures"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(0); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(0); });
 
   // sequence length n in "k tokens": slider 1..256
   var n = 64, sel = 'attention';
@@ -5057,10 +5038,9 @@
   };
   var ORDER = ['rnn', 'attention', 'ssm', 'hybrid', 'moe'];
 
-  function mk(label, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label;
-    b.addEventListener('click', function () { fn(); if (K.reduced) draw(0); }); controls.appendChild(b); return b; }
+  function mk(label, fn) { return K.btn(controls, label, function () { fn(); if (K.reduced) draw(0); }); }
   var abtn = {};
-  var lbl = document.createElement('span'); lbl.className = 'chip'; lbl.textContent = 'architecture'; controls.appendChild(lbl);
+  K.chip(controls, 'architecture');
   ORDER.forEach(function (k) { abtn[k] = mk(ARCH[k].name, function () { sel = k; sync(); }); });
   var slab = document.createElement('label'); slab.className = 'chip'; slab.style.marginLeft = '8px'; slab.textContent = 'context';
   var range = document.createElement('input'); range.type = 'range'; range.min = '4'; range.max = '256'; range.step = '1'; range.value = String(n);
@@ -5070,8 +5050,8 @@
   sync();
 
   function draw(t) {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule'),
-        col = K.v('--accent'), col2 = K.v('--accent-2'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = K.v('--rule'),
+        col = P.acc, col2 = P.acc2, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
 
     // ---- plot: cost vs sequence length ----
@@ -5131,7 +5111,7 @@
     }
     // selected blurb
     var a = ARCH[sel];
-    ctx.fillStyle = ink; ctx.font = '13px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'center';
+    ctx.fillStyle = ink; ctx.font = '13px ' + P.sans; ctx.textAlign = 'center';
     ctx.fillText(a.idea, W / 2, ry - 26);
     ctx.fillStyle = col; ctx.font = '11px ' + mono;
     ctx.fillText(a.cx, W / 2, ry - 8);
@@ -5142,8 +5122,7 @@
 
   // ───── entanglement (two-qubit statevector + Bell) ─────
   EDU["entanglement"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) snap(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) snap(); });
   var S2 = 1 / Math.sqrt(2);
   // statevector over |00>,|01>,|10>,|11>; index = 2*b0 + b1 (qubit0 = leftmost)
   var st = [K.C(1, 0), K.C(0, 0), K.C(0, 0), K.C(0, 0)];
@@ -5179,9 +5158,7 @@
     measured = pick; measFlash = 1;
   }
 
-  function mk(label, fn, primary) { var b = document.createElement('button'); b.type = 'button';
-    b.className = primary ? 'btn primary' : 'btn'; b.textContent = label;
-    b.addEventListener('click', function () { fn(); if (K.reduced) snap(); }); controls.appendChild(b); return b; }
+  function mk(label, fn, primary) { var b = K.btn(controls, label, function () { fn(); if (K.reduced) snap(); }); if (primary) b.className = 'btn primary'; return b; }
   mk('H₀', function () { H1q(2); }); mk('H₁', function () { H1q(1); });
   mk('X₀', function () { X1q(2); }); mk('CNOT 0→1', function () { CNOT(); });
   mk('Bell pair', function () { bell(); }, true);
@@ -5194,8 +5171,7 @@
     return 'hsla(' + hue(re, im).toFixed(0) + ',72%,' + (K.dark() ? 62 : 46) + '%,' + al + ')'; }
 
   function render() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        col = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, col = P.acc, pass = P.pass, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
 
     // amplitude bars
@@ -5228,7 +5204,7 @@
     ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.strokeRect(rx, topY + 52, 140, 8);
     ctx.fillStyle = ent ? pass : faint; ctx.fillRect(rx, topY + 52, Math.max(0, Math.min(1, C)) * 140, 8);
     // correlation note
-    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
+    ctx.fillStyle = ink2; ctx.font = '11px ' + P.sans;
     var note = ent ? 'measuring one qubit instantly fixes the other' : 'the two qubits are independent';
     wrap(note, rx, topY + 84, 150, 15);
     if (measured >= 0) {
@@ -5252,8 +5228,7 @@
 
   // ───── quantum-algorithms (Grover interference) ─────
   EDU["quantum-algorithms"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; if (K.reduced) draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw && K.reduced) draw(); });
 
   var N = 16, marked = 5, amp = [], step = 0, running = false, lastStep = 0;
   function reset() { amp = []; for (var i = 0; i < N; i++) amp.push(1 / Math.sqrt(N)); step = 0; }
@@ -5266,9 +5241,7 @@
   }
   reset();
 
-  function mk(label, fn, primary) { var b = document.createElement('button'); b.type = 'button';
-    b.className = primary ? 'btn primary' : 'btn'; b.textContent = label;
-    b.addEventListener('click', function () { fn(); if (K.reduced) draw(); }); controls.appendChild(b); return b; }
+  function mk(label, fn, primary) { var b = K.btn(controls, label, function () { fn(); if (K.reduced) draw(); }); if (primary) b.className = 'btn primary'; return b; }
   mk('Grover step', function () { grover(); });
   var runBtn = mk('Run', function () { running = !running; runBtn.textContent = running ? 'Pause' : 'Run'; }, true);
   mk('Reset', function () { reset(); running = false; runBtn.textContent = 'Run'; });
@@ -5285,8 +5258,7 @@
   });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        col = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, col = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
 
     var x0 = 20, x1 = W - 20, bw = (x1 - x0) / N;
