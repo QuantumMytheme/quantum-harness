@@ -330,6 +330,42 @@ window.SCOREBOARD_DATA = {
       ]
     },
     {
+      "problem_id": "ghz3_he",
+      "task": "state_prep",
+      "source": "quantum-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-ghz3_he --remix ghz3_he"
+        }
+      ]
+    },
+    {
+      "problem_id": "ghz5_line",
+      "task": "state_prep",
+      "source": "quantum-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-ghz5_line --remix ghz5_line"
+        }
+      ]
+    },
+    {
       "problem_id": "h2vqe",
       "task": "vqe",
       "source": "quantum-judge",
@@ -424,8 +460,8 @@ window.SCOREBOARD_DATA = {
       "task": "vqe",
       "source": "quantum-judge",
       "paradigms_tried": [
-        "qaoa",
-        "hardware-efficient"
+        "hardware-efficient",
+        "qaoa"
       ],
       "runs": 2,
       "has_model_run": true,
@@ -731,20 +767,20 @@ window.SCOREBOARD_DATA = {
       "costLabel": "2q gates",
       "points": [
         {
-          "paradigm": "qaoa",
-          "model": "opus-4.8",
-          "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
-          "metric": 0.00010313849458487567,
-          "cost": 4,
-          "reference": false,
-          "dominated": false
-        },
-        {
           "paradigm": "hardware-efficient",
           "model": "opus-4.8",
           "run_repo": "https://github.com/QuantumMytheme/run-tfim3-hwe",
           "metric": 0.014258023432029088,
           "cost": 2,
+          "reference": false,
+          "dominated": false
+        },
+        {
+          "paradigm": "qaoa",
+          "model": "opus-4.8",
+          "run_repo": "https://github.com/QuantumMytheme/run-tfim3-qaoa",
+          "metric": 0.00010313849458487567,
+          "cost": 4,
           "reference": false,
           "dominated": false
         }
