@@ -3684,15 +3684,12 @@
 
 // ───── walls (the three physical walls on efficient computing) ─────
   EDU["walls"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var MAC_pJ = 0.05, HBM_pJ_bit = 2.5, LAND_J = 2.8e-21, bytes = 1;     // bytes moved off-chip per op
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'bytes moved / op ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = '1'; range.max = '64'; range.step = '1'; range.value = String(bytes); range.style.marginLeft = '6px';
-  range.addEventListener('input', function () { bytes = parseInt(range.value, 10); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+  var range = K.slider(controls, 'bytes moved / op ', { min: 1, max: 64, step: 1, value: bytes }, function () { bytes = parseInt(range.value, 10); draw(); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), acc2 = K.v('--accent-2'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, acc2 = P.acc2, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('Wall 1 — the memory wall: moving data costs far more than the arithmetic.', 14, 22);
@@ -3712,24 +3709,21 @@
     var lx0 = 30, lx1 = W - 24, ly = H * 0.74;
     function E2X(j) { var lo = -22, hi = -10; return lx0 + (Math.max(lo, Math.min(hi, Math.log10(j))) - lo) / (hi - lo) * (lx1 - lx0); }
     ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(lx1, ly); ctx.stroke();
-    [[LAND_J, 'Landauer kT·ln2', pass(K)], [1e-12, 'one logic op (~1 pJ)', acc], [MAC_pJ * 1e-12, 'one INT8 MAC (0.05 pJ)', acc2]].forEach(function (m) {
+    [[LAND_J, 'Landauer kT·ln2', P.pass], [1e-12, 'one logic op (~1 pJ)', acc], [MAC_pJ * 1e-12, 'one INT8 MAC (0.05 pJ)', acc2]].forEach(function (m) {
       var x = E2X(m[0]); ctx.strokeStyle = faint; ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.moveTo(x, ly - 7); ctx.lineTo(x, ly + 7); ctx.stroke(); ctx.globalAlpha = 1;
       ctx.fillStyle = m[2]; ctx.font = '9px ' + mono; ctx.textAlign = 'center'; ctx.fillText(m[1], x, ly - 11); ctx.fillStyle = faint; ctx.fillText(m[0].toExponential(0) + ' J', x, ly + 18); });
     ctx.fillStyle = reject; ctx.font = '600 11px ' + mono; ctx.textAlign = 'right'; ctx.fillText('MAC ~10⁷× above the floor', lx1, ly - 24);
 
     // Wall 3 — Koomey
-    ctx.fillStyle = faint; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'left';
-    wrap('Wall 3 — Koomey’s law: efficiency once doubled every ~1.6 years; since Dennard scaling ended (~2005) it doubles every ~2.6 years. The free ride is over — which is why architecture and new substrates, not faster switches, now carry the gains.', 30, H - 28, W - 54, 13);
+    ctx.fillStyle = faint; ctx.font = '10px ' + P.sans; ctx.textAlign = 'left';
+    K.wrap(ctx, 'Wall 3 — Koomey’s law: efficiency once doubled every ~1.6 years; since Dennard scaling ended (~2005) it doubles every ~2.6 years. The free ride is over — which is why architecture and new substrates, not faster switches, now carry the gains.', 30, H - 28, W - 54, 13);
   }
-  function pass(K) { return K.v('--pass'); }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── levers (stack the shipping levers — honestly) ─────
   EDU["levers"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var BASE = 1.8;                                            // J/token baseline (datacenter GPU)
   // ENERGY levers reduce J/token (they multiply on the energy axis); THROUGHPUT levers cut latency, NOT energy/token.
   // g = realistic energy/token factor · hl = the marketed headline number.
@@ -3747,11 +3741,11 @@
     var latency = on.filter(function (l) { return l.kind === 'latency'; });
     return { real: real, naive: naive, latency: latency };
   }
-  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'stack levers'; controls.appendChild(lab);
-  LEVERS.forEach(function (l) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = l.name; b.setAttribute('aria-pressed', l.on); b.addEventListener('click', function () { l.on = !l.on; b.setAttribute('aria-pressed', l.on); draw(); }); controls.appendChild(l.btn = b); });
+  K.chip(controls, 'stack levers');
+  LEVERS.forEach(function (l) { l.btn = K.btn(controls, l.name, function () { l.on = !l.on; l.btn.setAttribute('aria-pressed', l.on); draw(); }, { pressed: l.on }); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('The levers shipping today — stacked on a ~1.8 J/token baseline. The catch: they do NOT cleanly multiply.', 14, 22);
@@ -3769,17 +3763,15 @@
     // throughput note (these cut latency, not energy/token)
     ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText(c.latency.length ? '+ ' + c.latency.map(function (l) { return l.name; }).join(' · ') + ': cut latency, NOT energy/token' : 'throughput levers (spec-decode, SSM) cut latency, not energy/token', bx, y0 + 124);
-    ctx.fillStyle = ink2; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif');
-    wrap('Only quantization, MoE and distillation lower energy per token — and even those win on different axes (memory traffic, active compute, parameters), so the honest combined number is a few ×, far below the naïve product of every headline.', bx, H - 26, W - bx - 16, 13);
+    ctx.fillStyle = ink2; ctx.font = '10px ' + P.sans;
+    K.wrap(ctx, 'Only quantization, MoE and distillation lower energy per token — and even those win on different axes (memory traffic, active compute, parameters), so the honest combined number is a few ×, far below the naïve product of every headline.', bx, H - 26, W - bx - 16, 13);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── claim-checker (the normalization gauntlet) ─────
   EDU["claim-checker"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   // each claim walks 5 normalization gates; pass/fail per gate + honest verdict
   var GATES = ['vs a current datacenter baseline (not edge/old silicon)?', 'full-system / PUE-inclusive energy?', 'fixed precision & a real workload at scale?', 'independently measured (not a datasheet/extrapolation)?', 'read-in / read-out included (for quantum)?'];
   var CLAIMS = [
@@ -3790,13 +3782,13 @@
     { name: 'Quantum ML “exponential”', gates: [0, 0, 0, 0, 0], verdict: 'collapses', honest: 'dequantized (Tang) and eaten by the O(N) data read-in plus costly read-out (repeated sampling, up to O(N)) — no end-to-end advantage.' }
   ];
   var ci = 0;
-  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'check a claim'; controls.appendChild(lab);
-  var cbtn = []; CLAIMS.forEach(function (c, i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = c.name.split(' (')[0]; b.addEventListener('click', function () { ci = i; sync(); draw(); }); controls.appendChild(b); cbtn.push(b); });
+  K.chip(controls, 'check a claim');
+  var cbtn = []; CLAIMS.forEach(function (c, i) { cbtn.push(K.btn(controls, c.name.split(' (')[0], function () { ci = i; sync(); draw(); })); });
   function sync() { cbtn.forEach(function (b, i) { b.setAttribute('aria-pressed', i === ci ? 'true' : 'false'); }); }
   sync();
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), amber = '#c4880c', mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, amber = '#c4880c', mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var c = CLAIMS[ci];
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
@@ -3805,28 +3797,24 @@
     // gates
     var passed = 0; for (var g = 0; g < GATES.length; g++) { var ok = c.gates[g], yy = 76 + g * 26;
       ctx.fillStyle = ok ? pass : reject; ctx.font = '600 13px ' + mono; ctx.textAlign = 'left'; ctx.fillText(ok ? '✓' : '✗', 26, yy);
-      ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); ctx.fillText(GATES[g], 44, yy); if (ok) passed++; }
+      ctx.fillStyle = ink2; ctx.font = '11px ' + P.sans; ctx.fillText(GATES[g], 44, yy); if (ok) passed++; }
     // verdict
     var vy = 76 + GATES.length * 26 + 14, vc = c.verdict === 'survives' ? pass : c.verdict === 'shrinks' ? amber : reject;
     ctx.fillStyle = faint; ctx.font = '10px ' + mono; ctx.textAlign = 'left'; ctx.fillText('passes ' + passed + ' / 5 gates  →', 26, vy);
     ctx.fillStyle = vc; ctx.font = '600 16px ' + mono; ctx.fillText(c.verdict.toUpperCase(), 170, vy + 1);
-    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif'); wrap(c.honest, 26, vy + 24, W - 50, 14);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + P.sans; K.wrap(ctx, c.honest, 26, vy + 24, W - 50, 14);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── quantum-lever (a simulation lever, not an LLM lever) ─────
   EDU["quantum-lever"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var n = 30;                                                // problem size (log) slider value
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'problem size ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = '4'; range.max = '60'; range.step = '1'; range.value = String(n); range.style.marginLeft = '6px';
-  range.addEventListener('input', function () { n = parseInt(range.value, 10); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+  var range = K.slider(controls, 'problem size ', { min: 4, max: 60, step: 1, value: n }, function () { n = parseInt(range.value, 10); draw(); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, acc2 = P.acc2, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var splitX = Math.round(W * 0.5);
     ctx.strokeStyle = rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(splitX, 30); ctx.lineTo(splitX, H - 28); ctx.stroke();
@@ -3842,7 +3830,7 @@
     ctx.fillStyle = acc; ctx.globalAlpha = 0.5; ctx.fillRect(bx, by, bw * 0.3, 14); ctx.globalAlpha = 1; ctx.fillStyle = faint; ctx.font = '9px ' + mono; ctx.fillText('claimed gain', bx, by - 4);
     ctx.fillStyle = reject; ctx.globalAlpha = 0.7; var ov = Math.min(1, (n / 60)); ctx.fillRect(bx, by + 22, bw * (0.3 + 0.7 * ov), 14); ctx.globalAlpha = 1; ctx.fillStyle = faint; ctx.fillText('data-movement overhead (grows with N)', bx, by + 18);
     ctx.fillStyle = reject; ctx.font = '600 11px ' + mono; ctx.fillText('→ net advantage: none (the wall eats it)', bx, by + 56);
-    ctx.fillStyle = faint; ctx.font = '9px ' + (K.v('--sans') || 'sans-serif'); wrap('plus dequantization (Tang) & barren plateaus', bx, by + 76, bw, 12);
+    ctx.fillStyle = faint; ctx.font = '9px ' + P.sans; K.wrap(ctx, 'plus dequantization (Tang) & barren plateaus', bx, by + 76, bw, 12);
 
     // RIGHT: quantum for materials — the state space explodes
     var rx = splitX + 16;
@@ -3855,24 +3843,20 @@
     ctx.stroke();
     var states = Math.pow(2, n);
     ctx.fillStyle = pass; ctx.font = '600 12px ' + mono; ctx.fillText('2^' + n + ' ≈ ' + (states >= 1e6 ? states.toExponential(1) : Math.round(states)) + ' states', rx, py1 + 16);
-    ctx.fillStyle = faint; ctx.font = '9px ' + (K.v('--sans') || 'sans-serif'); wrap('FeMoco (nitrogen fixation): ~10²⁹ configurations — classically intractable, a genuine quantum-simulation target. The lever for better CLASSICAL chips, 10–20 yr out.', rx, py1 + 34, px1 - rx, 12);
+    ctx.fillStyle = faint; ctx.font = '9px ' + P.sans; K.wrap(ctx, 'FeMoco (nitrogen fixation): ~10²⁹ configurations — classically intractable, a genuine quantum-simulation target. The lever for better CLASSICAL chips, 10–20 yr out.', rx, py1 + 34, px1 - rx, 12);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── metric (the one honest yardstick) ─────
   EDU["metric"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   // J/token anchors. brain ~6 J/word; ~0.75 word/token → ~4.5 J/token. LLM ~1.8 J/token. Landauer ~ per-token floor.
   var sysJ = 1.8;                                            // the system the user places (J/token)
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'your system (J/token) ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = '-2'; range.max = '1'; range.step = '0.02'; range.value = String(Math.log10(sysJ)); range.style.marginLeft = '6px';
-  range.addEventListener('input', function () { sysJ = Math.pow(10, parseFloat(range.value)); draw(); }); lab.appendChild(range); controls.appendChild(lab);
+  var range = K.slider(controls, 'your system (J/token) ', { min: -2, max: 1, step: 0.02, value: Math.log10(sysJ) }, function () { sysJ = Math.pow(10, parseFloat(range.value)); draw(); });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('The one honest number: energy per token at fixed quality, full-system — placed against the brain and the floor.', 14, 22);
@@ -3895,7 +3879,7 @@
     ctx.fillText('your system: ' + (sysJ >= 0.01 ? sysJ.toFixed(2) : sysJ.toExponential(1)) + ' J/token', lx0, H - 60);
     ctx.fillStyle = vsBrain >= 1 ? ink2 : pass; ctx.fillText((vsBrain >= 1 ? vsBrain.toFixed(1) + '× the brain’s energy' : (1 / vsBrain).toFixed(1) + '× better than the brain'), lx0, H - 42);
     ctx.fillStyle = reject; ctx.font = '600 12px ' + mono; ctx.fillText('headroom to the Landauer floor (kT·ln2 ≈ 2.8 zJ/bit):  ~' + aboveFloor.toFixed(0) + ' orders of magnitude', lx0, H - 22);
-    ctx.fillStyle = faint; ctx.font = '8.5px ' + (K.v('--sans') || 'sans-serif'); ctx.textAlign = 'right';
+    ctx.fillStyle = faint; ctx.font = '8.5px ' + P.sans; ctx.textAlign = 'right';
     ctx.fillText('caveat: J/word ↔ J/token via ~0.75 word/token; full-system (PUE) energy, fixed task quality', lx1, H - 8);
   }
   function sup(e) { var s = (e < 0 ? '⁻' : '') + String(Math.abs(e)).split('').map(function (d) { return '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]; }).join(''); return s; }
@@ -3907,8 +3891,7 @@
 
 // ───── efficiency (the North Star: where machine intelligence gets more efficient) ─────
   EDU["efficiency"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   // DATA — every lever, adversarially verified, with the baseline it was measured against + source.
   // mult = verified efficiency multiplier (× vs its stated baseline); headline = the marketed number (if inflated).
   var LEVERS = [
@@ -3935,8 +3918,8 @@
   var filter = 'all', headline = false, sel = LEVERS[1], hitmap = [];
   function catColor(c) { return c === 'arch' ? K.v('--accent') : c === 'sub' ? K.v('--accent-2') : K.v('--faint'); }
 
-  function mk(label, fn, group) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.setAttribute('data-g', group || ''); b.addEventListener('click', function () { fn(); sync(); draw(); }); controls.appendChild(b); return b; }
-  var flbl = document.createElement('span'); flbl.className = 'chip'; flbl.textContent = 'show'; controls.appendChild(flbl);
+  function mk(label, fn, group) { var b = K.btn(controls, label, function () { fn(); sync(); draw(); }); b.setAttribute('data-g', group || ''); return b; }
+  K.chip(controls, 'show');
   var fbtns = {};
   [['all', 'all'], ['arch', 'architectures'], ['sub', 'substrates'], ['q', 'quantum']].forEach(function (o) { fbtns[o[0]] = mk(o[1], function () { filter = o[0]; }, 'f'); });
   var hb = mk('headline vs verified', function () { headline = !headline; }, 'h');
@@ -3949,8 +3932,7 @@
 
   function vis(l) { return filter === 'all' || filter === l.cat; }
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace', sans = K.v('--sans') || 'sans-serif';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, reject = P.reject, mono = P.mono, sans = P.sans;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic'; hitmap = [];
     var px0 = 56, px1 = W - 16, py0 = 30, py1 = Math.min(H * 0.58, H - 150);
     // y = log multiplier (0.5× .. 10000×)
@@ -3992,7 +3974,7 @@
       ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.fillText(CATNAME[sel.cat] + '  ·  ' + (sel.mat < MAT.length ? MAT[sel.mat] : '') + (sel.measures === 'no path' || sel.measures === 'NOT a win' ? '' : '  ·  measures: ' + sel.measures), dx, dy + 14);
       ctx.fillStyle = ink; ctx.font = '600 12px ' + mono; ctx.fillText('as measured:  ' + sel.val, dx, dy + 31);
       ctx.fillStyle = sel.cat === 'q' || sel.measures === 'NOT a win' ? reject : ink2; ctx.font = '11px ' + sans;
-      wrap('baseline:  ' + sel.base, dx, dy + 48, W - dx - 16, 13);
+      K.wrap(ctx, 'baseline:  ' + sel.base, dx, dy + 48, W - dx - 16, 13);
       ctx.fillStyle = faint; ctx.font = '9.5px ' + mono; ctx.fillText('source: ' + sel.src, dx, dy + 79);
     }
     // floors footer
@@ -4000,34 +3982,28 @@
     ctx.fillStyle = faint; ctx.font = '8.5px ' + mono; ctx.textAlign = 'left';
     ctx.fillText('the hard floors:  Landauer kT·ln2 ≈ 2.8 zJ/bit  ·  brain ~6 J/word  ·  today’s LLM ~1.8 J/token  ·  an INT8 MAC ~10⁷× above Landauer  ·  moving a bit ~50× the math  ·  doubling slowed 1.6→2.6 yr (Koomey)', dx, fy);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
   // ───── roofline (refereeing efficiency on real silicon — the TPU roofline) ─────
   EDU["roofline"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   // TPU v5e figures (generation-specific — see caption): HBM 8.2e11 B/s, VMEM ~22×, bf16 peak 1.97e14 FLOP/s, int8 ~2×.
   var BW_HBM = 8.2e11, BW_VMEM = 8.2e11 * 22, PEAK = 1.97e14, INT8X = 2;
   var Imin = 0.5, Imax = 4096, I = 4, vmem = false, int8 = false;
   function sToI(s) { var lo = Math.log10(Imin), hi = Math.log10(Imax); return Math.pow(10, lo + (s / 1000) * (hi - lo)); }
   function iToS(i) { var lo = Math.log10(Imin), hi = Math.log10(Imax); return Math.round((Math.log10(i) - lo) / (hi - lo) * 1000); }
 
-  var lab = document.createElement('label'); lab.className = 'chip'; lab.style.marginRight = '8px'; lab.textContent = 'arithmetic intensity ';
-  var range = document.createElement('input'); range.type = 'range'; range.min = '0'; range.max = '1000'; range.step = '1'; range.value = String(iToS(I)); range.style.marginLeft = '6px';
-  range.addEventListener('input', function () { I = sToI(parseInt(range.value, 10)); draw(); });
-  lab.appendChild(range); controls.appendChild(lab);
+  var range = K.slider(controls, 'arithmetic intensity ', { min: 0, max: 1000, step: 1, value: iToS(I) }, function () { I = sToI(parseInt(range.value, 10)); draw(); });
   function mkToggle(text, get, set) {
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = text; b.setAttribute('aria-pressed', get());
-    b.addEventListener('click', function () { set(!get()); b.setAttribute('aria-pressed', get()); draw(); }); controls.appendChild(b); return b;
+    var b = K.btn(controls, text, function () { set(!get()); b.setAttribute('aria-pressed', get()); draw(); }, { pressed: get() });
+    return b;
   }
   mkToggle('weights in VMEM', function () { return vmem; }, function (v) { vmem = v; });
   mkToggle('int8', function () { return int8; }, function (v) { int8 = v; });
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'),
-        acc = K.v('--accent'), acc2 = K.v('--accent-2'), pass = K.v('--pass'), reject = K.v('--reject'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, acc2 = P.acc2, pass = P.pass, reject = P.reject, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var bw = vmem ? BW_VMEM : BW_HBM, peak = PEAK * (int8 ? INT8X : 1), ridge = peak / bw;
     var Fmin = 4e11, Fmax = PEAK * INT8X * 1.15;
@@ -4077,14 +4053,13 @@
     var pct = Math.round(opF / peak * 100);
     ctx.textAlign = 'right'; ctx.font = '600 12px ' + mono; ctx.fillStyle = compute ? pass : acc2;
     ctx.fillText((compute ? 'compute-bound' : 'memory-bound') + '  ·  ' + pct + '% of peak', px1, 16);
-    ctx.textAlign = 'left'; ctx.font = '10px ' + (K.v('--sans') || 'sans-serif');
+    ctx.textAlign = 'left'; ctx.font = '10px ' + P.sans;
     ctx.fillStyle = compute ? ink : reject;
     var msg = compute
       ? 'The MXU is fed. Now it is a real FLOP claim — and the judge recomputes the bytes and FLOPs it rests on, so a stranger gets the same number.'
       : 'Moving bytes, not doing math — the systolic array idles. The only lever that crosses the ridge is reuse (batch); residency and precision just move which bandwidth binds you.';
-    wrap(msg, px0, H - 20, W - px0 - 12, 12);
+    K.wrap(ctx, msg, px0, H - 20, W - px0 - 12, 12);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
@@ -4093,8 +4068,8 @@
 
 // ───── deutsch-jozsa (constant or balanced in one query) ─────
   EDU["deutsch-jozsa"] = function (canvas, controls, K) {
-  var f = K.fit(), ctx = f.ctx, W = f.w, H = f.h, N = 3, DIM = 8;
-  K.onTheme(function () { var r = K.fit(); ctx = r.ctx; W = r.w; H = r.h; draw(); });
+  var N = 3, DIM = 8;
+  var ctx, W, H; K.frame(function (r, redraw) { ctx = r.ctx; W = r.w; H = r.h; if (redraw) draw(); });
   var FUNCS = [['constant 0', function () { return 0; }, 'constant'], ['constant 1', function () { return 1; }, 'constant'],
                ['balanced · x₀', function (x) { return (x >> 2) & 1; }, 'balanced'], ['balanced · parity', function (x) { return ((x >> 2) ^ (x >> 1) ^ x) & 1; }, 'balanced']];
   var fi = 2;
@@ -4102,13 +4077,13 @@
   function run() { var st = []; for (var i = 0; i < DIM; i++) st.push(K.C(i === 0 ? 1 : 0, 0)); for (var q = 0; q < N; q++) st = Had(st, q);
     for (var x = 0; x < DIM; x++) if (FUNCS[fi][1](x) & 1) st[x] = K.C(-st[x].re, -st[x].im); for (var q2 = 0; q2 < N; q2++) st = Had(st, q2); return st; }
 
-  var lab = document.createElement('span'); lab.className = 'chip'; lab.textContent = 'oracle f'; controls.appendChild(lab);
-  var fbtn = []; FUNCS.forEach(function (fn, i) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = fn[0]; b.addEventListener('click', function () { fi = i; sync(); draw(); }); controls.appendChild(b); fbtn.push(b); });
+  K.chip(controls, 'oracle f');
+  var fbtn = []; FUNCS.forEach(function (fn, i) { fbtn.push(K.btn(controls, fn[0], function () { fi = i; sync(); draw(); })); });
   function sync() { fbtn.forEach(function (b, i) { b.setAttribute('aria-pressed', i === fi ? 'true' : 'false'); }); }
   sync();
 
   function draw() {
-    var ink = K.v('--ink'), ink2 = K.v('--ink-2'), faint = K.v('--faint'), rule = K.v('--rule-2'), acc = K.v('--accent'), pass = K.v('--pass'), mono = K.v('--mono') || 'monospace';
+    var P = K.pal(), ink = P.ink, ink2 = P.ink2, faint = P.faint, rule = P.rule, acc = P.acc, pass = P.pass, mono = P.mono;
     ctx.clearRect(0, 0, W, H); ctx.textBaseline = 'alphabetic';
     var st = run(), p0 = st[0].re * st[0].re + st[0].im * st[0].im, isConst = p0 > 0.5;
     ctx.fillStyle = faint; ctx.font = '10.5px ' + mono; ctx.textAlign = 'left';
@@ -4124,10 +4099,9 @@
     ctx.textAlign = 'left'; ctx.font = '11px ' + mono; ctx.fillStyle = faint; ctx.fillText('outcome after one query:', rx, ry);
     ctx.fillStyle = ink; ctx.font = '600 14px ' + mono; ctx.fillText('P(measure |000⟩) = ' + (p0 * 100).toFixed(0) + '%', rx, ry + 24);
     ctx.fillStyle = isConst ? pass : acc; ctx.font = '600 16px ' + mono; ctx.fillText(isConst ? 'all-zeros → CONSTANT' : 'nonzero → BALANCED', rx, ry + 50);
-    ctx.fillStyle = ink2; ctx.font = '11px ' + (K.v('--sans') || 'sans-serif');
-    wrap('Interference makes every balanced function steer away from |000⟩ and every constant one land exactly on it — settled in a single query, where a classical computer might need 2ⁿ⁻¹+1.', rx, ry + 76, W - rx - 16, 14);
+    ctx.fillStyle = ink2; ctx.font = '11px ' + P.sans;
+    K.wrap(ctx, 'Interference makes every balanced function steer away from |000⟩ and every constant one land exactly on it — settled in a single query, where a classical computer might need 2ⁿ⁻¹+1.', rx, ry + 76, W - rx - 16, 14);
   }
-  function wrap(text, x, y, mw, lh) { var words = text.split(' '), line = '', yy = y; ctx.textAlign = 'left'; for (var i = 0; i < words.length; i++) { var t = line + words[i] + ' '; if (ctx.measureText(t).width > mw && line) { ctx.fillText(line, x, yy); line = words[i] + ' '; yy += lh; } else line = t; } ctx.fillText(line, x, yy); }
   draw();
 };
 
