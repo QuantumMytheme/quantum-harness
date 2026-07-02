@@ -113,17 +113,44 @@ fidelity-kernel entry between two encoded inputs.
   `references/kernel2.json`, and a forged overlap claim is rejected.
 - Ref: bench/quantum-judge/sim.py statevector overlap.
 
-## ☐ 7. OpenQASM3 import adapter (authoring convenience, judge unchanged)
+## ☑ 7. OpenQASM3 import adapter (authoring convenience, judge unchanged)
 Let authors hand the harness an OpenQASM3 file; convert to the proof-bundle `circuit.ops`
 form so the existing simulator and judge grade it unchanged.
-- **Do:** add `qasm_import.py` mapping the supported gate subset (x y z h s sdg t tdg sx sxdg
-  rx ry rz p; cx cz cy swap crz cp rzz; ccx) onto bundle ops, with explicit failure on any
-  unsupported instruction; numpy-only verification root stays intact (QASM parse is authoring
-  side).
-- **Done =** `capture.py`/judge round-trips a QASM3 GHZ file to a bundle that `judge_verify.py`
-  ACCEPTs (exit 0) on ghz3, and a QASM file using an unsupported gate fails the importer with
-  a clear error rather than silently dropping the op.
-- Ref: bench/quantum-judge/capture.py, sim.py gate table.
+- **Did:** added `bench/quantum-judge/qasm_import.py`, a stdlib-only (no `qiskit`/`openqasm3`
+  package — checked `requirements.txt` first; nothing like that was a dep) statement-level
+  regex/split parser over an EXPLICIT subset: `qubit[n] name;` declarations (one or more
+  registers, flattened into a single 0-based index space) plus the exact gate list from the
+  spec (`x y z h s sdg t tdg sx sxdg rx ry rz p`; `cx cz cy swap crz cp rzz`; `ccx`). Verified
+  the gate-name mapping against `sim.py`'s real `KNOWN_GATES`/`ONE_Q`/`TWO_Q`/`THREE_Q` tables
+  rather than assuming: the mapping turned out to be the **identity** for every name in this
+  subset (OpenQASM3's `stdgates.inc` names and `sim.py`'s internal op names are already the
+  same string, including `p` — no renaming table was needed), asserted in
+  `test_qasm_import.py` as `qasm_import.SUPPORTED_GATES.issubset(sim.KNOWN_GATES)`. Params are
+  evaluated with a small hand-written recursive-descent expression parser (not Python `eval`)
+  supporting `+ - * /`, parens, float literals, and the `pi` identifier — deliberate: this is
+  authoring input, and the project's ethos is to avoid running arbitrary code to parse it. Any
+  instruction outside the subset (`barrier`, `measure`, `reset`, `if`/`for`/`gate`/`def`,
+  `bit`/`creg`, or a real-but-unlisted stdgates.inc gate like `ch`/`u`/`u1`) raises
+  `QasmImportError` naming the offending line/instruction — never a silent drop. The CLI either
+  emits the bare `{n_qubits, ops}` circuit IR (`capture.py`'s own input shape) or, given
+  `--problem_id`/`--task`, shells out to `capture.py` UNCHANGED to build the full bundle, so
+  this file never re-implements bundle-building or touches the judge's trust boundary.
+- **Done =** verified live: `qasm_fixtures/ghz3.qasm` (h + 2×cx) round-trips through
+  `qasm_import.py --problem_id ghz3 --task state_prep` → `capture.py` → `judge_verify.py` and
+  ACCEPTs (exit 0, fidelity 1.0 reproduced, cost-adjusted fidelity 0.9 ≥ baseline 0). Two
+  unsupported-instruction fixtures (`qasm_fixtures/unsupported_barrier.qasm`,
+  `qasm_fixtures/unsupported_gate.qasm` using `ch`) both fail the importer with a clear,
+  specific error and exit 2 — no traceback, no dropped op. New `test_qasm_import.py`
+  (17/17, wired into `bin/test-all.sh` and `npm run judge:qasm-import:test`) covers the
+  round-trip ACCEPT, both clean-failure cases, and gate-mapping unit checks (e.g. QASM
+  `cx q[0], q[1];` → `{"gate":"cx","q":[0,1]}`, `ccx q[0],q[1],q[2];` →
+  `{"gate":"ccx","q":[0,1,2]}`, `rz(pi/2) q[0];` → `{"gate":"rz","q":[0],"params":[pi/2]}`).
+  `test_judge.py` is untouched and stayed at 53/53 — the judge's trust boundary did not move;
+  this is purely an authoring-side converter that hands the existing judge input it already
+  knew how to grade.
+- Ref: `bench/quantum-judge/qasm_import.py`, `bench/quantum-judge/capture.py`,
+  `bench/quantum-judge/test_qasm_import.py`, `bench/quantum-judge/qasm_fixtures/`, sim.py gate
+  table.
 
 ## ☑ 8. Noisy-simulation judge mode — IMPLEMENTED, via a stronger mechanism than proposed
 Add an optional depolarizing-noise model so PERFORMANCE can be graded under a noise budget,

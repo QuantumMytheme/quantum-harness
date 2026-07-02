@@ -21,6 +21,8 @@
     "test:fuzz": "python3 bench/kernel-judge/fuzz_kernel.py && python3 bench/quantum-judge/fuzz_judge.py",
     "judge": "python3 bench/judge.py",
     "judge:quantum": "python3 bench/quantum-judge/judge_verify.py",
-    "judge:test": "python3 bench/quantum-judge/test_judge.py"
+    "judge:test": "python3 bench/quantum-judge/test_judge.py",
+    "judge:qasm-import": "python3 bench/quantum-judge/qasm_import.py",
+    "judge:qasm-import:test": "python3 bench/quantum-judge/test_qasm_import.py"
   }
 }

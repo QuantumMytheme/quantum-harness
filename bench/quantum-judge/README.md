@@ -46,7 +46,10 @@ in it depends on wall-clock time or unseeded RNG.
 | `graph.py` | dependency-free graph utilities (degree, connectivity, routing cost) for the `architecture` task |
 | `judge_verify.py` | the four-gate judge; consumes a proof bundle, returns an exit code |
 | `capture.py` | builds a well-formed proof bundle from a circuit IR using the SAME simulator |
+| `qasm_import.py` | AUTHORING-ONLY: converts a minimal, explicit OpenQASM3 subset into the same circuit IR `capture.py` consumes; explicit failure on any unsupported instruction; judge is unchanged |
+| `qasm_fixtures/` | example `.qasm` inputs for `qasm_import.py` (a valid GHZ-3 file, plus unsupported-instruction fixtures that must fail the importer) |
 | `test_judge.py` | 38/38 regression suite: accept the worked examples, reject every class of forgery |
+| `test_qasm_import.py` | regression suite for `qasm_import.py`: QASM3 GHZ-3 round-trips to a judge ACCEPT; unsupported instructions fail the importer cleanly |
 | `references/<problem_id>.json` | **hidden ground truth** (target state / Hamiltonian / workload / train set + thresholds; may declare a held-out check) |
 | `quantum-proof-poc.json` | worked `state_prep` example (GHZ-3) — must ACCEPT |
 | `quantum-proof-vqe.json` | worked `vqe` example (Ising/Bell-2) — must ACCEPT |
@@ -451,6 +454,25 @@ python3 bench/quantum-judge/capture.py <circuit.json> <problem_id> [--task state
 `capture.py` reads the committed reference *only* to make the worked example's
 self-reported claim self-consistent; the **judge** is what independently confirms
 or refutes that claim.
+
+### Or start from OpenQASM3 with `qasm_import.py`
+
+If you'd rather author in OpenQASM3 than hand-write the JSON circuit IR,
+`qasm_import.py` converts a minimal, explicit subset (`x y z h s sdg t tdg sx
+sxdg rx ry rz p`, `cx cz cy swap crz cp rzz`, `ccx`, plus `qubit[n] name;`
+declarations) into exactly the circuit shape `capture.py` consumes. It is an
+**authoring convenience only** — it never touches the judge, and any
+instruction outside that subset (`barrier`, `measure`, custom `gate`
+definitions, unlisted stdgates like `u`/`ch`, ...) is an explicit import error,
+never a silently dropped op:
+
+```sh
+python3 bench/quantum-judge/qasm_import.py my_circuit.qasm -o circuit.json
+python3 bench/quantum-judge/capture.py circuit.json <problem_id> --task state_prep > bundle.json
+
+# or chain straight to a bundle in one step:
+python3 bench/quantum-judge/qasm_import.py my_circuit.qasm --problem_id <problem_id> --task state_prep -o bundle.json
+```
 
 ---
 

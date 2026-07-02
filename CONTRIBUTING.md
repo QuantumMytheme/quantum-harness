@@ -69,7 +69,10 @@ demonstrators. To solve one:
 2. **Author a circuit** using the supported gate set — `x y z h s sdg t tdg sx sxdg rx ry rz p`
    (1-qubit), `cx cz cy swap crz cp rzz` (2-qubit), `ccx` (3-qubit). Qubit 0 is the
    most-significant index. Respect the problem's constraints: `n_qubits`, `max_depth`, native
-   gates, coupling map, and the 2-qubit-gate cap.
+   gates, coupling map, and the 2-qubit-gate cap. If you'd rather write OpenQASM3 than the JSON
+   circuit IR directly, `python3 bench/quantum-judge/qasm_import.py <file.qasm> -o circuit.json`
+   converts the same supported gate subset for you (authoring-only; unsupported instructions fail
+   the import explicitly rather than being silently dropped — see `bench/quantum-judge/README.md`).
 
 3. **Build a proof bundle** with the same simulator the judge uses, so your claimed metric is
    honest:

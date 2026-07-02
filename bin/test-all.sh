@@ -27,6 +27,7 @@ run() {
 echo "quantum-harness · full suite"
 echo
 run "quantum-judge (numpy)"                 python3 bench/quantum-judge/test_judge.py
+run "qasm_import.py (OpenQASM3 authoring adapter)" python3 bench/quantum-judge/test_qasm_import.py
 run "kernel-judge · Oracle-Diff + Roofline" python3 bench/kernel-judge/test_kernel.py
 run "judge router (both judges, one door)"  python3 bench/test_router.py
 run "kernel-judge soundness fuzz"           python3 bench/kernel-judge/fuzz_kernel.py
