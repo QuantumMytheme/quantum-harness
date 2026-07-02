@@ -97,7 +97,9 @@ test('boot smoke: lab.js renders the Landscape and Results (traps) sections with
       assert.match(sheet.innerHTML, /data-key="land"/)
     } else {
       assert.match(sheet.innerHTML, /Gallery of Traps/)
-      assert.equal((sheet.innerHTML.match(/data-impostor=/g) || []).length, 6, 'all six trap cards render')
+      const expectedTraps = Object.keys(win.QMRunner.IMPOSTORS).length
+      assert.equal((sheet.innerHTML.match(/data-impostor=/g) || []).length, expectedTraps,
+        `all ${expectedTraps} trap cards render (one per IMPOSTORS entry, not a hardcoded count)`)
     }
   }
 })

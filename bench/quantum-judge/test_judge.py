@@ -358,6 +358,18 @@ def main():
     record("mean-field-only mol4 circuit (no entanglement, gap 0.075 > 0.02 budget) REJECTed (exit 5)",
            verify_code(b) == judge_verify.EXIT_PERFORMANCE)
 
+    # --- FORGERY GALLERY (item 12): one canonical, standalone, committed fixture per
+    # judge gate, each honestly labeled and independently runnable (the lab's Impostor
+    # Workshop renders these as trap cards). exit 4 (FORGED.json) and exit 6 (OVERFIT.json)
+    # already exist above; this is the missing exit-3/exit-5 pair as clean standalone files.
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz3-3CX.json"))
+    record("forgery gallery: STRUCTURE trap (quantum-proof-ghz3-3CX.json) REJECTed (exit 3)",
+           code == judge_verify.EXIT_STRUCTURE, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-ghz3-UNDERPOWERED.json"))
+    record("forgery gallery: PERFORMANCE trap (quantum-proof-ghz3-UNDERPOWERED.json — honest "
+           "claim, correctly reproduced, clears baseline, misses threshold) REJECTed (exit 5)",
+           code == judge_verify.EXIT_PERFORMANCE, f"exit {code}: {out}")
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

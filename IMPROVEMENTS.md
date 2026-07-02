@@ -198,19 +198,30 @@ TESTED gate (not by-construction only) for any problem declaring a held-out chec
 - Ref: bench/quantum-judge/judge_verify.py `check_holdout` / EXIT_OVERFIT (6),
   references/bell_pops2.json, quantum-proof-pops.json, quantum-proof-OVERFIT.json.
 
-## ☐ 12. Forgery-fixture expansion (one fixture per forgery class)
+## ☑ 12. Forgery-fixture expansion (one fixture per forgery class) — full gallery LIVE
 The committed `quantum-proof-FORGED.json` covers one class (dropped CX, fabricated fidelity).
 Add a committed adversarial fixture for EACH judge gate so every reject path has a regression.
-- **Do:** add fixtures that trip STRUCTURE (coupling-map violation), PERFORMANCE (meets
-  threshold but loses to baseline), and ANTI-OVERFIT (passes primary, fails held-out), each
-  named for the exit it must produce.
-- **Done =** `test_judge.py` asserts each new fixture is REJECTED at its exact exit code
-  (3 / 5 / 6), the existing exit-4 forgery still rejects, and the worked examples still ACCEPT
-  — total green count grows from 29/29. Note: the ANTI-OVERFIT (exit 6) fixture now exists
-  (`quantum-proof-OVERFIT.json`, shipped with item 11) and is asserted in `test_judge.py`;
-  remaining scope is the dedicated STRUCTURE (3) and PERFORMANCE (5) per-class fixtures named
-  for their exit code.
-- Ref: bench/quantum-judge/quantum-proof-FORGED.json, test_judge.py.
+- **Did:** the STRUCTURE (3) and ANTI-OVERFIT (6) classes already had committed, named fixtures
+  from other items (`quantum-proof-ghz3-3CX.json` — item 2's 2q-cost cap; `quantum-proof-OVERFIT.json`
+  + 2 siblings — item 11) but PERFORMANCE (5) only existed as a fixture constructed inline inside
+  `test_judge.py` (mol4's mean-field-only case), not a standalone committed file a citizen could
+  browse or run. Shipped `quantum-proof-ghz3-UNDERPOWERED.json`: RY(0.6π) instead of the exact H,
+  then the real cascade — fidelity 0.9755, exactly what the judge recomputes (no lie), clears the
+  0.5 classical baseline by a wide margin, and still misses the 0.99 threshold. The literal
+  "meets threshold but loses to baseline" phrasing in the original proposal doesn't apply to any
+  current problem's numbers (baseline < threshold everywhere it's declared), so this fixture
+  demonstrates the real, common PERFORMANCE failure instead: an honest, correctly-reproduced,
+  genuinely-not-good-enough design — distinct from a reproducibility lie or a structural cap
+  violation.
+- **Also wired into the Impostor Workshop** (the lab's "Gallery of Traps", built earlier this
+  session): both new-to-the-gallery fixtures (STRUCTURE + PERFORMANCE) added to `runner.js`
+  `IMPOSTORS`, so all four reject gates are now visitor-runnable trap cards, not just two.
+- **Done =** `test_judge.py` asserts `quantum-proof-ghz3-3CX.json` (exit 3) and
+  `quantum-proof-ghz3-UNDERPOWERED.json` (exit 5) as standalone "forgery gallery" checks
+  alongside the existing exit-4/exit-6 assertions (53/53, was 51/51); `test/impostor.test.mjs`
+  asserts the gallery covers exactly `{3,4,5,6}` — every judge reject gate, not a fixed count.
+- Ref: bench/quantum-judge/quantum-proof-ghz3-3CX.json, quantum-proof-ghz3-UNDERPOWERED.json,
+  viewer/runner.js `IMPOSTORS`, test/impostor.test.mjs.
 
 ---
 When an item ships, mark it ☑, note the worked reference + fixtures it shipped with, and move

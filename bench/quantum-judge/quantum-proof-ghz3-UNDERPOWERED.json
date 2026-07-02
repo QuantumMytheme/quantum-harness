@@ -1,0 +1,40 @@
+{
+ "schema": "quantum-harness/proof-bundle@1",
+ "task": "state_prep",
+ "problem_id": "ghz3",
+ "_comment": "HONEST but under-rotated: RY(0.6*pi) on q0 (instead of the exact H = RY(0.5*pi) up to phase) then the real GHZ cascade cx(0,1);cx(1,2). The claimed fidelity is exactly the judge's own recompute -- REPRODUCIBILITY holds -- and it clears the classical baseline (0.5) by a wide margin. It trips PERFORMANCE ALONE (exit 5): close, well ahead of a naive guess, but short of the 0.99 bar. The canonical 'correct claim, just not good enough' reject -- distinct from a reproducibility lie (FORGED) or a structural violation (3CX).",
+ "circuit": {
+  "n_qubits": 3,
+  "ops": [
+   {
+    "gate": "ry",
+    "q": [
+     0
+    ],
+    "params": [
+     1.8849555921538759
+    ]
+   },
+   {
+    "gate": "cx",
+    "q": [
+     0,
+     1
+    ]
+   },
+   {
+    "gate": "cx",
+    "q": [
+     1,
+     2
+    ]
+   }
+  ]
+ },
+ "claim": {
+  "fidelity": 0.9755282581475766
+ },
+ "classical_baseline": {
+  "fidelity": 0.5
+ }
+}

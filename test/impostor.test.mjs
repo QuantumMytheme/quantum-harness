@@ -12,12 +12,14 @@ import { loadRunner } from './stub-dom.mjs'
 const { QMRunner: R, doc } = loadRunner()
 const BENCH = (f) => fileURLToPath(new URL('../bench/quantum-judge/' + f, import.meta.url))
 
-test('IMPOSTORS enumerates exactly the committed OVERFIT + FORGED fixtures', () => {
+test('IMPOSTORS enumerates exactly the committed forgery-gallery fixtures — one per judge gate', () => {
   const files = Object.values(R.IMPOSTORS).map(t => t.file).sort()
   assert.deepEqual(files, [
     'quantum-proof-FORGED.json',
     'quantum-proof-OVERFIT.json',
     'quantum-proof-arch-OVERFIT.json',
+    'quantum-proof-ghz3-3CX.json',
+    'quantum-proof-ghz3-UNDERPOWERED.json',
     'quantum-proof-h2-FORGED.json',
     'quantum-proof-noisy-FORGED.json',
     'quantum-proof-qml-OVERFIT.json',
@@ -26,6 +28,10 @@ test('IMPOSTORS enumerates exactly the committed OVERFIT + FORGED fixtures', () 
     assert.ok(existsSync(BENCH(t.file)), `${t.file} is committed in bench/quantum-judge/`)
     assert.ok(t.label && t.trap && t.refId && t.expect, `${t.file}: label/trap/refId/expect present`)
   }
+  // item 12: every judge reject gate (STRUCTURE 3, REPRODUCIBILITY 4, PERFORMANCE 5,
+  // ANTI-OVERFIT 6) has at least one standalone, committed, runnable gallery card.
+  const expects = new Set(Object.values(R.IMPOSTORS).map(t => t.expect))
+  assert.deepEqual([...expects].sort(), [3, 4, 5, 6])
 })
 
 test('each card matches its fixture: refId = problem_id, expected exit = documented exit', () => {
@@ -35,8 +41,9 @@ test('each card matches its fixture: refId = problem_id, expected exit = documen
     const doc0 = String(fx._attack || fx._comment || '')
     assert.match(doc0, new RegExp(`exit ${t.expect}`), `${key}: fixture documents exit ${t.expect}`)
     assert.ok(existsSync(BENCH(`references/${t.refId}.json`)), `${key}: hidden reference exists for ${t.refId}`)
-    // OVERFIT traps are caught by the held-out gate (6); FORGED by re-simulation (4)
-    assert.equal(t.expect, /OVERFIT/.test(t.file) ? 6 : 4, `${key}: gate class matches the fixture class`)
+    // gate class implied by the fixture's own file name must match the documented exit
+    const byName = /OVERFIT/.test(t.file) ? 6 : /3CX/.test(t.file) ? 3 : /UNDERPOWERED/.test(t.file) ? 5 : 4
+    assert.equal(t.expect, byName, `${key}: gate class matches the fixture class`)
   }
 })
 
