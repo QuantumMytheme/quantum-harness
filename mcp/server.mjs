@@ -49,6 +49,7 @@ const LABELS = {
   aiaccel4:   { task: 'architecture', label: 'AI-Accel — route a workload over a coupling map within budget' },
   qml_sign1:  { task: 'classify',     label: 'Sign classifier — a feature map that generalizes to held-out points' },
   bellnoisy2: { task: 'state_prep',   label: 'Bell (noisy) — re-verifiable prediction under a depolarizing channel' },
+  kernel2:    { task: 'kernel',       label: 'Fidelity kernel — overlap of two encoded points, with a held-out dissimilar pair' },
   // TPU kernel Oracle-Diff Gate (bench/kernel-judge) — routed by task through bench/judge.py.
   gemm_bf16_tile1: { task: 'kernel-correctness-oracle', label: 'Tiled bf16 GEMM — MXU output vs an fp64 reference within the bf16-derived tolerance (Oracle-Diff Gate)' },
   gemm_int8_tile1: { task: 'kernel-correctness-oracle', label: 'Tiled int8 GEMM — bit-exact integer oracle (Oracle-Diff Gate)' },

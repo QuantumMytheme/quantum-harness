@@ -1,0 +1,13 @@
+{
+  "_comment": "FIDELITY-KERNEL demonstrator. The BRIEF asks for a feature-map encoding circuit (the same feature-bound-op mechanism as qml_sign1) whose judged quantity is the state-overlap kernel |<phi(x)|phi(y)>|^2 between two classical data points, estimated WITHOUT an ancilla/SWAP-test register: the judge instantiates the model's own template independently for x and for y and takes the overlap of the two returned statevectors directly (sim.fidelity). The VISIBLE pair is a near-pair (x, y almost identical) the encoding must call SIMILAR (kernel >= kernel_min); the HELD-OUT pair is a far-pair (x, y very different) it must call DISSIMILAR (kernel <= holdout.kernel_max). A degenerate feature map that ignores its input (e.g. scale 0 -> every point maps to |00>) trivially nails the visible pair (constant overlap 1.0) but fails the held-out pair (still 1.0, not <= kernel_max) -- REJECTED at the anti-overfit gate (exit 6), the same trap qml_sign1 sets with a high-frequency encoding.",
+  "problem_id": "kernel2",
+  "task": "kernel",
+  "n_features": 2,
+  "pair": { "x": [0.5, -0.3], "y": [0.55, -0.25] },
+  "thresholds": { "kernel_min": 0.9 },
+  "tolerance": { "kernel_reproduce": 1e-06 },
+  "holdout": {
+    "pair": { "x": [0.5, -0.3], "y": [3.0, 2.5] },
+    "kernel_max": 0.1
+  }
+}

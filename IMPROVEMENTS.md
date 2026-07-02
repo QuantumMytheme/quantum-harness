@@ -102,16 +102,65 @@ defined entirely numerically in the reference — no chemistry deps).
   viewer/knowledge.js PROBLEMS; added to the "no holdout block" enumeration in RUBRIC.md /
   VERIFIER-MAP.md alongside ghz3/ghz3_he/ghz5_line/isingbell2.
 
-## ☐ 6. Quantum-kernel block
+## ☑ 6. Quantum-kernel block — task=kernel is LIVE
 A kernel-estimation circuit (state-overlap / inversion test) whose judged quantity is a
 fidelity-kernel entry between two encoded inputs.
-- **Do:** add task `kernel`: brief asks for an overlap circuit on a data pair; reference holds
-  the input pair + the expected |⟨φ(x)|φ(y)⟩|² and a tolerance; judge re-simulates the
-  overlap and compares.
+- **Did:** added task `kernel` (problem `kernel2`): a fidelity-kernel overlap
+  |⟨φ(x)|φ(y)⟩|² between two classically-encoded points, using the SAME feature-bound-op
+  encoding mechanism as `classify` (`_instantiate`) — the closest existing precedent flagged in
+  the brief, since both tasks are data-dependent and need a held-out generalization check. One
+  design choice differs from the literal spec: instead of a real SWAP-test circuit (which needs
+  a 2n+1-qubit ancilla register and controlled-SWAPs), the judge instantiates the submitted
+  feature-map template **independently** for x and for y (two ordinary n-qubit runs) and takes
+  the overlap of the two returned statevectors directly with `sim.fidelity` — mathematically
+  identical to what a SWAP test estimates, without paying for the extra qubits/gates to get it,
+  and it reuses `_instantiate`/`sim.fidelity` verbatim rather than adding new simulator
+  machinery. I DID build the optional held-out pair (the brief flagged it as optional): the
+  reference holds a VISIBLE near-pair `x=[0.5,-0.3], y=[0.55,-0.25]` the encoding must call
+  similar (`kernel_min: 0.9`) and a HELD-OUT far-pair `y=[3.0, 2.5]` it must call dissimilar
+  (`kernel_max: 0.1`) — the opposite relationship, not just a second similar pair, so a
+  degenerate feature map that ignores its input (`scale: 0` → every point encodes to |00⟩)
+  cannot pass by being constant. Both the "expected" kernel value and the OVERFIT numbers are
+  computed by re-running the judge's own `sim.py` (via `judge_verify._instantiate` +
+  `sim.fidelity`), never hand-derived — printed live: visible kernel `0.9987506508572361`,
+  held-out kernel `0.002872364109197902`, degenerate (both pairs) `1.0`. The worked ansatz is a
+  per-feature `Ry(scale·xᵢ)` product map (2 qubits, 2 ops, scale 1.0); overlap factorizes per
+  qubit as `cos²((Δθᵢ)/2)`, so a small visible Δ (~0.05/feature) stays near 1 while the large
+  held-out Δ (~2.5–2.8/feature) collapses it — the same template genuinely distinguishes both
+  without any hand-tuning per pair.
 - **Done =** `judge_verify.py` exits 0 only when the recomputed kernel value matches the claim
-  within tolerance (REPRODUCIBILITY, exit 4) for the held-out pair in
-  `references/kernel2.json`, and a forged overlap claim is rejected.
-- Ref: bench/quantum-judge/sim.py statevector overlap.
+  within tolerance (REPRODUCIBILITY, exit 4) for the visible pair in `references/kernel2.json`,
+  AND clears `thresholds.kernel_min` (PERFORMANCE, exit 5), AND the SAME template calls the
+  held-out pair dissimilar (`holdout.kernel_max`, ANTI-OVERFIT, exit 6) — all four verified
+  live: `quantum-proof-kernel2.json` ACCEPTs (exit 0); `quantum-proof-kernel2-FORGED.json` (same
+  genuine circuit, claims overlap `1.0` the re-sim contradicts) REJECTs at REPRODUCIBILITY
+  (exit 4); `quantum-proof-kernel2-OVERFIT.json` (input-ignoring `scale: 0` map, honestly
+  reproduces train-pair kernel `1.0`, clears the 0.9 threshold) REJECTs ONLY at ANTI-OVERFIT
+  (exit 6) once the held-out far pair also comes back `1.0` instead of ≤ 0.1.
+  `test_judge.py` grew from an observed 53/53 baseline to **58/58** (5 new checks: ACCEPT,
+  FORGED exit 4, OVERFIT exit 6, tampered-claim exit 4, an honest-but-over-sensitive
+  `scale: 50` encoding that genuinely misses the visible-pair threshold at exit 5).
+  `bench/test_router.py` stays 9/9 (task string `kernel` does not collide with the
+  kernel-judge's `kernel-correctness-oracle`/`roofline-attest` TPU tasks). `npm test` stays
+  283/283 after registering `kernel2` in `mcp/server.mjs` LABELS, `viewer/knowledge.js`
+  PROBLEMS/TASKS/TASK_HUE (required by `test/mcp.test.mjs`'s every-reference-has-task+label
+  assertion), and rebuilding `viewer/scoreboard-data.js` via `node scoreboard/build.mjs`
+  (`test/frontier.test.mjs` enumerates every committed reference into the Wanted Board coverage
+  table and failed until the board was regenerated — a real, mechanical gap, not hardcoded
+  around). Honest scope note: `scoreboard/verify.py` and `scoreboard/discover.mjs` still gate
+  community entries on a `KNOWN_TASKS` set that does not include `kernel` (no `judged_metric`
+  branch either) — a real follow-on gap for a future community `kernel2` run, left unfixed here
+  since it needs its own design decision (which of the visible/held-out kernel values ranks)
+  and no test currently exercises it.
+- Ref: `bench/quantum-judge/judge_verify.py` (`verify_kernel`, registered in `TASKS`),
+  `bench/quantum-judge/references/kernel2.json`, `quantum-proof-kernel2.json`,
+  `quantum-proof-kernel2-FORGED.json`, `quantum-proof-kernel2-OVERFIT.json`; registered in
+  `mcp/server.mjs` LABELS and `viewer/knowledge.js` PROBLEMS/TASKS/TASK_HUE; RUBRIC.md (new
+  R7c, X2 marked done, held-out-forms list, task count, worked-bundle count, test count) and
+  VERIFIER-MAP.md (task count, held-out-forms list, R7c/R7c-regression rows, X3 stretch row,
+  copy-paste gate block) updated to enumerate the sixth task type; BRIEF.md (Target 6 section +
+  schema enum) and RERUN.md (six worked problems, kernel bundle shape, anti-cheat regression,
+  "what stays" fixture list) and README.md (schema `task` enum) updated for consistency.
 
 ## ☑ 7. OpenQASM3 import adapter (authoring convenience, judge unchanged)
 Let authors hand the harness an OpenQASM3 file; convert to the proof-bundle `circuit.ops`
