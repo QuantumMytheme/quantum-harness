@@ -44,6 +44,7 @@ const LABELS = {
   isingbell2: { task: 'vqe',          label: 'Ising Bell — ground state of H = −X₀X₁ − Z₀Z₁' },
   tfim3:      { task: 'vqe',          label: 'TFIM₃ — transverse-field Ising ground state via QAOA p=2' },
   h2vqe:      { task: 'vqe',          label: 'H₂ — molecular ground-state energy (VQE)' },
+  mol4:       { task: 'vqe',          label: 'Mol4 — 4-qubit ring TFIM + NNN Hamiltonian, molecular-style VQE headroom' },
   bell_pops2: { task: 'populations',  label: 'Bell |Φ⁺⟩ — populations with a held-out ⟨XX⟩ check' },
   aiaccel4:   { task: 'architecture', label: 'AI-Accel — route a workload over a coupling map within budget' },
   qml_sign1:  { task: 'classify',     label: 'Sign classifier — a feature map that generalizes to held-out points' },
