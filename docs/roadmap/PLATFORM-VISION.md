@@ -1,10 +1,16 @@
 # Platform vision — quantummytheme.com
 
-> **Status: roadmap, not built.** Nothing in this document ships today. This repo
-> (`QuantumMytheme/quantum-harness`) is the *engine* — the verifiable-run prompt harness and
-> its deterministic judge. **quantummytheme.com** is the public platform that engine is
-> designed to feed. The harness exists; the platform is the destination. Treat every section
-> below as a target architecture, not a description of current behavior.
+> **Status: mostly built.** This document was written before the platform existed; most of it
+> now describes **quantummytheme.com as it actually runs**, not a target architecture. Track 1
+> (Phases 0–2, and the core of Phase 3) is live: the scoreboard, the in-browser WASM judge, the
+> education curriculum, GitHub-wide auto-discovery, and the self-serve "run your own run" loop
+> — proven end-to-end on 2026-07-01 by a real stranger-authored run (`craigm26/run-ghz3he-…`,
+> minted under a personal GitHub account, discovered by topic, re-verified by the trust gate,
+> closing a Wanted Board gap live). What's still aspirational: **subscription/API-credit
+> provisioning** (Phase 3's monetization half — today everyone brings their own model access),
+> and in Track 2, **Phase T2 (a real refereed kernel measured on physical TPU hardware)** and
+> **Phase T3 (pod-scale)** — both genuinely blocked on hardware this project doesn't have, not
+> on missing code. See the phase-by-phase status below; each is labeled honestly, not assumed.
 
 `quantummytheme.com` (domain owned by the org) is the planned home for a **"best of citizen
 science"** web platform layered directly on top of this harness: a place where anyone can point
@@ -178,7 +184,7 @@ regression suite, the autonomy scorecard, and the forkable template.
 **The engine works on a laptop, in CI, or on a Raspberry Pi.** Everything below consumes its
 output; nothing below changes its trust model.
 
-### Phase 1 — static directory + judge in CI
+### Phase 1 — static directory + judge in CI (live)
 
 A static, read-only site generated from a corpus of committed proof bundles. The judge runs in
 CI on every contribution; the public page shows each bundle's verdict, its four active gate
@@ -192,7 +198,7 @@ verified metric, and every entry is re-verifiable — anyone can re-run the judg
 ranking. The leading entry per problem is the current frontier, held honest by the same gates.
 The format and current standings live in [SCOREBOARD.md](../../SCOREBOARD.md).
 
-### Phase 2 — interactive in-browser circuit runner
+### Phase 2 — interactive in-browser circuit runner (live)
 
 Port the statevector simulator to run client-side (WASM/JS), so the directory's "view" becomes
 "run." Step through `circuit.ops`, visualize the statevector, recompute the claimed metric in
@@ -201,14 +207,18 @@ worked problems and the forged fixture become interactive lessons, and a guided 
 flow walks newcomers through authoring a bundle. **Re-verifiability becomes hands-on** — a
 visitor reproduces the judge's number themselves.
 
-### Phase 3 — self-serve runs + subscriptions
+### Phase 3 — self-serve runs + subscriptions (core loop live; monetization not built)
 
 The full "run your own run" loop. Fork the template from the platform, get (or author) a brief,
-point a subscription's autonomous model at it, loop against the rubric until the judge is green,
-and submit the proof bundle for open contribution — merged by the judge-as-gate. Subscriptions
-provision the model capacity; live contests use held-out references via `QH_REFERENCES_DIR`.
-This is where the platform becomes a self-sustaining citizen-science engine: briefs in, verified
-quantum circuits out, all scored without human taste.
+point a model at it, loop against the rubric until the judge is green, and submit the proof
+bundle for open contribution — merged by the judge-as-gate. **This loop is real**: `bin/new-run.sh`
+mints a public repo under the caller's own account (no org membership needed), the GitHub-wide
+topic crawler discovers it, and `scoreboard/verify.py`'s trust gate re-fetches and re-judges the
+external bundle before it's allowed on the board — proven on a genuinely independent, first-time
+contributor's repo on 2026-07-01. What's *not* built: the **subscription/API-credit** half —
+there's no product that provisions model capacity for a contributor; today you bring your own
+Claude (or other) access. Live contests would still use held-out references via
+`QH_REFERENCES_DIR`, unchanged from the original plan.
 
 ---
 
@@ -301,7 +311,7 @@ Same discipline as Track 1's Phase 0→3: each phase shippable on its own, stric
 on the **build-first trio** — two gates, then the first refereed kernel — every claim either bit-exact
 or wall-clock-physical, all single-chip until the last step.
 
-#### Phase T0 — Oracle-Diff Gate (the enabling correctness notary)
+#### Phase T0 — Oracle-Diff Gate (the enabling correctness notary) — live
 
 A Pallas kernel bundle (start with a plain tiled GEMM) that ships an `interpret=True` golden run.
 `verify_bundle` runs the fp32 control notary (bit-match grid/index-map/masking logic) and, for the
@@ -311,7 +321,7 @@ number below is unscorable until correctness is a hash-sealed, replayable artifa
 crosses the roofline knee or touches performance — it just makes "right" a compiler-tied fact instead
 of a claimant's word.
 
-#### Phase T1 — Roofline Notary (the measurement backbone)
+#### Phase T1 — Roofline Notary (the measurement backbone) — live
 
 A `roofline-attest` task that re-lowers the submitted kernel, pulls algorithmic FLOPs from
 `cost_analysis()`, reads `device_kind` from the harness, times median wall-clock over N runs, and
@@ -321,7 +331,7 @@ shown separately and stamped as modeled. This is the honesty split — measured 
 built into the output, and it makes the transparent-scoring capability real for efficiency, using only
 what a single TPU VM emits.
 
-#### Phase T2 — Twin-Rail Int4 (the first refereed kernel)
+#### Phase T2 — Twin-Rail Int4 (the first refereed kernel) — not built, blocked on hardware access
 
 A Pallas W4A8 decode kernel: int4 weights packed so low/high nibbles land as separate MXU-aligned
 sub-tiles (elementwise unpack, no cross-lane shuffle), int8 activations, int32 accumulate, per-group
@@ -343,8 +353,13 @@ hand, and are strictly additive on top of the single-chip referee below them.
 
 ### The honest boundary
 
-The line held throughout the design doc, and the reason this whole track is marked roadmap-not-built,
-is that **measured-in-harness and hoped-on-hardware are different words and we never blur them.**
+The line held throughout the design doc — and the reason T2/T3 stay marked not-built while T0/T1
+are live — is that **measured-in-harness and hoped-on-hardware are different words and we never
+blur them.** T0/T1 shipped because they need only a single TPU VM (or, for the correctness gate,
+no hardware at all — `interpret=True` runs anywhere). T2's "measured decode tokens/s" claim is
+only honest if it's actually measured on physical silicon, which this project does not have
+access to; fabricating those numbers to unblock the phase would violate the exact discipline
+this whole platform exists to enforce. It stays open until real hardware access changes that.
 Specifically:
 
 - **The TPU constants are asserted, not re-pinned.** VMEM size and bandwidth, the ~240 ops/byte ridge, int8 at 2× — all generation-specific (v5e/v5p/v6e differ materially) and unverified until a real VM re-measures them. Anything tuned to one chip is mis-tuned on another.
