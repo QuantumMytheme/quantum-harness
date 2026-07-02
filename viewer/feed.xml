@@ -5,8 +5,15 @@
   <id>https://quantummytheme.com/feed.xml</id>
   <link href="https://quantummytheme.com/feed.xml" rel="self" type="application/atom+xml"/>
   <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
-  <updated>2026-06-16T00:00:00Z</updated>
+  <updated>2026-07-01T00:00:00Z</updated>
   <author><name>QuantumMytheme scoreboard build</name></author>
+  <entry>
+    <title>NEW_PROBLEM · ghz3_he</title>
+    <id>https://quantummytheme.com/feed.xml#e9</id>
+    <link href="https://quantummytheme.com/#frontier" rel="alternate" type="text/html"/>
+    <updated>2026-07-01T00:00:00Z</updated>
+    <content type="text">board opened — first verified design: euler-cz-sandwich (metric 1) · run repo: https://github.com/craigm26/run-ghz3he-craigm26 · re-verify: python3 bench/quantum-judge/judge_verify.py bench/quantum-judge/quantum-proof-ghz3he-craigm26.json (bundle from https://github.com/craigm26/run-ghz3he-craigm26)</content>
+  </entry>
   <entry>
     <title>NEW_LEADER · tfim3 (genesis backfill)</title>
     <id>https://quantummytheme.com/feed.xml#e8</id>

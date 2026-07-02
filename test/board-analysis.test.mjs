@@ -188,11 +188,16 @@ test('--now stamps observed ONLY on genuinely-appended events (and is omitted by
       cpSync(join(ROOT, dir), join(tmp, dir), { recursive: true })
     mkdirSync(join(tmp, 'viewer'), { recursive: true })
     rmSync(join(tmp, 'scoreboard', 'frontier-history.json'), { force: true })   // force genesis
-    const a = buildAll(tmp, { now: '2026-07-01' })
+    // A sentinel far in the future: this test copies the LIVE discovered.json, whose
+    // entries carry real verified_at dates that drift as new runs register (e.g. today's
+    // date, if a run was just registered) — a --now fixed to "today" would coincidentally
+    // collide and defeat the observed-vs-date distinction this test exists to check.
+    const NOW = '2099-01-01'
+    const a = buildAll(tmp, { now: NOW })
     assert.ok(a.pendingEvents.length >= 7, 'genesis appends events')
     for (const e of a.pendingEvents) {
-      assert.equal(e.observed, '2026-07-01')
-      assert.notEqual(e.date, '2026-07-01', 'date stays the entry verified_at — observed never overwrites it')
+      assert.equal(e.observed, NOW)
+      assert.notEqual(e.date, NOW, 'date stays the entry verified_at — observed never overwrites it')
     }
     const b = buildAll(tmp)   // no --now
     for (const e of b.pendingEvents) assert.ok(!('observed' in e))

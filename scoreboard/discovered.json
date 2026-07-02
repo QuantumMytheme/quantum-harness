@@ -5,7 +5,7 @@
     "topic-search",
     "org-list"
   ],
-  "count": 2,
+  "count": 3,
   "entries": [
     {
       "_comment": "This run repo's scoreboard entry. It is auto-DISCOVERED by the harness (topic 'quantum-harness-run' + this file) — no PR to the central entries.json needed. The aggregator fetches it, re-judges the linked proof_bundle against the canonical hidden reference, and checks the metric matches before ranking it.",
@@ -73,6 +73,27 @@
       "verified_at": "2026-06-16",
       "why_it_scores": "Remix that takes rank 1 on tfim3: a problem-specific QAOA p=2 ansatz (rzz couplers matching the Ising bonds + an rx mixer) reaches gap 0.000103 to E0 — 138x closer than the hardware-efficient ingredient (0.0143) — at the same 4 two-qubit gates. The frontier moves when a run builds on prior ingredients.",
       "_discovered_from": "QuantumMytheme/run-tfim3-qaoa"
+    },
+    {
+      "problem_id": "ghz3_he",
+      "task": "state_prep",
+      "paradigm": "euler-cz-sandwich",
+      "family": "hardware-efficient",
+      "model": "sonnet-5",
+      "verified_metric": {
+        "name": "fidelity",
+        "value": 1
+      },
+      "resource_costs": {
+        "depth": 11,
+        "two_qubit_gates": 2,
+        "n_qubits": 3
+      },
+      "run_repo": "https://github.com/craigm26/run-ghz3he-craigm26",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-ghz3he-craigm26.json",
+      "judge_exit": 0,
+      "verified_at": "2026-07-01",
+      "_discovered_from": "craigm26/run-ghz3he-craigm26"
     }
   ]
 }

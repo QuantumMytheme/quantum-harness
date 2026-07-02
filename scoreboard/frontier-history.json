@@ -48,6 +48,21 @@
           "https://github.com/QuantumMytheme/quantum-harness|bench/quantum-judge/quantum-proof-poc.json"
         ]
       },
+      "ghz3_he": {
+        "task": "state_prep",
+        "entries": 1,
+        "leader": {
+          "key": "https://github.com/craigm26/run-ghz3he-craigm26|bench/quantum-judge/quantum-proof-ghz3he-craigm26.json",
+          "paradigm": "euler-cz-sandwich",
+          "metric": 1,
+          "verified_at": "2026-07-01",
+          "run_repo": "https://github.com/craigm26/run-ghz3he-craigm26",
+          "proof_bundle": "bench/quantum-judge/quantum-proof-ghz3he-craigm26.json"
+        },
+        "frontier": [
+          "https://github.com/craigm26/run-ghz3he-craigm26|bench/quantum-judge/quantum-proof-ghz3he-craigm26.json"
+        ]
+      },
       "h2vqe": {
         "task": "vqe",
         "entries": 1,
@@ -113,6 +128,7 @@
     },
     "paradigms": [
       "chain-cascade",
+      "euler-cz-sandwich",
       "hardware-efficient",
       "hardware-efficient-h2",
       "low-frequency-encoding",
@@ -202,6 +218,15 @@
       "proof_bundle": "quantum-proof-tfim3.json",
       "genesis": true,
       "seq": 8
+    },
+    {
+      "type": "NEW_PROBLEM",
+      "problem_id": "ghz3_he",
+      "date": "2026-07-01",
+      "detail": "board opened — first verified design: euler-cz-sandwich (metric 1)",
+      "run_repo": "https://github.com/craigm26/run-ghz3he-craigm26",
+      "proof_bundle": "bench/quantum-judge/quantum-proof-ghz3he-craigm26.json",
+      "seq": 9
     }
   ]
 }
