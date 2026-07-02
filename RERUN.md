@@ -109,8 +109,10 @@ artifacts — no hand-copying, no drift.
      performance (5) gates. The anti-overfit gate **fires for problems whose reference declares a
      `holdout` block** — something the model was NEVER told: a held-out **observable** (state tasks,
      e.g. `bell_pops2` holds out `<X0X1>`), a held-out **workload** (architecture — the topology must
-     also route a second interaction set within budget, e.g. `aiaccel4`), or a held-out **test set**
-     (classify — the feature map must classify unseen data, e.g. `qml_sign1`). A design that matches the
+     also route a second interaction set within budget, e.g. `aiaccel4`), a held-out **test set**
+     (classify — the feature map must classify unseen data, e.g. `qml_sign1`), or a held-out **pair**
+     (kernel — the same feature map must also call a far pair dissimilar, e.g. `kernel2`). A design
+     that matches the
      VISIBLE spec but fails the HIDDEN held-out check overfit the part it could see and is REJECTED
      at exit 6. For problems with NO holdout block (e.g. `ghz3`, `isingbell2`)
      anti-overfit ALSO holds by construction, so exit 6 is simply not triggered for them. (Other
@@ -123,7 +125,7 @@ artifacts — no hand-copying, no drift.
 That loop IS the orchestration story judges reward: brief + rubric + `/goal` + saved workflow
 scripts + a machine-checkable "done" — a verdict, not an opinion.
 
-#### The five worked problems (committed, runnable today)
+#### The six worked problems (committed, runnable today)
 Use these as the templates for the BRIEF+RUBRIC of any new run:
 - **`ghz3`** — task `state_prep`: prepare the 3-qubit GHZ state under a linear `[0-1-2]`
   coupling map. Threshold fidelity `0.99`, classical baseline `0.5`. Reference solution
@@ -147,12 +149,20 @@ Use these as the templates for the BRIEF+RUBRIC of any new run:
   (`quantum-proof-qml.json` → exit 0); an `Ry(7x)` map that overfits the training data fails the
   HELD-OUT test set and is REJECTED at the **ANTI-OVERFIT** gate (exit 6) —
   `quantum-proof-qml-OVERFIT.json`.
+- **`kernel2`** — task `kernel` (held-out pair): design a fidelity-kernel feature map (the same
+  feature-bound-op encoding as `classify`) whose overlap `|<phi(x)|phi(y)>|^2` calls a VISIBLE near
+  pair similar. The per-feature `Ry(x_i)` map genuinely distinguishes near from far
+  (`quantum-proof-kernel2.json` → exit 0); an input-ignoring `scale: 0` map reports the same kernel
+  for every pair, nailing the visible pair by luck but failing the HELD-OUT far pair, and is
+  REJECTED at the **ANTI-OVERFIT** gate (exit 6) — `quantum-proof-kernel2-OVERFIT.json`.
 
 #### The anti-cheat regression (must stay red for forgeries)
 `bench/quantum-judge/quantum-proof-FORGED.json` omits the 2nd CX and claims fidelity `1.0` while
 the circuit truly yields `0.25`; `judge_verify.py` MUST reject it at the **REPRODUCIBILITY**
-gate (exit 4). `quantum-proof-OVERFIT.json` passes structure/reproducibility/performance but MUST
-be rejected at the held-out **ANTI-OVERFIT** gate (exit 6). `test_judge.py` is the 38/38
+gate (exit 4) — as does `quantum-proof-kernel2-FORGED.json` (same genuine kernel circuit, claims
+overlap `1.0` the re-simulation contradicts). `quantum-proof-OVERFIT.json` passes
+structure/reproducibility/performance but MUST
+be rejected at the held-out **ANTI-OVERFIT** gate (exit 6). `test_judge.py` is the 58/58
 regression: accept the worked examples, reject every class of forgery (including the overfit
 impostor). Never weaken these to make a run pass.
 
@@ -171,8 +181,10 @@ a machine verdict.
 - **Stays (the template skeleton):** `bench/quantum-judge/` (the spine — `sim.py`, `graph.py`,
   `judge_verify.py`, `capture.py`, `test_judge.py`, the `references/` held-out truth, and the
   committed fixtures incl. `quantum-proof-FORGED.json`, the architecture pair
-  `quantum-proof-arch.json` + `quantum-proof-arch-OVERFIT.json`, and the classify pair
-  `quantum-proof-qml.json` + `quantum-proof-qml-OVERFIT.json`); `bin/` + `lib/` + `test/` (autonomy
+  `quantum-proof-arch.json` + `quantum-proof-arch-OVERFIT.json`, the classify pair
+  `quantum-proof-qml.json` + `quantum-proof-qml-OVERFIT.json`, and the kernel trio
+  `quantum-proof-kernel2.json` + `quantum-proof-kernel2-OVERFIT.json` +
+  `quantum-proof-kernel2-FORGED.json`); `bin/` + `lib/` + `test/` (autonomy
   scorecard + transcript scrub + planner pipeline); `README.md`, `VERIFIER-MAP.md`,
   `IMPROVEMENTS.md`, this guide.
 - **Replace per run:** `BRIEF.md`, `RUBRIC.md`, the kickoff, `/goal`, the chosen IMPROVEMENTS
@@ -182,7 +194,7 @@ a machine verdict.
 #### Proof bundle schema (`quantum-harness/proof-bundle@1`)
 What the model authors and the judge grades:
 ```
-{ schema, problem_id, task ∈ { state_prep | vqe | populations | architecture | classify },
+{ schema, problem_id, task ∈ { state_prep | vqe | populations | architecture | classify | kernel },
   circuit:    { n_qubits, ops:[ {gate, q:[...], params?:[...]} ] },
   constraints:{ n_qubits, max_depth, native_gates:[...], coupling_map:[[i,j],...],
                 max_two_qubit_gates },
@@ -190,14 +202,18 @@ What the model authors and the judge grades:
   classical_baseline: { fidelity|energy, note },
   meta:       {} }
 ```
-The `architecture` and `classify` tasks carry their own bundle shapes instead of `circuit`:
+The `architecture`, `classify`, and `kernel` tasks carry their own bundle shapes instead of `circuit`:
 ```
 architecture: { architecture:{ n_qubits, coupling_map:[[i,j],...] },
                 constraints:{ max_degree, connected }, claim:{ routing_cost } }
 classify:     { feature_map:{ n_qubits, ops:[ {gate, q, feature?, scale?, params?} ] },
                 readout:{ pauli, bias }, claim:{ train_accuracy } }
+kernel:       { feature_map:{ n_qubits, ops:[ {gate, q, feature?, scale?, params?} ] },
+                claim:{ kernel } }
 ```
-(A feature-bound op uses `{"feature": idx, "scale": s}` so its angle = `s * x[idx]`.)
+(A feature-bound op uses `{"feature": idx, "scale": s}` so its angle = `s * x[idx]`. `kernel`
+reuses the SAME feature-map mechanism as `classify` — no `readout`, since the judged quantity is
+the overlap between two independent instantiations of the template, not a measured expectation.)
 The hermetic simulator (`sim.py`) uses **qubit 0 = most-significant index** and supports gates
 `x y z h s sdg t tdg sx sxdg rx ry rz p; cx cz cy swap crz cp rzz; ccx`. Build a well-formed
 bundle from a circuit with the SAME simulator via `capture.py` — never hand-fabricate the

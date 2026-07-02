@@ -1,0 +1,16 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "kernel2",
+  "task": "kernel",
+  "_attack": "Degenerate feature map: scale 0.0 means Ry(0) = identity on BOTH qubits regardless of the input, so every point encodes to the same state |00>. This trivially 'nails' the visible near-pair (overlap exactly 1.0 >= the 0.9 threshold -- passes structure/reproducibility/performance since the claim is honestly reproduced) but the SAME template also reports overlap 1.0 for the held-out FAR pair, which the judge expects to be <= 0.1 (dissimilar). REJECTED at the anti-overfit gate (exit 6) -- the map never actually looked at its input; it only got lucky on the pair it could see.",
+  "feature_map": {
+    "n_qubits": 2,
+    "ops": [
+      { "gate": "ry", "q": [0], "feature": 0, "scale": 0.0 },
+      { "gate": "ry", "q": [1], "feature": 1, "scale": 0.0 }
+    ]
+  },
+  "claim": { "kernel": 1.0 },
+  "classical_baseline": { "note": "ignores its input entirely -- every pair maps to the same constant state" },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

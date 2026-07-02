@@ -50,14 +50,18 @@ performance (5), and exit 6 is simply not triggered for them.
 
 The held-out forms vary by task: a held-out OBSERVABLE (state tasks; e.g. `bell_pops2` holds
 out `<X0X1>`), a held-out WORKLOAD (architecture; the topology must also route a second
-interaction set within budget), and a held-out TEST SET (classify; the feature map must
-classify unseen data). Problems that declare no held-out check hold anti-overfit by construction.
+interaction set within budget), a held-out TEST SET (classify; the feature map must
+classify unseen data), and a held-out PAIR (kernel; the same encoding must call a far pair
+DISSIMILAR, not just the near pair SIMILAR). Problems that declare no held-out check hold
+anti-overfit by construction.
 
-**Five task types.** The judge handles `state_prep`, `vqe`, `populations` (state-based
+**Six task types.** The judge handles `state_prep`, `vqe`, `populations` (state-based
 circuits), `architecture` (a real hardware-TOPOLOGY design task — a coupling map that must route
-a workload within budget), and `classify` (a QML feature-map classifier). Each runs its own
-STRUCTURE check, then reproducibility, performance, and — when the reference declares a held-out
-check — anti-overfit.
+a workload within budget), `classify` (a QML feature-map classifier), and `kernel` (a
+fidelity-kernel overlap estimator — the SAME feature-bound encoding mechanism as `classify`,
+judged on the overlap between two independently re-simulated encoded states instead of a
+readout). Each runs its own STRUCTURE check, then reproducibility, performance, and — when the
+reference declares a held-out check — anti-overfit.
 
 ---
 
@@ -108,15 +112,22 @@ check — anti-overfit.
       exit 6 when a held-out check is declared and the submission fails it. The held-out forms
       are: a held-out OBSERVABLE (state tasks; `bell_pops2` holds out `<X0X1> = +1`), a held-out
       WORKLOAD (architecture; `aiaccel4`'s topology must also route a second interaction set
-      within budget), and a held-out TEST SET (classify; `qml_sign1`'s feature map must classify
-      unseen data). Worked demonstrators: `bell_pops2` — visible spec is the Z-basis populations
+      within budget), a held-out TEST SET (classify; `qml_sign1`'s feature map must classify
+      unseen data), and a held-out PAIR (kernel; `kernel2`'s encoding must also call a FAR pair
+      dissimilar, not just the visible NEAR pair similar). Worked demonstrators: `bell_pops2` —
+      visible spec is the Z-basis populations
       50/50 between |00> and |11>, held out is `<X0X1> = +1`; the genuine Bell state
       `quantum-proof-pops.json` ACCEPTs (exit 0) while the wrong-phase impostor
       `quantum-proof-OVERFIT.json` passes structure/reproducibility/performance yet is REJECTED at
       exit 6. `aiaccel4` — the ring `quantum-proof-arch.json` ACCEPTs while the overfit topology
       `quantum-proof-arch-OVERFIT.json` exits 6. `qml_sign1` — the Ry(x) map
       `quantum-proof-qml.json` generalizes and ACCEPTs while the Ry(7x) overfit
-      `quantum-proof-qml-OVERFIT.json` exits 6. Ground truth always lives ONLY in
+      `quantum-proof-qml-OVERFIT.json` exits 6. `kernel2` — the per-feature `Ry(x_i)` map
+      `quantum-proof-kernel2.json` calls the near pair similar (kernel 0.999) AND the held-out far
+      pair dissimilar (kernel 0.003), ACCEPTing at exit 0, while the input-ignoring (`scale: 0`)
+      map `quantum-proof-kernel2-OVERFIT.json` reports kernel 1.0 on BOTH pairs — honestly clears
+      the visible threshold yet is REJECTED at exit 6 for failing the held-out one. Ground truth
+      always lives ONLY in
       `references/<problem_id>.json`, NEVER in the bundle, and ACCEPTs unchanged when the
       references are relocated via `QH_REFERENCES_DIR` outside the builder's tree. For problems
       that declare no holdout block (`ghz3`, `ghz3_he`, `ghz5_line`, `isingbell2`, `mol4`) anti-overfit holds by construction —
@@ -131,11 +142,12 @@ check — anti-overfit.
       verifier can read directly from `--json` output; over-budget is already an exit-3
       failure under R1, so R5 additionally requires the metrics be *emitted and within
       budget*, making efficiency a first-class, machine-read number rather than prose.
-- [ ] **R6 — End-to-end ACCEPT on every worked problem (exit 0).** The five committed worked
+- [ ] **R6 — End-to-end ACCEPT on every worked problem (exit 0).** The six committed worked
       bundles pass cleanly: `quantum-proof-poc.json` (ghz3, state_prep → fidelity 1.0),
       `quantum-proof-vqe.json` (isingbell2, vqe → energy −2.0), `quantum-proof-pops.json`
       (bell_pops2, populations), `quantum-proof-arch.json` (aiaccel4, architecture — the ring
-      topology), and `quantum-proof-qml.json` (qml_sign1, classify — the Ry(x) feature map) each
+      topology), `quantum-proof-qml.json` (qml_sign1, classify — the Ry(x) feature map), and
+      `quantum-proof-kernel2.json` (kernel2, kernel — the per-feature Ry(x_i) overlap map) each
       exit 0. Regression: `test_judge.py` asserts each ACCEPTs (exit 0).
 - [ ] **R7 — Architecture-design dimension is a real, scored gate (exit 0/3/4/5/6).** A
       bundle with `task: "architecture"` (`aiaccel4`) submits a coupling map that must parse
@@ -146,9 +158,21 @@ check — anti-overfit.
       the visible workload) is REJECTed at exit 6. Regression: `test_judge.py` asserts the ring
       ACCEPTs and the overfit path exits 6 (plus tampered-cost → exit 4, over-budget → exit 5,
       degree-over-budget → exit 3).
+- [ ] **R7c — Kernel quality (fidelity-overlap estimation).** A bundle with `task: "kernel"`
+      (`kernel2`) submits a feature-map template that must parse (STRUCTURE, exit 3),
+      reproduce its claimed `claim.kernel` from the judge's OWN re-simulation of the SAME
+      template on x and on y independently (REPRODUCIBILITY, exit 4 — no ancilla/SWAP-test
+      register; the judge diffs two ordinary statevectors), clear the visible near-pair
+      threshold (PERFORMANCE, exit 5), and call the HELD-OUT far pair dissimilar
+      (ANTI-OVERFIT, exit 6). PASS = `quantum-proof-kernel2.json` (per-feature `Ry(x_i)`) ACCEPTs
+      at exit 0 while `quantum-proof-kernel2-OVERFIT.json` (an input-ignoring `scale: 0` map that
+      reports kernel 1.0 on every pair) is REJECTed at exit 6. Regression: `test_judge.py` asserts
+      the genuine map ACCEPTs, the degenerate map exits 6, a tampered claim exits 4
+      (`quantum-proof-kernel2-FORGED.json`), and an honest-but-over-sensitive encoding (a huge
+      scale that blows a tiny visible-pair delta past a full oscillation) exits 5.
 - [ ] **R8 — Verifiability of artifacts (bench self-test green, capture round-trips).** The
       whole bench re-derives soundly: `python3 bench/quantum-judge/test_judge.py` reports
-      `38/38 checks passed` (exit 0). Within it, the `capture.py` check proves it builds a
+      `58/58 checks passed` (exit 0). Within it, the `capture.py` check proves it builds a
       well-formed bundle from a raw circuit using the SAME simulator and that bundle ACCEPTs
       under the judge — so artifacts are reproducible by tool, not hand-authored. Every R
       above is mirrored by a named regression check, so a fresh verifier reproduces every
@@ -192,16 +216,20 @@ check — anti-overfit.
 - [ ] **X1 A further problem** (new `problem_id`, held-out reference) is added and a submitted
       bundle ACCEPTs end-to-end under `QH_REFERENCES_DIR`, proving the harness generalizes
       beyond the seeded worked problems. Skipping X1 NEVER fails the run.
-- [ ] **X2 A sixth task type** (beyond `state_prep`, `vqe`, `populations`, `architecture`,
+- [x] **X2 A sixth task type** (beyond `state_prep`, `vqe`, `populations`, `architecture`,
       `classify`) is added with its own STRUCTURE / reproducibility / performance / held-out
-      gates and a worked bundle. Until then H1/H2 forbid claiming a task the judge does not
-      implement.
+      gates and a worked bundle. **DONE — now R7c.** `kernel` (fidelity-overlap estimation,
+      `kernel2`) is the sixth: it reuses `classify`'s feature-bound-op encoding mechanism
+      (`_instantiate`) rather than a SWAP-test ancilla register — the judge instantiates the
+      SAME template independently for x and y and diffs the two returned statevectors with
+      `sim.fidelity`. Its held-out check is a held-out PAIR (a far pair that must read as
+      dissimilar), the fourth held-out FORM alongside observable/workload/test-set.
 
 ## Done is a two-stage gate
 
 - **Bench-done** = all H + R1–R8 + A1–A3 + S1 + S2 pass in ONE fresh-verifier run:
   `node --test test/*.test.mjs` is all-pass (0 fail), `python3 bench/quantum-judge/test_judge.py` is
-  38/38, and every submitted bundle exits 0 under `judge_verify.py` (including under a
+  58/58, and every submitted bundle exits 0 under `judge_verify.py` (including under a
   relocated `QH_REFERENCES_DIR`).
 - **Submission-done** = S3 + S4 pass, plus an S1 re-check, in a second short verifier run.
 

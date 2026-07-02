@@ -24,8 +24,9 @@ is held to a number a third party can re-derive. (To be honest about where quant
 strongly-correlated materials for better *classical* chips. The full map is the curriculum's
 North Star.) We start with circuits that prepare states and minimize Hamiltonian energy because
 those are the verifiable atoms, then extend to designing the hardware **topology** those circuits
-run on (`architecture`) and the quantum **feature map** that classifies data (`classify`) — five
-task types, each judged the same way.
+run on (`architecture`), the quantum **feature map** that classifies data (`classify`), and a
+**fidelity kernel** that estimates the state-overlap similarity between two encoded data points
+(`kernel`) — six task types, each judged the same way.
 
 The chain the harness maintains is: target (stated conceptually in this brief) → submitted
 circuit → re-simulated result → constraint check + reproducibility check + threshold check
@@ -53,7 +54,7 @@ The schema:
 {
   "schema": "quantum-harness/proof-bundle@1",
   "problem_id": "<ghz3 | isingbell2 | bell_pops2 | aiaccel4 | qml_sign1 | ...>",
-  "task": "state_prep | vqe | populations | architecture | classify",
+  "task": "state_prep | vqe | populations | architecture | classify | kernel",
   "circuit": { "n_qubits": N, "ops": [ { "gate": "...", "q": [...], "params": [...] } ] },
   "constraints": {
     "n_qubits": N, "max_depth": D,
@@ -182,6 +183,28 @@ misclassifies the held-out test — it passes STRUCTURE, REPRODUCIBILITY and PER
 REJECTED at ANTI-OVERFIT. The committed adversarial fixture
 `bench/quantum-judge/quantum-proof-qml-OVERFIT.json` is exactly that impostor and MUST be
 rejected at exit 6.
+
+### Target 6 — `kernel2` (task `kernel`, held-out PAIR)
+
+Design a **fidelity-kernel feature map** (n=2, the same feature-bound-op encoding mechanism as
+`classify`) whose judged quantity is the state-overlap `|⟨φ(x)|φ(y)⟩|²` between two classical data
+points — no ancilla/SWAP-test register: the judge instantiates your template independently for x
+and for y and takes the overlap of the two resulting statevectors directly. The **visible** pair
+is a near-pair `x=[0.5,-0.3], y=[0.55,-0.25]` your encoding must call SIMILAR (kernel ≥ 0.9). But
+the reference **HOLDS OUT** a far pair `y=[3.0, 2.5]` the same template must call DISSIMILAR
+(kernel ≤ 0.1) — so a map cannot just memorize "always report a high kernel."
+
+- bundle shape: `{ "feature_map": { "n_qubits", "ops":[{gate,q,feature?,scale?,params?}] }, "claim": { "kernel" } }`
+- threshold: `kernel ≥ kernel_min` (host-side: 0.9) on the visible pair
+- HELD-OUT check (exit 6): `kernel ≤ kernel_max` (host-side: 0.1) on the held-out pair
+- reference solution (ACCEPTs): a per-feature `Ry(x_i)` product map — near-pair kernel ≈ 0.999, held-out far-pair kernel ≈ 0.003
+- committed passing bundle: `bench/quantum-judge/quantum-proof-kernel2.json`
+
+The trap: an input-ignoring map (`scale: 0`, `Ry(0) = identity`) reports kernel 1.0 for EVERY pair
+— it nails the visible pair by luck, passing STRUCTURE, REPRODUCIBILITY and PERFORMANCE, but is
+REJECTED at ANTI-OVERFIT because it also reports 1.0 for the held-out far pair. The committed
+adversarial fixture `bench/quantum-judge/quantum-proof-kernel2-OVERFIT.json` is exactly that
+impostor and MUST be rejected at exit 6.
 
 You are told the Hamiltonian and the GHZ target **conceptually, here**. The exact target
 amplitude vector, the exact Hamiltonian terms, and the numeric thresholds live **host-side** with

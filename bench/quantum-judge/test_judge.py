@@ -370,6 +370,33 @@ def main():
            "claim, correctly reproduced, clears baseline, misses threshold) REJECTed (exit 5)",
            code == judge_verify.EXIT_PERFORMANCE, f"exit {code}: {out}")
 
+    # --- KERNEL task: fidelity-overlap estimation with a held-out far pair ------
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-kernel2.json"))
+    record("quantum-proof-kernel2.json (angle-encoding overlap) ACCEPTs (exit 0)",
+           code == 0, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-kernel2-FORGED.json"))
+    record("kernel overclaim (claims overlap 1.0 the re-sim contradicts) REJECTed (exit 4)",
+           code == judge_verify.EXIT_REPRODUCIBILITY, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-kernel2-OVERFIT.json"))
+    record("kernel degenerate (input-ignoring) map REJECTed at ANTI-OVERFIT (exit 6)",
+           code == judge_verify.EXIT_OVERFIT, f"exit {code}: {out}")
+    kernel2 = load("quantum-proof-kernel2.json")
+    b = copy.deepcopy(kernel2); b["claim"]["kernel"] = 0.5
+    record("kernel tampered claim REJECTed (exit 4)",
+           verify_code(b) == judge_verify.EXIT_REPRODUCIBILITY)
+    # an honest but over-sensitive encoding (huge scale) genuinely fails to call the
+    # visible NEAR pair similar (a tiny Delta gets blown up past a full oscillation)
+    # -> PERFORMANCE reject, not reproducibility (the claim is honestly reproduced).
+    b = copy.deepcopy(kernel2)
+    b["feature_map"]["ops"][0]["scale"] = 50.0
+    b["feature_map"]["ops"][1]["scale"] = 50.0
+    weak_state_x = judge_verify.sim.simulate(judge_verify._instantiate(b["feature_map"], [0.5, -0.3]))
+    weak_state_y = judge_verify.sim.simulate(judge_verify._instantiate(b["feature_map"], [0.55, -0.25]))
+    weak_kernel = judge_verify.sim.fidelity(weak_state_x, weak_state_y)
+    b["claim"]["kernel"] = weak_kernel
+    record("kernel honest-but-underperforming encoding REJECTed (exit 5)",
+           weak_kernel < 0.9 and verify_code(b) == judge_verify.EXIT_PERFORMANCE)
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

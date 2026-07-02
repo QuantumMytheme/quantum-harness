@@ -531,6 +531,24 @@ window.SCOREBOARD_DATA = {
       ]
     },
     {
+      "problem_id": "kernel2",
+      "task": "kernel",
+      "source": "quantum-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-kernel2 --remix kernel2"
+        }
+      ]
+    },
+    {
       "problem_id": "mol4",
       "task": "vqe",
       "source": "quantum-judge",

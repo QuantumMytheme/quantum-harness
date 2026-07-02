@@ -203,10 +203,10 @@ exit 6 is simply not triggered for them.
 }
 ```
 
-`task` is one of `state_prep` | `vqe` | `populations` | `architecture` | `classify`. For a VQE
-task, `claim` carries `{ "energy": ... }` instead of `{ "fidelity": ... }`; for a `populations`
-task it carries `{ "populations": [...] }`; the `architecture` and `classify` tasks use their own
-bundle shapes (see the bench README). The simulator uses **qubit 0 = most
+`task` is one of `state_prep` | `vqe` | `populations` | `architecture` | `classify` | `kernel`. For
+a VQE task, `claim` carries `{ "energy": ... }` instead of `{ "fidelity": ... }`; for a
+`populations` task it carries `{ "populations": [...] }`; the `architecture`, `classify`, and
+`kernel` tasks use their own bundle shapes (see the bench README). The simulator uses **qubit 0 = most
 significant index** and supports the gate set `x y z h s sdg t tdg sx sxdg rx ry rz p` (1-qubit),
 `cx cz cy swap crz cp rzz` (2-qubit), and `ccx` (3-qubit).
 

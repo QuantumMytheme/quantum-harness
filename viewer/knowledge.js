@@ -45,7 +45,12 @@
       question: 'Can a quantum feature map separate the classes on data it never saw?',
       given: 'a training set; the test set is withheld',
       metric: 'held-out test accuracy',
-      good: 'high TEST accuracy — a low-frequency map generalizes, a high-frequency one overfits', teeth: true }
+      good: 'high TEST accuracy — a low-frequency map generalizes, a high-frequency one overfits', teeth: true },
+    kernel: { name: 'Fidelity kernel', one: 'a state-overlap similarity measure between two points',
+      question: 'Does your encoding actually distinguish near points from far points — or does it ignore its input?',
+      given: 'a visible near-pair (must read as similar); a held-out far-pair is withheld',
+      metric: 'overlap |<phi(x)|phi(y)>|^2 between the two independently re-simulated encoded states',
+      good: 'high kernel on the near pair AND low kernel on the held-out far pair — a constant map that ignores its input fails the held-out check', teeth: true }
   };
 
   // ---- the worked problems: the actual question + what good looks like ---------
@@ -104,7 +109,12 @@
       question: 'Prepare a Bell state AND predict its on-device fidelity under depolarizing noise.',
       given: 'the target plus a stated noise budget; predict the noisy fidelity',
       goal: 'predicted noisy fidelity ≥ 0.90', baseline: 'ideal 1.0 vs noisy ≈ 0.916',
-      good: 'a correct, re-verifiable noisy prediction — not an inflated claim', best: 'noisy fid 0.916 (predicted, re-derived)' }
+      good: 'a correct, re-verifiable noisy prediction — not an inflated claim', best: 'noisy fid 0.916 (predicted, re-derived)' },
+    kernel2: { task: 'kernel', n: 2, title: 'Fidelity kernel · held-out far pair',
+      question: 'Build a 2-feature angle-encoding map whose overlap kernel calls a near pair similar — a far pair is held out.',
+      given: 'a visible near-pair (kernel ≥ 0.9 required); a held-out far-pair is withheld (kernel ≤ 0.1 required)',
+      goal: 'held-out kernel ≤ 0.1 while the visible kernel ≥ 0.9', baseline: 'input-ignoring map (scale 0) scores kernel 1.0 on both — passes the visible pair by accident, fails the held-out one',
+      good: 'per-feature Ry(x_i) genuinely separates near (kernel 0.999) from far (kernel 0.003) — no ancilla/SWAP-test register needed', best: 'near 0.999 · far 0.003 · 2 ops · 2 qubits' }
   };
 
   // ---- the five quality axes (mirror the formulas in scoreboard/build.mjs) -----
@@ -164,7 +174,7 @@
       '</dl>' + (q ? profileDetail(q) : '') + '</div>';
     function row(k, v) { return '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>'; }
   }
-  var TASK_HUE = { state_prep: 210, vqe: 162, populations: 40, architecture: 280, classify: 330 };
+  var TASK_HUE = { state_prep: 210, vqe: 162, populations: 40, architecture: 280, classify: 330, kernel: 20 };
   function taskColor(task) { var h = TASK_HUE[task]; return h == null ? 210 : 'hsl(' + h + ',58%,45%)'; }
 
   // ---- the design schematic: derive a circuit + a chip topology from a recipe --

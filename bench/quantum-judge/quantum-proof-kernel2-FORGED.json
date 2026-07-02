@@ -1,0 +1,16 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "problem_id": "kernel2",
+  "task": "kernel",
+  "_attack": "Same feature-map circuit as quantum-proof-kernel2.json (the genuine near-pair overlap is ~0.9988), but the claim overclaims a suspiciously round 1.0 -- as if the two encoded states were exactly identical. The judge re-simulates BOTH x and y through this template independently and recomputes the true overlap; the claim does not match, so this is REJECTED at REPRODUCIBILITY (exit 4) before performance or anti-overfit are ever reached.",
+  "feature_map": {
+    "n_qubits": 2,
+    "ops": [
+      { "gate": "ry", "q": [0], "feature": 0, "scale": 1.0 },
+      { "gate": "ry", "q": [1], "feature": 1, "scale": 1.0 }
+    ]
+  },
+  "claim": { "kernel": 1.0 },
+  "classical_baseline": { "note": "fabricated: claims a perfect overlap the circuit does not actually produce" },
+  "meta": { "author": "adversarial-fixture", "framework": "json-ir" }
+}

@@ -40,8 +40,9 @@ Exit codes: 0 ok | 2 schema/parse | 3 structure | 4 reproducibility |
             5 performance | 6 anti-overfit (held-out).
 
 Task types: state_prep, vqe, populations (state-based); architecture (topology);
-classify (QML feature map). Each runs its own STRUCTURE check, then reproducibility,
-performance, and — when the reference declares a held-out check — anti-overfit.
+classify (QML feature map); kernel (fidelity-kernel overlap estimation). Each runs
+its own STRUCTURE check, then reproducibility, performance, and — when the
+reference declares a held-out check — anti-overfit.
 
 Usage:
   python3 judge_verify.py <bundle.json> [--json]
@@ -500,12 +501,89 @@ def verify_classify(bundle, ref, checks):
                          f"the feature map overfit the training data")
 
 
+def verify_kernel(bundle, ref, checks):
+    """Fidelity-kernel estimation: the overlap |<phi(x)|phi(y)>|^2 between two
+    classically-encoded inputs, via the SAME feature-bound encoding mechanism as
+    `classify` (see _instantiate) — the closest existing precedent, since both
+    tasks are data-dependent and need a held-out generalization check. There is no
+    SWAP-test ancilla register here: the judge re-simulates the SAME feature-map
+    template independently for x and for y (two ordinary n-qubit runs) and computes
+    the overlap directly from the two returned statevectors with sim.fidelity — that
+    IS the SWAP test's result without paying for the extra qubits/CSWAPs to get it.
+
+    Anti-overfit = a HELD-OUT pair with the OPPOSITE similarity relationship: the
+    visible pair is a near-pair the encoding must call SIMILAR (kernel >= kernel_min),
+    the held-out pair is a far-pair it must call DISSIMILAR (kernel <= kernel_max). A
+    degenerate feature map that ignores its input entirely (e.g. scale 0 -> every
+    input encodes to the same state) trivially "nails" the visible pair (constant
+    state -> overlap 1.0 >= kernel_min) but fails the held-out pair (still overlap
+    1.0, not <= kernel_max) — caught here, not at reproducibility/performance."""
+    fm = bundle.get("feature_map")
+    if not fm:
+        raise Reject(EXIT_SCHEMA, "kernel task requires 'feature_map'")
+    n = int(fm["n_qubits"])
+    pair = ref["pair"]
+    n_features = len(pair["x"])
+
+    # STRUCTURE (exit 3): the feature-map template is well-formed (same shape
+    # checks as classify's feature map — it is the identical encoding mechanism).
+    for i, op in enumerate(fm.get("ops", [])):
+        if op["gate"].lower() not in sim.KNOWN_GATES:
+            raise Reject(EXIT_STRUCTURE, f"op[{i}] unknown gate {op['gate']!r}")
+        if any(q < 0 or q >= n for q in op["q"]):
+            raise Reject(EXIT_STRUCTURE, f"op[{i}] qubit index out of range")
+        if "feature" in op and not (0 <= int(op["feature"]) < n_features):
+            raise Reject(EXIT_STRUCTURE, f"op[{i}] feature index {op['feature']} out of range")
+    checks["structure"] = {"n_qubits": n, "ops": len(fm.get("ops", []))}
+
+    # REPRODUCIBILITY (exit 4): the claimed kernel matches what the judge recomputes
+    # by re-simulating BOTH encoded states independently through the SAME template
+    # and taking the overlap of the two resulting statevectors — the model cannot
+    # fabricate a kernel value; the judge re-derives it from scratch.
+    state_x = sim.simulate(_instantiate(fm, pair["x"]))
+    state_y = sim.simulate(_instantiate(fm, pair["y"]))
+    kernel = sim.fidelity(state_x, state_y)
+    checks["reproduced"] = {"kernel": round(kernel, 6)}
+
+    claimed = bundle.get("claim", {}).get("kernel")
+    if claimed is None:
+        raise Reject(EXIT_SCHEMA, "kernel claim requires claim.kernel")
+    tol = float(ref.get("tolerance", {}).get("kernel_reproduce", 1e-6))
+    if abs(float(claimed) - kernel) > tol:
+        raise Reject(EXIT_REPRODUCIBILITY, f"claimed kernel {claimed} != recomputed {kernel:.6f} (tol {tol:g})")
+
+    # PERFORMANCE (exit 5): the visible pair's kernel clears the declared threshold
+    # (the encoding must actually treat this near-pair as similar).
+    kmin = float(ref.get("thresholds", {}).get("kernel_min", 0.0))
+    if kernel + 1e-12 < kmin:
+        raise Reject(EXIT_PERFORMANCE, f"kernel {kernel:.6f} below threshold {kmin}")
+    checks["performance"] = {"kernel": round(kernel, 6), "min": kmin}
+
+    # ANTI-OVERFIT (exit 6): the HELD-OUT far-pair the model was never told, run
+    # through the SAME template — it must be called DISSIMILAR (kernel <= kernel_max).
+    holdout = ref.get("holdout", {})
+    hpair = holdout.get("pair")
+    if hpair:
+        hx = sim.simulate(_instantiate(fm, hpair["x"]))
+        hy = sim.simulate(_instantiate(fm, hpair["y"]))
+        h_kernel = sim.fidelity(hx, hy)
+        kmax = float(holdout.get("kernel_max", 1.0))
+        checks["anti_overfit"] = {"holdout_kernel": round(h_kernel, 6), "max": kmax}
+        if h_kernel > kmax + 1e-12:
+            raise Reject(
+                EXIT_OVERFIT,
+                f"held-out kernel {h_kernel:.6f} above {kmax}; the feature map overfit "
+                f"the visible pair (it does not actually distinguish its input)",
+            )
+
+
 TASKS = {
     "state_prep": verify_state_prep,
     "vqe": verify_vqe,
     "populations": verify_populations,
     "architecture": verify_architecture,
     "classify": verify_classify,
+    "kernel": verify_kernel,
 }
 
 
