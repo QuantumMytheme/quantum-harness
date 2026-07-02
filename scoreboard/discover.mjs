@@ -24,7 +24,7 @@ import { dirname, join } from 'node:path'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ORG = process.env.QH_ORG || 'QuantumMytheme'
 const TOPIC = 'quantum-harness-run'
-const KNOWN_TASKS = new Set(['state_prep', 'vqe', 'populations', 'architecture', 'classify'])
+const KNOWN_TASKS = new Set(['state_prep', 'vqe', 'populations', 'architecture', 'classify', 'kernel'])
 const sh = (c) => execSync(c, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 
 // Shape gate for community-authored scoreboard-entry.json. Mirrored by

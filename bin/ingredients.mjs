@@ -30,7 +30,7 @@ const seeds = filterValid(load('scoreboard/entries.json')?.entries || [], 'seed 
 const disc = filterValid(load('scoreboard/discovered.json')?.entries || [], 'discovered entry')
 const entries = [...seeds, ...disc].filter((e) => e && e.problem_id === pid)
 
-const DIR = { state_prep: 'higher', vqe: 'lower', populations: 'higher', architecture: 'lower', classify: 'higher' }
+const DIR = { state_prep: 'higher', vqe: 'lower', populations: 'higher', architecture: 'lower', classify: 'higher', kernel: 'higher' }
 entries.sort((a, b) => ((DIR[a.task] === 'lower' ? 1 : -1) * (a.verified_metric.value - b.verified_metric.value)))
 
 async function bundleOf(e) {

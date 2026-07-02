@@ -56,9 +56,9 @@ DATA = json.load(open(os.path.join(ROOT, "scoreboard", "entries.json")))
 HARNESS = DATA.get("harness_repo", "https://github.com/QuantumMytheme/quantum-harness")
 LOCAL_ONLY = "--local-only" in sys.argv
 
-# The five tasks whose primary metric the judge recomputes. An entry with any other
+# The tasks whose primary metric the judge recomputes. An entry with any other
 # task has no judge-recomputed metric, so it can never rank — fail it closed.
-KNOWN_TASKS = {"state_prep", "vqe", "populations", "architecture", "classify"}
+KNOWN_TASKS = {"state_prep", "vqe", "populations", "architecture", "classify", "kernel"}
 
 # Controlled paradigm-family vocabulary (SCOREBOARD.md §c). Free-text `paradigm`
 # stays the human label; `family` is the stable grouping key. WARN-only.
@@ -79,6 +79,7 @@ def judged_metric(task, checks):
         if task == "populations":  return checks["anti_overfit"]["checks"][0]["got"]
         if task == "architecture": return checks["performance"]["routing_cost"]
         if task == "classify":     return checks["anti_overfit"]["test_accuracy"]
+        if task == "kernel":       return checks["reproduced"]["kernel"]
     except (KeyError, IndexError, TypeError):
         return None
     return None

@@ -147,11 +147,16 @@ fidelity-kernel entry between two encoded inputs.
   assertion), and rebuilding `viewer/scoreboard-data.js` via `node scoreboard/build.mjs`
   (`test/frontier.test.mjs` enumerates every committed reference into the Wanted Board coverage
   table and failed until the board was regenerated — a real, mechanical gap, not hardcoded
-  around). Honest scope note: `scoreboard/verify.py` and `scoreboard/discover.mjs` still gate
-  community entries on a `KNOWN_TASKS` set that does not include `kernel` (no `judged_metric`
-  branch either) — a real follow-on gap for a future community `kernel2` run, left unfixed here
-  since it needs its own design decision (which of the visible/held-out kernel values ranks)
-  and no test currently exercises it.
+  around). **Follow-up closed same session:** `scoreboard/verify.py` and
+  `scoreboard/discover.mjs` initially gated community entries on a `KNOWN_TASKS` set that
+  excluded `kernel` — checked whether this was a silent trust-gate hole (it was not: unknown
+  tasks FAIL CLOSED via `entry_shape_error`, so a `kernel2` entry would have been correctly
+  rejected, just unable to register at all) and closed it properly: `kernel` added to
+  `KNOWN_TASKS` in both files, `judged_metric()` gained `checks["reproduced"]["kernel"]` as
+  the ranking value (higher-is-better, same convention as `state_prep`'s fidelity), and
+  `bin/ingredients.mjs`'s `DIR` map marked it `'higher'`. Rebuilt the board — `kernel2` now
+  shows as a genuine, mintable Wanted Board gap (`bin/new-run.sh run-kernel2 --remix kernel2`),
+  and `scoreboard/verify.py` still re-verifies 9/9 (unaffected — no `kernel` entries exist yet).
 - Ref: `bench/quantum-judge/judge_verify.py` (`verify_kernel`, registered in `TASKS`),
   `bench/quantum-judge/references/kernel2.json`, `quantum-proof-kernel2.json`,
   `quantum-proof-kernel2-FORGED.json`, `quantum-proof-kernel2-OVERFIT.json`; registered in
