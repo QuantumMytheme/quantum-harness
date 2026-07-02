@@ -335,6 +335,29 @@ def main():
     record("bundle-declared denser coupling map overridden by reference pin (exit 3)",
            verify_code(b) == judge_verify.EXIT_STRUCTURE)
 
+    # --- 4-QUBIT MOLECULAR-STYLE VQE (mol4, ring TFIM + NNN ZZ, 16-amplitude headroom) ---
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-mol4.json"))
+    record("quantum-proof-mol4.json (4-qubit ring ansatz, gap 0.0105 <= 0.02) ACCEPTs (exit 0)",
+           code == 0, f"exit {code}: {out}")
+    code, out = run_cli(os.path.join(HERE, "quantum-proof-mol4-FORGED.json"))
+    record("mol4 overclaim (same ansatz, claims exact E0 the ansatz misses) REJECTed (exit 4)",
+           code == judge_verify.EXIT_REPRODUCIBILITY, f"exit {code}: {out}")
+    mol4 = load("quantum-proof-mol4.json")
+    # a mean-field-only circuit (no entangling gates) genuinely lands ON the classical
+    # baseline, well outside the 0.02 gap budget -> PERFORMANCE reject, not reproducibility.
+    b = copy.deepcopy(mol4)
+    b["circuit"]["ops"] = [
+        {"gate": "ry", "q": [0], "params": [0.35525135]},
+        {"gate": "ry", "q": [1], "params": [0.35525135]},
+        {"gate": "ry", "q": [2], "params": [0.35525135]},
+        {"gate": "ry", "q": [3], "params": [0.35525135]},
+    ]
+    mf_energy = judge_verify.sim.expectation_pauli(
+        judge_verify.sim.simulate(b["circuit"]), judge_verify.load_reference("mol4")["hamiltonian_terms"], 4)
+    b["claim"]["energy"] = mf_energy
+    record("mean-field-only mol4 circuit (no entanglement, gap 0.075 > 0.02 budget) REJECTed (exit 5)",
+           verify_code(b) == judge_verify.EXIT_PERFORMANCE)
+
     n_pass = sum(1 for _, ok, _ in results if ok)
     print(f"\n{n_pass}/{len(results)} checks passed")
     return 0 if n_pass == len(results) else 1

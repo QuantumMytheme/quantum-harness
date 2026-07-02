@@ -1,0 +1,44 @@
+{
+  "schema": "quantum-harness/proof-bundle@1",
+  "task": "vqe",
+  "problem_id": "mol4",
+  "_comment": "FORGERY: identical ansatz to quantum-proof-mol4.json (which genuinely reaches -5.2205633, a gap of 0.0105 from E0), but here it claims the exact ground-state energy -5.2310950. The judge recomputes the SAME circuit's actual energy (-5.2205633, a worse/higher number) and REJECTS the overclaim at REPRODUCIBILITY (exit 4) before the performance gate is even reached.",
+  "circuit": {
+    "n_qubits": 4,
+    "ops": [
+      { "gate": "ry", "q": [0], "params": [5.0330178311446705] },
+      { "gate": "ry", "q": [1], "params": [1.575368256993554] },
+      { "gate": "ry", "q": [2], "params": [1.579358912845673] },
+      { "gate": "ry", "q": [3], "params": [1.8914545844246617] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "cx", "q": [1, 2] },
+      { "gate": "cx", "q": [2, 3] },
+      { "gate": "cx", "q": [3, 0] },
+      { "gate": "ry", "q": [0], "params": [8.310413967907479] },
+      { "gate": "ry", "q": [1], "params": [0.014891577452785132] },
+      { "gate": "ry", "q": [2], "params": [5.168834878430738] },
+      { "gate": "ry", "q": [3], "params": [1.925593446995455] },
+      { "gate": "cx", "q": [0, 1] },
+      { "gate": "cx", "q": [1, 2] },
+      { "gate": "cx", "q": [2, 3] },
+      { "gate": "cx", "q": [3, 0] },
+      { "gate": "ry", "q": [0], "params": [6.277009203083111] },
+      { "gate": "ry", "q": [1], "params": [0.0014630880426730482] },
+      { "gate": "ry", "q": [2], "params": [-0.002595780878853905] },
+      { "gate": "ry", "q": [3], "params": [6.2726936603401855] }
+    ]
+  },
+  "constraints": {
+    "n_qubits": 4,
+    "native_gates": ["ry", "cx"],
+    "coupling_map": [[0, 1], [1, 2], [2, 3], [3, 0]],
+    "max_depth": 12,
+    "max_two_qubit_gates": 8
+  },
+  "claim": { "energy": -5.231094971581286 },
+  "classical_baseline": {
+    "energy": -5.156521739130422,
+    "note": "best mean-field / product state -- misses the ring's ZZ correlation energy"
+  },
+  "meta": { "author": "worked-example-FORGED", "framework": "json-ir" }
+}

@@ -531,6 +531,24 @@ window.SCOREBOARD_DATA = {
       ]
     },
     {
+      "problem_id": "mol4",
+      "task": "vqe",
+      "source": "quantum-judge",
+      "paradigms_tried": [],
+      "runs": 0,
+      "has_model_run": false,
+      "has_classical_baseline": false,
+      "has_hardware_overlay": false,
+      "has_noisy_sim_overlay": false,
+      "gaps": [
+        {
+          "kind": "first-run",
+          "label": "untried — no verified design on this board at all; the first ACCEPT opens it",
+          "command": "bin/new-run.sh run-mol4 --remix mol4"
+        }
+      ]
+    },
+    {
       "problem_id": "qml_sign1",
       "task": "classify",
       "source": "quantum-judge",
@@ -998,7 +1016,8 @@ window.SCOREBOARD_DATA = {
       "mean_efficiency": 0.667,
       "untested_problems": [
         "h2vqe",
-        "isingbell2"
+        "isingbell2",
+        "mol4"
       ],
       "evidence": false
     },
@@ -1014,6 +1033,7 @@ window.SCOREBOARD_DATA = {
       "mean_efficiency": 0.688,
       "untested_problems": [
         "isingbell2",
+        "mol4",
         "tfim3"
       ],
       "evidence": false
@@ -1030,6 +1050,7 @@ window.SCOREBOARD_DATA = {
       "mean_efficiency": 0.75,
       "untested_problems": [
         "h2vqe",
+        "mol4",
         "tfim3"
       ],
       "evidence": false
@@ -1046,7 +1067,8 @@ window.SCOREBOARD_DATA = {
       "mean_efficiency": 0.286,
       "untested_problems": [
         "h2vqe",
-        "isingbell2"
+        "isingbell2",
+        "mol4"
       ],
       "evidence": false
     }

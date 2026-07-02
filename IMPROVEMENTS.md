@@ -75,16 +75,32 @@ held-out TEST SET as the anti-overfit guard.
 - Ref: bench/quantum-judge/judge_verify.py `verify_classify` / `check_holdout` EXIT_OVERFIT (6),
   references/qml_sign1.json, quantum-proof-qml.json, quantum-proof-qml-OVERFIT.json.
 
-## ☐ 5. VQE on a 4-qubit molecular-style Hamiltonian
+## ☑ 5. VQE on a 4-qubit molecular-style Hamiltonian — mol4 is LIVE
 Push VQE past the 2-qubit isingbell toy to a 4-qubit Pauli-sum Hamiltonian (H2-style, but
 defined entirely numerically in the reference — no chemistry deps).
-- **Do:** add problem `mol4` (task vqe): 4-qubit Hamiltonian as a Pauli-string list in the
-  held-out reference, with true E0, a product/classical baseline energy, and an `energy_gap`
-  budget; brief states the Hamiltonian shape conceptually only.
-- **Done =** `judge_verify.py` exits 0 when the recomputed energy is within `energy_gap` of
-  E0 in `references/mol4.json` AND beats the classical baseline (PERFORMANCE, exit 5); a
-  bundle claiming E0 but whose ansatz recomputes higher is REJECTED at exit 4.
-- Ref: bench/quantum-judge/references/isingbell2.json (the n=2 prior).
+- **Did:** added problem `mol4` (task vqe): a 4-qubit ring TFIM plus next-nearest-neighbor ZZ
+  coupling, H = −J·Σ_ring(ZᵢZᵢ₊₁) − h·Σᵢ(Xᵢ) − K·Σ_nnn(ZᵢZᵢ₊₂), J=1.0 h=0.8 K=0.3 on the
+  4-cycle 0-1-2-3-0 with diagonals 0-2/1-3 — chosen (after sweeping several (h,K) pairs) for a
+  genuinely entangled ground state with real headroom over the mean-field baseline, not a
+  near-product state. E0 = **−5.231094971581286** from `numpy.linalg.eigh` on the dense 16×16
+  matrix (not hand-derived); the best PRODUCT state (all 4 qubits at the same Bloch angle by
+  the ring's 4-fold symmetry, found by gradient descent AND confirmed analytically) reaches
+  **−5.156521739130422** — a 0.0746 Ha correlation gap, so the `energy_gap: 0.02` budget
+  forces a genuinely entangled ansatz. The worked ansatz (3 RY layers + 2 CX rings, 12 free
+  angles, optimized by finite-difference gradient descent directly against the judge's
+  `sim.expectation_pauli` — no scipy available in this environment) reaches energy
+  **−5.2205633111956296**, gap **0.0105** (≤ 0.02, clears the baseline by 0.064 Ha), at depth
+  11 / 8 two-qubit gates.
+- **Done =** `quantum-proof-mol4.json` ACCEPTs (exit 0, verified live: gap 0.010532 ≤ 0.02,
+  baseline −5.156522 beaten); the same ansatz re-claiming the exact E0 instead of its true
+  recomputed energy is REJECTED at REPRODUCIBILITY (exit 4, `quantum-proof-mol4-FORGED.json`,
+  verified live); a mean-field-only circuit (no entangling gates) genuinely lands on the
+  0.0746 baseline gap, outside the 0.02 budget, and is REJECTED at PERFORMANCE (exit 5).
+  `test_judge.py` asserts all three (51/51, was 48/48).
+- Ref: bench/quantum-judge/references/mol4.json, quantum-proof-mol4.json,
+  quantum-proof-mol4-FORGED.json; registered in mcp/server.mjs LABELS and
+  viewer/knowledge.js PROBLEMS; added to the "no holdout block" enumeration in RUBRIC.md /
+  VERIFIER-MAP.md alongside ghz3/ghz3_he/ghz5_line/isingbell2.
 
 ## ☐ 6. Quantum-kernel block
 A kernel-estimation circuit (state-overlap / inversion test) whose judged quantity is a
