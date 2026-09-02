@@ -4,85 +4,85 @@
   "rm": {
    "rules-to-learning": {
     "ops": 1964,
-    "h": "3bc850fa2c1c99bc",
+    "h": "781a809c41625cf9",
     "ch": "0ec02dfc97430d38",
     "cv": "ab536c9540fa4515"
    },
    "machine-learning": {
     "ops": 8369,
-    "h": "67ea932508cf2aa6",
+    "h": "921c84ebd446f7d0",
     "ch": "f79cb867cf03b773",
     "cv": "2aada1f83fbbcedb"
    },
    "big-data": {
     "ops": 5790,
-    "h": "e18e88e1104b57bb",
+    "h": "9c79460ee8ff353a",
     "ch": "49de954a719beff2",
     "cv": "2aada1f83fbbcedb"
    },
    "neural-nets": {
     "ops": 4118,
-    "h": "f30e945c67031d0d",
+    "h": "bf6723cfddaa5ddc",
     "ch": "bf956567285f3bed",
     "cv": "ab536c9540fa4515"
    },
    "transformers": {
     "ops": 1781,
-    "h": "56721a8c92396323",
+    "h": "09ee9913f0cd7099",
     "ch": "a070685c3c2a5398",
     "cv": "2aada1f83fbbcedb"
    },
    "slm-llm": {
     "ops": 1305,
-    "h": "8a65e20a18282f47",
+    "h": "4c829b2fea1ca4bf",
     "ch": "812ac8588d9892ec",
     "cv": "2f1c3f1fc9dc5931"
    },
    "pretrain-posttrain": {
     "ops": 942,
-    "h": "b54691561d7cf6a8",
+    "h": "8d0e5f19b8475657",
     "ch": "49624c962b38cc54",
     "cv": "4ee6b7ceecedafe9"
    },
    "inference-zoo": {
     "ops": 551,
-    "h": "dbe054f1a43b3109",
+    "h": "f5ecb5b9a0932763",
     "ch": "49de954a719beff2",
     "cv": "d0822dbd0f83efc1"
    },
    "classical-stack": {
     "ops": 749,
-    "h": "21a2bcdb991a7f87",
+    "h": "98400efbea1c5815",
     "ch": "49de954a719beff2",
     "cv": "2aada1f83fbbcedb"
    },
    "quantum-sim": {
     "ops": 704,
-    "h": "59af44d7f7e135e8",
+    "h": "ed1965db2df76273",
     "ch": "70b21d9bc6797997",
     "cv": "2aada1f83fbbcedb"
    },
    "hybrid-quantum": {
     "ops": 205,
-    "h": "631aa8ffca33cbe6",
+    "h": "d74a44813c3da1a6",
     "ch": "4faa3a08aa1b9beb",
     "cv": "2aada1f83fbbcedb"
    },
    "your-run": {
     "ops": 257,
-    "h": "dc5bd822c176dc62",
+    "h": "599394f6113f9fcd",
     "ch": "49de954a719beff2",
     "cv": "2aada1f83fbbcedb"
    },
    "walls": {
     "ops": 382,
-    "h": "28316ef63a9d24e6",
+    "h": "05e54ecaff3038a3",
     "ch": "6c974f36364fdf18",
     "cv": "2aada1f83fbbcedb"
    },
    "levers": {
     "ops": 390,
-    "h": "03f4ed8e2769364e",
+    "h": "5b3b37a5f92c3080",
     "ch": "d6a95057216f4892",
     "cv": "2aada1f83fbbcedb"
    },
@@ -94,31 +94,31 @@
    },
    "quantum-lever": {
     "ops": 498,
-    "h": "f265e56315e4e518",
+    "h": "bf3f065bfe73a2e3",
     "ch": "d362f35b7c8003d7",
     "cv": "2aada1f83fbbcedb"
    },
    "metric": {
     "ops": 454,
-    "h": "e4cd60b90dfb9997",
+    "h": "1352e5d4250d3276",
     "ch": "05d1e4ff92266862",
     "cv": "2aada1f83fbbcedb"
    },
    "efficiency": {
     "ops": 1395,
-    "h": "0a5e86ef734619d6",
+    "h": "a4192b7deb825e0d",
     "ch": "6febf65af802c990",
     "cv": "ab536c9540fa4515"
    },
    "roofline": {
     "ops": 1034,
-    "h": "3eae596a7e50a8be",
+    "h": "1d0f2a05378285de",
     "ch": "df49344b9f99683b",
     "cv": "2aada1f83fbbcedb"
    },
    "deutsch-jozsa": {
     "ops": 665,
-    "h": "6d22f6f946429e4e",
+    "h": "f5067efac5547d03",
     "ch": "07d05e7ce189938e",
     "cv": "2aada1f83fbbcedb"
    },
@@ -130,13 +130,13 @@
    },
    "superdense": {
     "ops": 289,
-    "h": "1e0403569ebf25df",
+    "h": "7c98281e0a228a42",
     "ch": "ee100a13780821a2",
     "cv": "2aada1f83fbbcedb"
    },
    "landauer": {
     "ops": 317,
-    "h": "80473bea392faa92",
+    "h": "486edd026003f699",
     "ch": "d0c90bf7a5841aed",
     "cv": "2aada1f83fbbcedb"
    },
@@ -154,91 +154,91 @@
    },
    "bv": {
     "ops": 2902,
-    "h": "def8f8aae771e2bb",
+    "h": "58a0a995bcbe3cc5",
     "ch": "d38766d30f29c220",
     "cv": "2aada1f83fbbcedb"
    },
    "hamming": {
     "ops": 2031,
-    "h": "a1c32d03b169ed5d",
+    "h": "b423564318f733f4",
     "ch": "071793e48a633a7b",
     "cv": "ab536c9540fa4515"
    },
    "sat3": {
     "ops": 849,
-    "h": "28b0ac337a779c5e",
+    "h": "9473df794be76dba",
     "ch": "2a067ed4e997487e",
     "cv": "2aada1f83fbbcedb"
    },
    "rsa-shor": {
     "ops": 1662,
-    "h": "60176443a6d8a7eb",
+    "h": "934a45acad7d55d9",
     "ch": "75f8275675032e9d",
     "cv": "2aada1f83fbbcedb"
    },
    "chsh": {
     "ops": 914,
-    "h": "eb6859f990f9862d",
+    "h": "c138da6b04f8847e",
     "ch": "65c04e3cc65731ae",
     "cv": "2aada1f83fbbcedb"
    },
    "teleport": {
     "ops": 442,
-    "h": "3e40fc01209bcf5d",
+    "h": "aad122cad9b3ebe0",
     "ch": "c24b05468a766951",
     "cv": "2aada1f83fbbcedb"
    },
    "qec-code": {
     "ops": 773,
-    "h": "1ae7b6a0823dea5b",
+    "h": "66009bd7173c789f",
     "ch": "95eb0bffcc2f3cd2",
     "cv": "2aada1f83fbbcedb"
    },
    "bit": {
     "ops": 2060,
-    "h": "68dfc8324c7739d3",
+    "h": "e6ebef3baa768f73",
     "ch": "2d97b0cff665c52b",
     "cv": "2aada1f83fbbcedb"
    },
    "architectures": {
     "ops": 3546,
-    "h": "301ddf7c63341ba3",
+    "h": "6b2fb4aa1958dd5d",
     "ch": "b0ae17675422eee9",
     "cv": "2aada1f83fbbcedb"
    },
    "entanglement": {
     "ops": 828,
-    "h": "84c54fc31b4ef54d",
+    "h": "ab0027e6db72d66f",
     "ch": "bb95061bf26823af",
     "cv": "2aada1f83fbbcedb"
    },
    "quantum-algorithms": {
     "ops": 534,
-    "h": "b4fb57cb551df5b8",
+    "h": "69a099a91ad77879",
     "ch": "7333ec3c623172b4",
     "cv": "ab536c9540fa4515"
    },
    "noise-qec": {
     "ops": 2839,
-    "h": "557fc80f682bf71b",
+    "h": "0b9d6371e477cc3e",
     "ch": "0306453948cb82c4",
     "cv": "2aada1f83fbbcedb"
    },
    "hardware-zoo": {
     "ops": 127,
-    "h": "ec95b071c52c7907",
+    "h": "8dbc247c4fbe9f2f",
     "ch": "49de954a719beff2",
     "cv": "d0822dbd0f83efc1"
    },
    "qubit-explorer": {
     "ops": 1418,
-    "h": "d744933a4c141e70",
+    "h": "fa1ce8dffbc2916c",
     "ch": "c10e9714d81a3449",
     "cv": "2aada1f83fbbcedb"
    },
    "history": {
     "ops": 373,
-    "h": "4d9fb1f104dcaf04",
+    "h": "fb778d6ca256b51f",
     "ch": "49de954a719beff2",
     "cv": "d0822dbd0f83efc1"
    }
@@ -246,85 +246,85 @@
   "anim": {
    "rules-to-learning": {
     "ops": 1423,
-    "h": "7f1b2fe1a8526a7d",
+    "h": "372d7f077c03238d",
     "ch": "0ec02dfc97430d38",
     "cv": "ab536c9540fa4515"
    },
    "machine-learning": {
     "ops": 10309,
-    "h": "c1b5223507c7ae3f",
+    "h": "1f33583571ed5930",
     "ch": "cd73c4ae2e570db6",
     "cv": "2aada1f83fbbcedb"
    },
    "big-data": {
     "ops": 5344,
-    "h": "40cdb36e9cdfb26b",
+    "h": "0c7ded34e76b3d98",
     "ch": "49de954a719beff2",
     "cv": "2aada1f83fbbcedb"
    },
    "neural-nets": {
     "ops": 3592,
-    "h": "44a6dd0e0eabe8af",
+    "h": "76c4a01560002386",
     "ch": "bf956567285f3bed",
     "cv": "ab536c9540fa4515"
    },
    "transformers": {
     "ops": 3737,
-    "h": "c25d4f10f49d64a3",
+    "h": "2eab9b7035a70857",
     "ch": "a070685c3c2a5398",
     "cv": "2aada1f83fbbcedb"
    },
    "slm-llm": {
     "ops": 3025,
-    "h": "eabf9aa87e3c023b",
+    "h": "c2faa7ad8b6cd2de",
     "ch": "ec5f1c7ea4b99d4a",
     "cv": "2f1c3f1fc9dc5931"
    },
    "pretrain-posttrain": {
     "ops": 6462,
-    "h": "8b00dd1f8404cdf4",
+    "h": "23fe2b232a65cb57",
     "ch": "49624c962b38cc54",
     "cv": "4ee6b7ceecedafe9"
    },
    "inference-zoo": {
     "ops": 1287,
-    "h": "d2fade91affdc4e3",
+    "h": "04b07a58fef2e888",
     "ch": "49de954a719beff2",
     "cv": "d0822dbd0f83efc1"
    },
    "classical-stack": {
     "ops": 5056,
-    "h": "f2177b494f88b7f4",
+    "h": "dd2511effd46318d",
     "ch": "49de954a719beff2",
     "cv": "2aada1f83fbbcedb"
    },
    "quantum-sim": {
     "ops": 619,
-    "h": "c38bf2b4363a113d",
+    "h": "af651529db2466ad",
     "ch": "70b21d9bc6797997",
     "cv": "2aada1f83fbbcedb"
    },
    "hybrid-quantum": {
     "ops": 1232,
-    "h": "73987ac5f107c196",
+    "h": "e337c59f87d6e39c",
     "ch": "4d8a8ef3359ef8c4",
     "cv": "2aada1f83fbbcedb"
    },
    "your-run": {
     "ops": 1588,
-    "h": "27fb1c5721523663",
+    "h": "4824ddafc7b2b700",
     "ch": "49de954a719beff2",
     "cv": "2aada1f83fbbcedb"
    },
    "walls": {
     "ops": 382,
-    "h": "28316ef63a9d24e6",
+    "h": "05e54ecaff3038a3",
     "ch": "6c974f36364fdf18",
     "cv": "2aada1f83fbbcedb"
    },
    "levers": {
     "ops": 390,
-    "h": "03f4ed8e2769364e",
+    "h": "5b3b37a5f92c3080",
     "ch": "d6a95057216f4892",
     "cv": "2aada1f83fbbcedb"
    },
@@ -336,31 +336,31 @@
    },
    "quantum-lever": {
     "ops": 498,
-    "h": "f265e56315e4e518",
+    "h": "bf3f065bfe73a2e3",
     "ch": "d362f35b7c8003d7",
     "cv": "2aada1f83fbbcedb"
    },
    "metric": {
     "ops": 454,
-    "h": "e4cd60b90dfb9997",
+    "h": "1352e5d4250d3276",
     "ch": "05d1e4ff92266862",
     "cv": "2aada1f83fbbcedb"
    },
    "efficiency": {
     "ops": 1395,
-    "h": "0a5e86ef734619d6",
+    "h": "a4192b7deb825e0d",
     "ch": "6febf65af802c990",
     "cv": "ab536c9540fa4515"
    },
    "roofline": {
     "ops": 1034,
-    "h": "3eae596a7e50a8be",
+    "h": "1d0f2a05378285de",
     "ch": "df49344b9f99683b",
     "cv": "2aada1f83fbbcedb"
    },
    "deutsch-jozsa": {
     "ops": 665,
-    "h": "6d22f6f946429e4e",
+    "h": "f5067efac5547d03",
     "ch": "07d05e7ce189938e",
     "cv": "2aada1f83fbbcedb"
    },
@@ -372,13 +372,13 @@
    },
    "superdense": {
     "ops": 289,
-    "h": "1e0403569ebf25df",
+    "h": "7c98281e0a228a42",
     "ch": "ee100a13780821a2",
     "cv": "2aada1f83fbbcedb"
    },
    "landauer": {
     "ops": 317,
-    "h": "80473bea392faa92",
+    "h": "486edd026003f699",
     "ch": "d0c90bf7a5841aed",
     "cv": "2aada1f83fbbcedb"
    },
@@ -396,91 +396,91 @@
    },
    "bv": {
     "ops": 2902,
-    "h": "def8f8aae771e2bb",
+    "h": "58a0a995bcbe3cc5",
     "ch": "d38766d30f29c220",
     "cv": "2aada1f83fbbcedb"
    },
    "hamming": {
     "ops": 2031,
-    "h": "a1c32d03b169ed5d",
+    "h": "b423564318f733f4",
     "ch": "071793e48a633a7b",
     "cv": "ab536c9540fa4515"
    },
    "sat3": {
     "ops": 849,
-    "h": "28b0ac337a779c5e",
+    "h": "9473df794be76dba",
     "ch": "2a067ed4e997487e",
     "cv": "2aada1f83fbbcedb"
    },
    "rsa-shor": {
     "ops": 1662,
-    "h": "60176443a6d8a7eb",
+    "h": "934a45acad7d55d9",
     "ch": "75f8275675032e9d",
     "cv": "2aada1f83fbbcedb"
    },
    "chsh": {
     "ops": 1063,
-    "h": "21e96073d3c90e8f",
+    "h": "4a0f56f183a83c5d",
     "ch": "65c04e3cc65731ae",
     "cv": "2aada1f83fbbcedb"
    },
    "teleport": {
     "ops": 586,
-    "h": "665b0ff0001a37c5",
+    "h": "f2bf7ccba64a37cd",
     "ch": "c24b05468a766951",
     "cv": "2aada1f83fbbcedb"
    },
    "qec-code": {
     "ops": 773,
-    "h": "1ae7b6a0823dea5b",
+    "h": "66009bd7173c789f",
     "ch": "95eb0bffcc2f3cd2",
     "cv": "2aada1f83fbbcedb"
    },
    "bit": {
     "ops": 1824,
-    "h": "8de8e81a6d550b2b",
+    "h": "7ce32b8f7a5521bb",
     "ch": "2d97b0cff665c52b",
     "cv": "2aada1f83fbbcedb"
    },
    "architectures": {
     "ops": 2760,
-    "h": "5a06e85faf0a5833",
+    "h": "f50b42009e8b3cef",
     "ch": "b0ae17675422eee9",
     "cv": "2aada1f83fbbcedb"
    },
    "entanglement": {
     "ops": 584,
-    "h": "303543e0af350f70",
+    "h": "9c50a95e381a7c9c",
     "ch": "bb95061bf26823af",
     "cv": "2aada1f83fbbcedb"
    },
    "quantum-algorithms": {
     "ops": 502,
-    "h": "f2f95e94a5a0c6d1",
+    "h": "dce026e37bbf2973",
     "ch": "7333ec3c623172b4",
     "cv": "ab536c9540fa4515"
    },
    "noise-qec": {
     "ops": 3981,
-    "h": "7b5f854387e2f8ff",
+    "h": "b28ffcb7976283bd",
     "ch": "0306453948cb82c4",
     "cv": "2aada1f83fbbcedb"
    },
    "hardware-zoo": {
     "ops": 760,
-    "h": "9ff1cdf0f1e079f3",
+    "h": "587e9a1a9f448a10",
     "ch": "49de954a719beff2",
     "cv": "d0822dbd0f83efc1"
    },
    "qubit-explorer": {
     "ops": 2468,
-    "h": "16999d9e1c835865",
+    "h": "2911ba03603c8df8",
     "ch": "c10e9714d81a3449",
     "cv": "2aada1f83fbbcedb"
    },
    "history": {
     "ops": 2449,
-    "h": "0e2a1002b5f6167a",
+    "h": "1439d530b43a3857",
     "ch": "49de954a719beff2",
     "cv": "d0822dbd0f83efc1"
    }

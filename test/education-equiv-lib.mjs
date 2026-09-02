@@ -11,8 +11,9 @@
  *
  * …under BOTH reduced-motion (true/false) passes. All entropy is frozen
  * (Math.random seeded LCG, Date.now/performance.now constant, fixed rAF timestamps,
- * theme-dependent deterministic CSS var colors), so two runs of identical code produce
- * byte-identical op streams. A refactor is accepted only if every module's op stream,
+ * theme-dependent deterministic CSS var colors) and every float is quantized to 8
+ * significant digits (see ser()), so two runs of identical code — on any Node version or
+ * CPU architecture — produce byte-identical op streams. A refactor is accepted only if every module's op stream,
  * final controls-DOM snapshot, and canvas style/attr snapshot hash-match the committed
  * baseline (test/fixtures/education-baseline.json).
  *
@@ -35,11 +36,22 @@ export const FULL_DUMP_PATH = process.env.EDU_BASELINE_FULL ||
   path.join(os.tmpdir(), 'education-baseline-full.json');
 
 // ---- serialization -----------------------------------------------------------
+// Floats are quantized to 8 significant digits before hashing. Transcendental math
+// (sin/cos/exp/pow) differs in the last ulp between V8 versions and CPU
+// architectures — a baseline captured on arm64/Node 24 failed on x86/Node 22 over a
+// 274.57709837107626 vs 274.5770983710763 lineTo() coordinate. 8 digits is far below
+// any visible change (sub-micro-pixel) and far above ulp noise, so a real behaviour
+// change still flips the hash while platform noise does not. Long decimals embedded
+// in strings (e.g. a label built from an un-rounded number) get the same treatment.
+const QUANT_DIGITS = 8;
+const quant = n => Number(n.toPrecision(QUANT_DIGITS)) || 0; // `|| 0` folds -0 into 0
+const LONG_DECIMAL = /-?\d+\.\d{9,}(?:e[+-]?\d+)?/g;
 function ser(v) {
   if (v === null) return null;
   const t = typeof v;
-  if (t === 'number') return Number.isFinite(v) ? v : `<${String(v)}>`;
-  if (t === 'string' || t === 'boolean') return v;
+  if (t === 'number') return Number.isFinite(v) ? quant(v) : `<${String(v)}>`;
+  if (t === 'string') return v.replace(LONG_DECIMAL, m => String(quant(Number(m))));
+  if (t === 'boolean') return v;
   if (t === 'undefined') return '<undef>';
   if (t === 'function') return '<fn>';
   if (Array.isArray(v)) return v.map(ser);
