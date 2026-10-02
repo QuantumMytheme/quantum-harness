@@ -44,6 +44,28 @@ The initial state matters: from a Néel state the symmetric ansatz stalls 0.5 t 
 4 layers. From the ground state of the x-bond hopping alone (a closed-shell product of bonding
 orbitals) it converges.
 
+Pair binding through the quantum route (`pair_binding_vqe.py`, U = 3, 3 layers, one angle per bond):
+VQE energies at N = 2, 3, 4 are each within 6×10⁻⁴ t of exact, giving **Δ_pb = −0.0357 t vs exact
+−0.0363 t**. Tying both x bonds to one angle (as at half filling) stalls N = 2 at 1.3 t and N = 3 at
+0.7 t above exact, because the doped start states fill only some of the x bonds.
+
+Noise sweep (`noise_sweep.py`, depolarizing, p₁q = p₂q / 10, the same circuits, 164–172 two-qubit gates):
+
+| p₂q | Δ_pb raw | Δ_pb post-selected on (N↑, N↓) | kept (N = 4) |
+|---|---|---|---|
+| 0 | −0.0357 | −0.0357 | 100% |
+| 1×10⁻⁴ | +0.0061 | −0.0177 | 98% |
+| 3×10⁻⁴ | +0.0842 | +0.0186 | 93% |
+| 1×10⁻³ | +0.3045 | +0.1465 | 80% |
+| 3×10⁻³ | +0.6163 | +0.4990 | 54% |
+| 1×10⁻² | +0.4776 | +1.1050 | 22% |
+
+**The binding signal is gone by p₂q ≈ 1×10⁻⁴ raw and ≈ 2×10⁻⁴ with post-selection.** Today's best
+two-qubit error rates are around 10⁻³, a few ×10⁻⁴ on the best devices, so these circuits run as-is
+on hardware would measure noise, not pairing. The hardware step has to cut the two-qubit count by an
+order of magnitude, add error mitigation tested first in this simulator, or measure a larger signal
+than a 0.04 t second difference.
+
 ## Limits
 
 - Small clusters mislead about the bulk. The plaquette's pair binding is real, but whether the
@@ -55,9 +77,10 @@ orbitals) it converges.
 
 ## Next
 
-1. Noise sweep with `density_matrix.py`: the gate-error rate at which the d-wave pair binding
-   disappears.
-2. Pair binding through the quantum route: VQE at N = 2, 3, 4 and Δ_pb from the three energies.
+1. Shallower circuits: a fermionic-swap layout on a line, fewer layers, symmetry-reduced angles;
+   re-run the noise sweep and report the new threshold.
+2. Error mitigation in simulation first (zero-noise extrapolation on the density-matrix simulator),
+   judged against the exact Δ_pb before any hardware time is spent.
 3. Real QPU: the plaquette on a free-tier device, mapped to its coupling graph, reported against
    the exact answer.
 4. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
