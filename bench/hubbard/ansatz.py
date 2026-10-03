@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "quantum-judge"))
 import sim  # noqa: E402
 
 NATIVE = ["x", "h", "s", "sdg", "rz", "cx", "rzz"]
+NATIVE_COMPACT = ["x", "h", "s", "sdg", "rz", "ry", "cx", "rzz"]
 
 
 def pauli_rotation(ops, pauli, phi):
@@ -48,7 +49,29 @@ def hop(ops, n, a, b, theta):
         pauli_rotation(ops, "".join(chars), theta / 2)
 
 
-def hva(cluster, params, occupied, groups=("x", "y")):
+def hop_compact(ops, n, a, b, theta):
+    """Same unitary as hop(), with 2 CNOTs for the (a, b) core instead of 4.
+    Frame C = CX(a,b) . (H_a x S_b) maps X_a X_b -> Y_b and Y_a Y_b -> Y_a (found by search over one-CNOT
+    Cliffords), so exp(-i theta/2 (XX + YY)) = C^dag (RY_a(theta) RY_b(theta)) C. A Jordan-Wigner string
+    is first folded into its last qubit m by a CNOT ladder; each Y then picks up Z_m and costs 2 CNOTs."""
+    a, b = sorted((a, b))
+    mid = list(range(a + 1, b))
+    ladder = [{"gate": "cx", "q": [mid[k], mid[k + 1]]} for k in range(len(mid) - 1)]
+    frame = [{"gate": "h", "q": [a]}, {"gate": "s", "q": [b]}, {"gate": "cx", "q": [a, b]}]
+    unframe = [{"gate": "cx", "q": [a, b]}, {"gate": "sdg", "q": [b]}, {"gate": "h", "q": [a]}]
+    ops += ladder + frame
+    if not mid:
+        ops += [{"gate": "ry", "q": [a], "params": [theta]}, {"gate": "ry", "q": [b], "params": [theta]}]
+    else:
+        pauli = ["I"] * n
+        for q in (a, b):
+            pauli = ["I"] * n
+            pauli[q], pauli[mid[-1]] = "Y", "Z"
+            pauli_rotation(ops, "".join(pauli), theta / 2)
+    ops += unframe + ladder[::-1]
+
+
+def hva(cluster, params, occupied, groups=("x", "y"), compact=False):
     """params: [gamma_1, theta_1[group]..., gamma_2, ...] for len(params) / (1 + len(groups)) layers.
     occupied: modes set to |1> by the initial X gates."""
     n = cluster.n_modes
@@ -66,7 +89,7 @@ def hva(cluster, params, occupied, groups=("x", "y")):
                 if lab != group:
                     continue
                 for spin in (0, 1):
-                    hop(ops, n, cluster.mode(i, spin), cluster.mode(j, spin), theta)
+                    (hop_compact if compact else hop)(ops, n, cluster.mode(i, spin), cluster.mode(j, spin), theta)
     for op in ops:
         if "params" in op:
             op["params"] = [float(x) for x in op["params"]]

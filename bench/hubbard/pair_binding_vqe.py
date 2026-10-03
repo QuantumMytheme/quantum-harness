@@ -37,19 +37,20 @@ FREE = hb.Cluster(cluster.n_sites, [(i, j, t, f"b{k}") for k, (i, j, t, _) in en
 GROUPS = tuple(f"b{k}" for k in range(len(cluster.bonds)))
 
 
-def prep(N):
+def prep(N, compact=False):
     ops = []
     for spin, (i, j) in FILL[N]:
         a, b = cluster.mode(i, spin), cluster.mode(j, spin)
         ops.append({"gate": "x", "q": [a]})
-        az.hop(ops, N_Q, a, b, np.pi / 4)
+        (az.hop_compact if compact else az.hop)(ops, N_Q, a, b, np.pi / 4)
         ops.append({"gate": "rz", "q": [b], "params": [np.pi / 2]})
     return ops
 
 
-def circuit(N, params):
-    c = az.hva(FREE, list(params), [], GROUPS)
-    c["ops"] = prep(N) + c["ops"]
+def circuit(N, params, compact=False):
+    """compact=True: the same unitary with hop_compact (about 40% fewer two-qubit gates)."""
+    c = az.hva(FREE, list(params), [], GROUPS, compact=compact)
+    c["ops"] = prep(N, compact) + c["ops"]
     for op in c["ops"]:
         if "params" in op:
             op["params"] = [float(v) for v in op["params"]]

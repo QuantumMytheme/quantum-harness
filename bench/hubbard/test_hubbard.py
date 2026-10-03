@@ -88,6 +88,47 @@ def main():
     record("Lanczos ground energy equals dense on the 2x3 ladder (400 states)",
            abs(e_dense - e_lanc) < 1e-9, f"diff {abs(e_dense - e_lanc):.1e}")
 
+    # 8. compact hops are the same unitary (DECLARED.md item 8)
+    import ansatz as az
+    sys.path.insert(0, os.path.join(HERE, "..", "quantum-judge"))
+    import density_matrix as dm
+    import fastdm
+    import sim
+
+    def unitary(ops, n):
+        cols = []
+        for k in range(2 ** n):
+            st = np.zeros(2 ** n, dtype=complex); st[k] = 1
+            for op in ops:
+                st = sim.apply(st, n, sim.gate_matrix(op["gate"], op.get("params", [])), op["q"])
+            cols.append(st)
+        return np.array(cols).T
+
+    worst = 0.0
+    for a, b in ((0, 1), (0, 3), (1, 3), (0, 4)):
+        for th in (0.3, -1.1, 2.0):
+            o1, o2 = [], []
+            az.hop(o1, 5, a, b, th); az.hop_compact(o2, 5, a, b, th)
+            A, B = unitary(o1, 5), unitary(o2, 5)
+            ph = np.vdot(B.ravel(), A.ravel()); ph /= abs(ph)
+            worst = max(worst, float(np.abs(A - ph * B).max()))
+    record("8 hop_compact equals hop (adjacent, 1-, 2- and 3-qubit JW strings)", worst < 1e-12, f"max err {worst:.1e}")
+
+    # fastdm reproduces the judge's density-matrix simulator
+    rng = np.random.default_rng(0)
+    ops = []
+    for _ in range(40):
+        if rng.random() < 0.4:
+            q = [int(x) for x in rng.choice(4, 2, replace=False)]
+            ops.append({"gate": "rzz", "q": q, "params": [float(rng.normal())]} if rng.random() < 0.5 else {"gate": "cx", "q": q})
+        else:
+            ops.append({"gate": "ry", "q": [int(rng.integers(4))], "params": [float(rng.normal())]} if rng.random() < 0.5
+                       else {"gate": str(rng.choice(["h", "s", "sdg", "x"])), "q": [int(rng.integers(4))]})
+    c = {"n_qubits": 4, "ops": ops}
+    diff = float(np.abs(dm.simulate_density(c, {"depolarizing_1q": 0.01, "depolarizing_2q": 0.03})
+                        - fastdm.simulate_density(c, 0.01, 0.03)).max())
+    record("fastdm equals density_matrix.py on a random noisy 4-qubit circuit", diff < 1e-12, f"max err {diff:.1e}")
+
     n_ok = sum(ok for _, ok in results)
     print(f"\n{n_ok}/{len(results)} checks passed")
     return 0 if n_ok == len(results) else 1

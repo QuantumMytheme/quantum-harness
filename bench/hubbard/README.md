@@ -66,6 +66,36 @@ on hardware would measure noise, not pairing. The hardware step has to cut the t
 order of magnitude, add error mitigation tested first in this simulator, or measure a larger signal
 than a 0.04 t second difference.
 
+Shallower circuits + zero-noise extrapolation (`mitigation.py`; pass/fail fixed beforehand in
+`DECLARED.md` items 8–11). `hop_compact` is the same unitary with 2 CNOTs per adjacent hop and 8 per
+wrap-around bond, so the 3-layer circuits drop from 164–172 to **100–104 two-qubit gates** with
+identical ideal answers. ZNE: local unitary folding at noise scales 1, 3, 5, quadratic Richardson
+on the post-selected energies, per N, then Δ_pb. `fastdm.py` reproduces the judge's density-matrix
+simulator to 1e-16, 23× faster.
+
+| p₂q | raw | post-selected | ZNE (quadratic, declared) | ZNE (linear) | declared pass | shots per setting, 3σ (lower bound) |
+|---|---|---|---|---|---|---|
+| 1×10⁻⁴ | −0.0132 | −0.0274 | −0.0357 | −0.0359 | pass | 3.4×10⁴ |
+| 3×10⁻⁴ | +0.0299 | −0.0106 | −0.0358 | −0.0369 | pass | 1.1×10⁵ |
+| 1×10⁻³ | +0.1610 | +0.0494 | **−0.0405** | −0.0394 | **pass** | 4.5×10⁵ |
+| 3×10⁻³ | +0.4024 | +0.2283 | −0.1024 | +0.0921 | fail | 2.0×10⁶ |
+
+Exact Δ_pb = −0.0363 t. Compact circuits alone keep the post-selected binding to between 3×10⁻⁴
+and 1×10⁻³ (predicted ~3×10⁻⁴). With ZNE the binding is recovered at 1×10⁻³, within 12% of exact,
+and lost at 3×10⁻³.
+
+How far to trust that:
+
+- Here p₂q is depolarizing strength per qubit after each two-qubit gate; the matching two-qubit gate
+  infidelity is about 4p/3, so the pass at 1×10⁻³ corresponds to ~1.3×10⁻³ gate error.
+- Depolarizing noise is the case ZNE handles best. Real devices add coherent errors, crosstalk,
+  leakage and readout error, which extrapolate worse.
+- The shot counts are lower bounds (they assume H is sampled in its eigenbasis). Measuring the
+  ~20 Pauli terms in commuting groups costs more, and there are 9 settings (3 electron numbers ×
+  3 noise scales): a few million shots at 1×10⁻³ before measurement-group overhead.
+- The compact circuits use the qubit pairs of an all-to-all device (trapped ions). A
+  nearest-neighbour superconducting layout would add SWAPs.
+
 ## Limits
 
 - Small clusters mislead about the bulk. The plaquette's pair binding is real, but whether the
@@ -77,11 +107,9 @@ than a 0.04 t second difference.
 
 ## Next
 
-1. Shallower circuits: a fermionic-swap layout on a line, fewer layers, symmetry-reduced angles;
-   re-run the noise sweep and report the new threshold.
-2. Error mitigation in simulation first (zero-noise extrapolation on the density-matrix simulator),
-   judged against the exact Δ_pb before any hardware time is spent.
-3. Real QPU: the plaquette on a free-tier device, mapped to its coupling graph, reported against
+1. Before hardware time: add readout error and a coherent over-rotation to the noise model and
+   re-run the mitigation judged the same way; count shots with real measurement groups.
+2. Real QPU: the plaquette on a free-tier device, mapped to its coupling graph, reported against
    the exact answer.
-4. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
+3. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
    nickelate parameters.
