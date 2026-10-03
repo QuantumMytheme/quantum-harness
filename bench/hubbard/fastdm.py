@@ -47,7 +47,8 @@ def _depolarize(t, n, q, p):
     return acc
 
 
-def simulate_density(circuit, p1=0.0, p2=0.0):
+def simulate_density(circuit, p1=0.0, p2=0.0, zz=0.0):
+    """zz: coherent ZZ over-rotation rzz(zz) applied after every two-qubit gate (no extra depolarizing)."""
     n = int(circuit["n_qubits"])
     t = np.zeros([2] * (2 * n), dtype=complex)
     t[(0,) * (2 * n)] = 1.0
@@ -55,6 +56,8 @@ def simulate_density(circuit, p1=0.0, p2=0.0):
         qs = list(op["q"])
         U = sim.gate_matrix(op["gate"].lower(), op.get("params", []))
         t = _unitary(t, n, U, qs)
+        if zz and len(qs) == 2:
+            t = _unitary(t, n, sim.gate_matrix("rzz", [zz]), qs)
         for q in qs:
             t = _depolarize(t, n, q, p1 if len(qs) == 1 else p2)
     return t.reshape(2 ** n, 2 ** n)

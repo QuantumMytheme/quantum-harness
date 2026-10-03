@@ -96,6 +96,29 @@ How far to trust that:
 - The compact circuits use the qubit pairs of an all-to-all device (trapped ions). A
   nearest-neighbour superconducting layout would add SWAPs.
 
+Device-like measurement and noise (`realistic.py`; rule fixed beforehand in `DECLARED.md` items 12–15).
+Three number-conserving measurement settings (all-Z, x bonds, y bonds; each hopping pair rotated by
+S then a compact hop at π/4, checked diagonal in code), coherent rzz(ε) after every two-qubit gate,
+1% readout flips; protocol = confusion inversion → post-selection → quadratic Richardson ZNE.
+
+| case | post-selected | ZNE | declared rule | shots per setting (×27 settings) |
+|---|---|---|---|---|
+| **p₂q 1×10⁻³, ε 0.02, readout 1% (headline)** | +0.0396 | **−0.0456** | **pass** (26% off) | 1.5×10⁶ |
+| p₂q 3×10⁻⁴, ε 0.02, readout 1% | −0.0243 | −0.0630 | **fail** (74% off) | 1.2×10⁶ |
+| p₂q 1×10⁻³, ε 0, readout 1% | +0.0524 | −0.0419 | pass | 1.4×10⁶ |
+| p₂q 1×10⁻³, ε 0.02, readout 0 | +0.0396 | −0.0456 | pass | 1.4×10⁶ |
+| p₂q 1×10⁻³, ε 0, readout 0 | +0.0524 | −0.0419 | pass | 1.3×10⁶ |
+
+The headline passes, but the run that fails is the informative one. **With less depolarizing noise
+(3×10⁻⁴) the coherent ZZ error is not washed out, and folding amplifies it non-polynomially, so the
+extrapolation overshoots** (the same case without coherent error gave −0.0358 in `mitigation.py`).
+The pass at 1×10⁻³ therefore partly relies on depolarizing noise randomizing the coherent part. A
+device run needs Pauli twirling (randomized compiling) to make coherent errors stochastic before
+ZNE. Readout error at 1% costs almost nothing once the confusion matrix is inverted.
+
+Shot cost: ~1.4×10⁶ shots per setting × 27 settings ≈ 4×10⁷ shots for a 3σ Δ_pb. That is far
+beyond a free tier's monthly QPU minutes.
+
 ## Limits
 
 - Small clusters mislead about the bulk. The plaquette's pair binding is real, but whether the
@@ -107,9 +130,9 @@ How far to trust that:
 
 ## Next
 
-1. Before hardware time: add readout error and a coherent over-rotation to the noise model and
-   re-run the mitigation judged the same way; count shots with real measurement groups.
-2. Real QPU: the plaquette on a free-tier device, mapped to its coupling graph, reported against
-   the exact answer.
+1. Pauli twirling in simulation, re-judged at 3×10⁻⁴ and 1×10⁻³ with coherent error.
+2. Real QPU, first run sized to a free tier: the `hubbard2x2` half-filled energy and its held-out
+   spin correlations (signals of order 1, thousands of shots), mapped to the device's coupling graph
+   and reported against the exact answer. Δ_pb on hardware only once shots and error rates allow.
 3. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
    nickelate parameters.
