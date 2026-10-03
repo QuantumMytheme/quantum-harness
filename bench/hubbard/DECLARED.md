@@ -92,3 +92,10 @@ hardware time, the same pass rule is re-applied under a device-like model:
     ε = 0.02 rad and p_ro = 1%. Also reported: p₂q = 3×10⁻⁴, and ε = 0 / p_ro = 0 variants, so the
     cost of each effect is visible. Shots are counted per setting (3 N × 3 scales × 3 settings = 27)
     from the actual measured distributions.
+
+## Addendum 3, 2026-10-02 (before the twirled run)
+
+16. **Pauli twirling.** Modelled exactly: the twirled coherent error rzz(ε) becomes the stochastic
+    channel ρ → (1 − sin²(ε/2)) ρ + sin²(ε/2) ZZ ρ ZZ after every two-qubit gate. Same protocol and
+    item-10 rule, ε = 0.02, readout 1%, at p₂q = 3×10⁻⁴ (failed untwirled) and 1×10⁻³. Expected:
+    both pass, with the 3×10⁻⁴ estimate close to the ε = 0 value (−0.036).
