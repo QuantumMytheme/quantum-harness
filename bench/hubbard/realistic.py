@@ -29,6 +29,8 @@ import sim  # noqa: E402
 
 CL, N_Q = pbv.cluster, pbv.N_Q
 SCALES, RICH = mit.SCALES, mit.RICHARDSON
+TWIRL = "--twirl" in sys.argv
+CASES_TWIRL = [(3e-4, 0.02, 0.01, "twirled, lower depolarizing"), (1e-3, 0.02, 0.01, "twirled, headline")]
 CASES = [  # (p2, eps, p_ro, label)
     (1e-3, 0.02, 0.01, "headline"),
     (3e-4, 0.02, 0.01, "lower depolarizing"),
@@ -93,7 +95,7 @@ def main(U, layers):
     sets = settings(U)
     in_sector = {N: np.array([hb.sector_of_index(i, CL) == pbv.SECTOR[N] for i in range(2 ** N_Q)]) for N in (2, 3, 4)}
     rows = []
-    for p2, eps, pro, label in CASES:
+    for p2, eps, pro, label in (CASES_TWIRL if TWIRL else CASES):
         E, var, keep = {}, {}, {}
         for N in (2, 3, 4):
             prep = pbv.circuit(N, by_N[str(N)]["params"], compact=True)
@@ -101,7 +103,7 @@ def main(U, layers):
                 e_tot, v_tot, k_min = 0.0, 0.0, 1.0
                 for name, rot, f in sets:
                     c = mit.fold({"n_qubits": N_Q, "ops": prep["ops"] + rot}, s)
-                    rho = fastdm.simulate_density(c, p2 / 10, p2, eps)
+                    rho = fastdm.simulate_density(c, p2 / 10, p2, eps, twirl=TWIRL)
                     measured = readout(np.clip(np.real(np.diag(rho)), 0, None), pro)
                     q = readout(measured, pro, invert=True) * in_sector[N]
                     w = q.sum()
@@ -123,10 +125,11 @@ def main(U, layers):
         rows.append(row)
         print(f"{label:58s} p2 {p2:.0e} eps {eps} ro {pro}: post-sel {pb(unmit):+.4f}  ZNE {pb(zne):+.4f}  "
               f"{'PASS' if ok else 'fail'}  shots/setting {shots:.1e}   [exact {pb_exact:+.4f}]", flush=True)
-    with open(os.path.join(HERE, "results", f"realistic-U{U:g}-L{layers}.json"), "w") as fh:
+    with open(os.path.join(HERE, "results", f"realistic-U{U:g}-L{layers}{'-twirled' if TWIRL else ''}.json"), "w") as fh:
         json.dump({"U": U, "layers": layers, "pb_exact": pb_exact, "rows": rows,
                    "protocol": "readout inversion -> post-selection -> quadratic Richardson ZNE (1,3,5) per N"}, fh, indent=1)
 
 
 if __name__ == "__main__":
-    main(float(sys.argv[1]) if len(sys.argv) > 1 else 3.0, int(sys.argv[2]) if len(sys.argv) > 2 else 3)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    main(float(args[0]) if args else 3.0, int(args[1]) if len(args) > 1 else 3)

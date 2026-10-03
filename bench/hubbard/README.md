@@ -116,6 +116,11 @@ The pass at 1×10⁻³ therefore partly relies on depolarizing noise randomizing
 device run needs Pauli twirling (randomized compiling) to make coherent errors stochastic before
 ZNE. Readout error at 1% costs almost nothing once the confusion matrix is inverted.
 
+With Pauli twirling (`realistic.py --twirl`, `DECLARED.md` item 16; modelled exactly as the
+stochastic ZZ channel the twirl produces) both cases pass as predicted: **p₂q 3×10⁻⁴ → −0.0355
+(2% off; untwirled −0.0630), p₂q 1×10⁻³ → −0.0417 (15% off)**. So the full protocol is compact
+circuits, number-conserving measurement, readout inversion, post-selection, twirling and ZNE.
+
 Shot cost: ~1.4×10⁶ shots per setting × 27 settings ≈ 4×10⁷ shots for a 3σ Δ_pb. That is far
 beyond a free tier's monthly QPU minutes.
 
@@ -130,9 +135,8 @@ beyond a free tier's monthly QPU minutes.
 
 ## Next
 
-1. Pauli twirling in simulation, re-judged at 3×10⁻⁴ and 1×10⁻³ with coherent error.
-2. Real QPU, first run sized to a free tier: the `hubbard2x2` half-filled energy and its held-out
+1. Real QPU, first run sized to a free tier: the `hubbard2x2` half-filled energy and its held-out
    spin correlations (signals of order 1, thousands of shots), mapped to the device's coupling graph
    and reported against the exact answer. Δ_pb on hardware only once shots and error rates allow.
-3. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
+2. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
    nickelate parameters.
