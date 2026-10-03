@@ -73,3 +73,22 @@ Context: the noise sweep on the ~170-two-qubit-gate circuits lost the plaquette'
 11. **Shots are not free.** The density-matrix simulator gives exact expectation values. Any pass
     is reported with an estimate of the shots a real device would need to resolve Δ_pb at 3σ,
     including the variance amplification of the extrapolation and the post-selection discard.
+
+## Addendum 2, 2026-10-02 (before the realistic-noise run)
+
+Item 10 passed at p₂q = 1×10⁻³ under depolarizing noise with exact expectation values. Before any
+hardware time, the same pass rule is re-applied under a device-like model:
+
+12. **Measurement as a device does it.** Three settings: all-Z (interaction terms); the x bonds of
+    both spins; the y bonds of both spins. Each hopping pair is rotated by S then a compact hop at
+    θ = π/4, which preserves electron number, so every setting can still be post-selected on
+    (N↑, N↓). Precondition (checked in code, not a result): each rotated group is diagonal.
+13. **Noise model.** Depolarizing as before (p₁q = p₂q / 10), plus a coherent ZZ over-rotation
+    rzz(ε = 0.02 rad) after every two-qubit gate, plus symmetric readout bit-flip p_ro = 1% per
+    qubit. Folding applies to every gate, including the measurement rotations.
+14. **Protocol (fixed now):** readout correction by inverting the known per-qubit confusion
+    matrix → post-selection on (N↑, N↓) → quadratic Richardson ZNE at scales 1, 3, 5 per N → Δ_pb.
+15. **Pass/fail:** the item-10 rule (negative, within ±50% of −0.0363 t) at p₂q = 1×10⁻³ with
+    ε = 0.02 rad and p_ro = 1%. Also reported: p₂q = 3×10⁻⁴, and ε = 0 / p_ro = 0 variants, so the
+    cost of each effect is visible. Shots are counted per setting (3 N × 3 scales × 3 settings = 27)
+    from the actual measured distributions.
