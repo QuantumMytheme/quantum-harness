@@ -51,3 +51,25 @@ is resolved.
    REJECT a forged energy claim (exit 4), REJECT the best product state as underpowered
    (exit 5), and REJECT a circuit that misses the held-out correlation (exit 6) if one can be
    built honestly.
+
+## Addendum, 2026-10-02 (before the shallow-circuit sweep and before any mitigation run)
+
+Context: the noise sweep on the ~170-two-qubit-gate circuits lost the plaquette's pair binding
+(Δ_pb = −0.0363 t at U = 3) by p₂q ≈ 1×10⁻⁴ raw, ≈ 2×10⁻⁴ post-selected.
+
+8. **Compact circuits are the same unitary.** `hop_compact` (2 CNOTs per adjacent hop, 8 per
+   wrap-around bond) equals `hop` to 1e-12 for every bond geometry used. Verified before this
+   addendum; it is a precondition, not a result. Ideal Δ_pb is therefore unchanged.
+9. **Prediction for the compact sweep.** Two-qubit count per 3-layer circuit falls from ~170 to
+   ~104. Expected: the post-selected threshold moves up by roughly that ratio, to ~3×10⁻⁴. Not
+   1×10⁻³.
+10. **Mitigation pass/fail, fixed now.** Zero-noise extrapolation by local unitary folding
+    (noise scale factors 1, 3, 5), applied to the particle-number post-selected energies, each of
+    N = 2, 3, 4 extrapolated separately, then combined into Δ_pb. **Passes at a given p₂q only if
+    the mitigated Δ_pb is negative and within ±50% of exact (between −0.054 t and −0.018 t).**
+    Read at p₂q = 1×10⁻³ (the headline), also reported at 3×10⁻⁴ and 3×10⁻³. Both linear and
+    quadratic (Richardson) extrapolations are reported; the declared one is **quadratic
+    Richardson through all three points**. The other is shown, never substituted.
+11. **Shots are not free.** The density-matrix simulator gives exact expectation values. Any pass
+    is reported with an estimate of the shots a real device would need to resolve Δ_pb at 3σ,
+    including the variance amplification of the extrapolation and the post-selection discard.
