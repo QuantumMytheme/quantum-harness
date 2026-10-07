@@ -145,6 +145,103 @@ def predict(e2q, e_ro, transpiled):
     return out
 
 
+def counts_to_probs(counts):
+    """Sampler counts ('c7...c0', clbit i = bench qubit i) -> 256-vector in bench order (qubit 0 most significant)."""
+    v = np.zeros(2 ** 8)
+    for bits, c in counts.items():
+        v[int(bits[::-1], 2)] += c
+    return v / v.sum()
+
+
+def confusion(c0, c1):
+    """Per bench qubit (e01, e10) from all-0 and all-1 calibration counts."""
+    out = []
+    for q in range(8):
+        n0 = sum(c0.values()); n1 = sum(c1.values())
+        e01 = sum(c for b, c in c0.items() if b[::-1][q] == "1") / n0
+        e10 = sum(c for b, c in c1.items() if b[::-1][q] == "0") / n1
+        out.append((e01, e10))
+    return out
+
+
+def fold3(isa):
+    """Global fold C·C†·C of an ISA circuit's body (measurements moved to the end), re-translated to the
+    native gates with no optimisation, so no inverse pair is cancelled and the layout is unchanged."""
+    from qiskit import QuantumCircuit, transpile
+    body = isa.remove_final_measurements(inplace=False)
+    folded = body.compose(body.inverse()).compose(body)
+    meas = QuantumCircuit(isa.num_qubits, isa.num_clbits)
+    for inst in isa.data:
+        if inst.operation.name == "measure":
+            meas.append(inst.operation, inst.qubits, inst.clbits)
+    out = QuantumCircuit(isa.num_qubits, isa.num_clbits); out.compose(folded, inplace=True); out.compose(meas, inplace=True)
+    return out
+
+
+def measured_physical(isa):
+    """clbit index -> physical qubit, from the ISA circuit's measurements."""
+    return {isa.find_bit(i.clbits[0]).index: isa.find_bit(i.qubits[0]).index for i in isa.data if i.operation.name == "measure"}
+
+
+def calibration_circuits(isa, n_qubits):
+    from qiskit import QuantumCircuit
+    m = measured_physical(isa); cs = []
+    for ones in (False, True):
+        qc = QuantumCircuit(n_qubits, 8)
+        for cb, pq in m.items():
+            if ones:
+                qc.x(pq)
+            qc.measure(pq, cb)
+        cs.append(qc)
+    return cs
+
+
+def build(backend, seeds=range(8)):
+    """ISA circuits: for each setting the best-of-seeds transpile (scale 1), its fold (scale 3), and calibrations."""
+    from qiskit import transpile
+    gates2 = calib_medians(backend)[2]
+    pubs, meta = [], []
+    for s in rl.settings(U):
+        qc = to_qiskit(ops_for(s)[0], name=s[0])
+        best = min((transpile(qc, backend=backend, optimization_level=3, seed_transpiler=sd) for sd in seeds),
+                   key=lambda t: sum(v for k, v in t.count_ops().items() if k in gates2))
+        f3 = transpile(fold3(best), backend=backend, optimization_level=0, layout_method="trivial", routing_method="none")
+        n1 = sum(v for k, v in best.count_ops().items() if k in gates2); n3 = sum(v for k, v in f3.count_ops().items() if k in gates2)
+        assert n3 == 3 * n1, (s[0], n1, n3)
+        assert measured_physical(f3) == measured_physical(best), "fold changed the measured qubits"
+        cal0, cal1 = (transpile(c, backend=backend, optimization_level=0, layout_method="trivial", routing_method="none")
+                      for c in calibration_circuits(best, backend.num_qubits))
+        for kind, circ in (("scale1", best), ("scale3", f3), ("cal0", cal0), ("cal1", cal1)):
+            pubs.append(circ); meta.append({"setting": s[0], "kind": kind, "cz": sum(v for k, v in circ.count_ops().items() if k in gates2),
+                                            "measured_physical": measured_physical(circ)})
+    return pubs, meta
+
+
+def analyze_job(meta, counts):
+    """counts[i] for pub i. Returns per-scale mitigated/raw results and linear ZNE."""
+    by = {(m["setting"], m["kind"]): c for m, c in zip(meta, counts)}
+    res = {}
+    for scale in ("scale1", "scale3"):
+        probs = {s: counts_to_probs(by[(s, scale)]) for s in ("Z", "x", "y")}
+        conf = {s: confusion(by[(s, "cal0")], by[(s, "cal1")]) for s in ("Z", "x", "y")}
+        sets = {x[0]: x for x in rl.settings(U)}
+        mit, raw = 0.0, 0.0
+        kept, hold_m, hold_r = {}, {}, {}
+        for s in ("Z", "x", "y"):
+            f = sets[s][2]
+            pr = probs[s]; raw += float(pr @ f)
+            pm = invert_readout(pr, conf[s]) * IN_SECTOR; kept[s] = float(pm.sum()); pm = pm / pm.sum(); mit += float(pm @ f)
+            if s == "Z":
+                hold_m = {k: float(pm @ zstring_diag(k)) for k in HOLDOUT}; hold_r = {k: float(pr @ zstring_diag(k)) for k in HOLDOUT}
+                nZ = sum(by[(s, scale)].values()) * kept[s]
+        res[scale] = {"raw": {"energy": raw, "holdout": hold_r}, "mitigated": {"energy": mit, "holdout": hold_m, "kept": kept},
+                      "confusion": {s: conf[s] for s in conf}, "n_kept_Z": nZ}
+    z = lambda a, b: (3 * a - b) / 2
+    res["zne"] = {"energy": z(res["scale1"]["mitigated"]["energy"], res["scale3"]["mitigated"]["energy"]),
+                  "holdout": {k: z(res["scale1"]["mitigated"]["holdout"][k], res["scale3"]["mitigated"]["holdout"][k]) for k in HOLDOUT}}
+    return res
+
+
 def check_conversion():
     """Ideal Qiskit statevector of the state prep must give the exact energy under the bench's Hamiltonian
     (catches qubit-order and angle-convention mismatches). Qiskit is little-endian: reverse to the bench order."""
@@ -158,7 +255,67 @@ def check_conversion():
     return abs(e - rec["energy"]) < 1e-8
 
 
+SHOTS, RANDOMIZATIONS, CAL_SHOTS, USAGE_CAP_S = 24576, 96, 4096, 400
+
+
+def run():
+    """Declared run (DECLARED.md hardware addendum): one Sampler V2 job; device by the declared rule; cancel while
+    queued if IBM's usage estimate exceeds the cap. Writes results/qpu-<job>.json before and after."""
+    import time
+    from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
+    svc = QiskitRuntimeService(name="quantummytheme")
+    usage0 = svc.usage()
+    be = svc.backend("ibm_kingston")
+    if be.status().pending_jobs > 20:
+        be = svc.backend("ibm_fez")
+    e2, ero, _ = calib_medians(be)
+    pubs, meta = build(be)
+    sampler = SamplerV2(mode=be)
+    sampler.options.twirling.enable_gates = True
+    sampler.options.twirling.num_randomizations = RANDOMIZATIONS
+    sampler.options.twirling.shots_per_randomization = "auto"  # 256 on the 24 576-shot circuits, ~43 on calibrations
+    sampler.options.dynamical_decoupling.enable = True
+    sampler.options.dynamical_decoupling.sequence_type = "XY4"
+    job = sampler.run([(c, None, CAL_SHOTS if m["kind"].startswith("cal") else SHOTS) for c, m in zip(pubs, meta)])
+    rec = {"job_id": job.job_id(), "backend": be.name, "submitted": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+           "calibration_medians": {"cz_error": e2, "readout_error": ero}, "pending_at_submit": be.status().pending_jobs,
+           "usage_before_s": usage0.get("usage_consumed_seconds"), "shots": SHOTS, "randomizations": RANDOMIZATIONS,
+           "cal_shots": CAL_SHOTS, "meta": meta}
+    path = os.path.join(HERE, "results", f"qpu-{job.job_id()}.json")
+    json.dump(rec, open(path, "w"), indent=1)
+    print("submitted", job.job_id(), "to", be.name, "->", path, flush=True)
+    for _ in range(60):
+        est = (job.usage_estimation or {}).get("quantum_seconds")
+        if est is not None:
+            print("IBM usage estimate", est, "s", flush=True)
+            if est > USAGE_CAP_S:
+                job.cancel(); print("CANCELLED: estimate over the declared cap", flush=True)
+            break
+        time.sleep(10)
+    return job.job_id()
+
+
+def collect(job_id):
+    from qiskit_ibm_runtime import QiskitRuntimeService
+    svc = QiskitRuntimeService(name="quantummytheme")
+    job = svc.job(job_id)
+    path = os.path.join(HERE, "results", f"qpu-{job_id}.json")
+    rec = json.load(open(path))
+    result = job.result()
+    counts = [r.data[list(r.data.keys())[0]].get_counts() for r in result]
+    rec["counts"] = counts
+    rec["metrics"] = {k: str(v) for k, v in (job.metrics() or {}).items()}
+    rec["usage_after_s"] = svc.usage().get("usage_consumed_seconds")
+    rec["analysis"] = analyze_job(rec["meta"], counts)
+    json.dump(rec, open(path, "w"), indent=1)
+    return rec
+
+
 if __name__ == "__main__":
+    if sys.argv[1] == "run":
+        run()
+    if sys.argv[1] == "collect":
+        r = collect(sys.argv[2]); print(json.dumps(r["analysis"], indent=1)[:4000])
     if sys.argv[1] == "predict":   # predict <e_cz> <e_ro> <n_cz Z> <n_cz x> <n_cz y>
         e2, ero = float(sys.argv[2]), float(sys.argv[3])
         tr = dict(zip(("Z", "x", "y"), map(int, sys.argv[4:7])))
