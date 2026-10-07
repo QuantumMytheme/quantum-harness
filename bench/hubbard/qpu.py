@@ -272,15 +272,15 @@ def check_conversion():
 SHOTS, RANDOMIZATIONS, CAL_SHOTS, USAGE_CAP_S = 24576, 96, 4096, 400
 
 
-def run(scales=(1, 3), shots=SHOTS, cap=USAGE_CAP_S):
+def run(scales=(1, 3), shots=SHOTS, cap=USAGE_CAP_S, force=None):
     """Declared run (DECLARED.md hardware addendum): one Sampler V2 job; device by the declared rule; cancel while
     queued if IBM's usage estimate exceeds the cap. Writes results/qpu-<job>.json before and after."""
     import time
     from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
     svc = QiskitRuntimeService(name="quantummytheme")
     usage0 = svc.usage()
-    be = svc.backend("ibm_kingston")
-    if be.status().pending_jobs > 20:
+    be = svc.backend(force or "ibm_kingston")
+    if force is None and be.status().pending_jobs > 20:
         be = svc.backend("ibm_fez")
     e2, ero, _ = calib_medians(be)
     pubs, meta = build(be, scales=scales)
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     if sys.argv[1] == "run":
         run()
     if sys.argv[1] == "run3":   # addendum 2: scales 1, 3, 5; 49 152 shots; cap 350 s
-        run(scales=(1, 3, 5), shots=49152, cap=350)
+        run(scales=(1, 3, 5), shots=49152, cap=350, force="ibm_kingston")
     if sys.argv[1] == "collect":
         r = collect(sys.argv[2]); print(json.dumps(r["analysis"], indent=1)[:4000])
     if sys.argv[1] == "predict":   # predict <e_cz> <e_ro> <n_cz Z> <n_cz x> <n_cz y>

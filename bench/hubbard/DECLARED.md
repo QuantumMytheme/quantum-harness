@@ -190,3 +190,8 @@ Rules: **H1′** both quadratic-ZNE holdouts within ±0.05 of exact; **H2′** q
 10 % of exact (−5.49 ≥ E ≥ −6.71); **H5 (replication)** this job's scale-1 and scale-3 mitigated energies
 agree with job 1's within 3σ (combined bootstrap); a disagreement is reported as device drift.
 Model A over-shoots the energy (106 %): an over-shoot inside 10 % passes H2′; beyond it fails.
+
+**Deviation, caught before any data (2026-10-06):** the first submission of the addendum-2 job
+(`db2srrm8v0ts73c3fhn0`) was routed to ibm_fez by addendum 1's fallback rule (kingston had > 20 pending).
+Addendum 2 names ibm_kingston, its predictions are kingston's, and H5 replicates a kingston job, so the
+fez job was cancelled while still queued (0 s used) and resubmitted with the backend forced to kingston.

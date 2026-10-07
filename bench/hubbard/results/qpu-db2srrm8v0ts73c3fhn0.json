@@ -1,0 +1,247 @@
+{
+ "job_id": "db2srrm8v0ts73c3fhn0",
+ "backend": "ibm_fez",
+ "submitted": "2026-10-06T21:43:26-0700",
+ "calibration_medians": {
+  "cz_error": 0.0026799097708200686,
+  "readout_error": 0.010498046875
+ },
+ "pending_at_submit": 52,
+ "usage_before_s": 55,
+ "shots": 49152,
+ "scales": [
+  1,
+  3,
+  5
+ ],
+ "randomizations": 96,
+ "cal_shots": 4096,
+ "meta": [
+  {
+   "setting": "Z",
+   "kind": "scale1",
+   "cz": 222,
+   "measured_physical": {
+    "0": 144,
+    "1": 124,
+    "2": 123,
+    "3": 136,
+    "4": 140,
+    "5": 143,
+    "6": 142,
+    "7": 141
+   }
+  },
+  {
+   "setting": "Z",
+   "kind": "scale3",
+   "cz": 666,
+   "measured_physical": {
+    "0": 144,
+    "1": 124,
+    "2": 123,
+    "3": 136,
+    "4": 140,
+    "5": 143,
+    "6": 142,
+    "7": 141
+   }
+  },
+  {
+   "setting": "Z",
+   "kind": "scale5",
+   "cz": 1110,
+   "measured_physical": {
+    "0": 144,
+    "1": 124,
+    "2": 123,
+    "3": 136,
+    "4": 140,
+    "5": 143,
+    "6": 142,
+    "7": 141
+   }
+  },
+  {
+   "setting": "Z",
+   "kind": "cal0",
+   "cz": 0,
+   "measured_physical": {
+    "0": 144,
+    "1": 124,
+    "2": 123,
+    "3": 136,
+    "4": 140,
+    "5": 143,
+    "6": 142,
+    "7": 141
+   }
+  },
+  {
+   "setting": "Z",
+   "kind": "cal1",
+   "cz": 0,
+   "measured_physical": {
+    "0": 144,
+    "1": 124,
+    "2": 123,
+    "3": 136,
+    "4": 140,
+    "5": 143,
+    "6": 142,
+    "7": 141
+   }
+  },
+  {
+   "setting": "x",
+   "kind": "scale1",
+   "cz": 236,
+   "measured_physical": {
+    "0": 2,
+    "1": 4,
+    "2": 16,
+    "3": 3,
+    "4": 23,
+    "5": 22,
+    "6": 21,
+    "7": 24
+   }
+  },
+  {
+   "setting": "x",
+   "kind": "scale3",
+   "cz": 708,
+   "measured_physical": {
+    "0": 2,
+    "1": 4,
+    "2": 16,
+    "3": 3,
+    "4": 23,
+    "5": 22,
+    "6": 21,
+    "7": 24
+   }
+  },
+  {
+   "setting": "x",
+   "kind": "scale5",
+   "cz": 1180,
+   "measured_physical": {
+    "0": 2,
+    "1": 4,
+    "2": 16,
+    "3": 3,
+    "4": 23,
+    "5": 22,
+    "6": 21,
+    "7": 24
+   }
+  },
+  {
+   "setting": "x",
+   "kind": "cal0",
+   "cz": 0,
+   "measured_physical": {
+    "0": 2,
+    "1": 4,
+    "2": 16,
+    "3": 3,
+    "4": 23,
+    "5": 22,
+    "6": 21,
+    "7": 24
+   }
+  },
+  {
+   "setting": "x",
+   "kind": "cal1",
+   "cz": 0,
+   "measured_physical": {
+    "0": 2,
+    "1": 4,
+    "2": 16,
+    "3": 3,
+    "4": 23,
+    "5": 22,
+    "6": 21,
+    "7": 24
+   }
+  },
+  {
+   "setting": "y",
+   "kind": "scale1",
+   "cz": 243,
+   "measured_physical": {
+    "0": 143,
+    "1": 144,
+    "2": 136,
+    "3": 142,
+    "4": 125,
+    "5": 122,
+    "6": 123,
+    "7": 124
+   }
+  },
+  {
+   "setting": "y",
+   "kind": "scale3",
+   "cz": 729,
+   "measured_physical": {
+    "0": 143,
+    "1": 144,
+    "2": 136,
+    "3": 142,
+    "4": 125,
+    "5": 122,
+    "6": 123,
+    "7": 124
+   }
+  },
+  {
+   "setting": "y",
+   "kind": "scale5",
+   "cz": 1215,
+   "measured_physical": {
+    "0": 143,
+    "1": 144,
+    "2": 136,
+    "3": 142,
+    "4": 125,
+    "5": 122,
+    "6": 123,
+    "7": 124
+   }
+  },
+  {
+   "setting": "y",
+   "kind": "cal0",
+   "cz": 0,
+   "measured_physical": {
+    "0": 143,
+    "1": 144,
+    "2": 136,
+    "3": 142,
+    "4": 125,
+    "5": 122,
+    "6": 123,
+    "7": 124
+   }
+  },
+  {
+   "setting": "y",
+   "kind": "cal1",
+   "cz": 0,
+   "measured_physical": {
+    "0": 143,
+    "1": 144,
+    "2": 136,
+    "3": 142,
+    "4": 125,
+    "5": 122,
+    "6": 123,
+    "7": 124
+   }
+  }
+ ],
+ "status": "CANCELLED while queued (0 s used): routed to ibm_fez by the addendum-1 fallback, but addendum 2 declared ibm_kingston; resubmitted to kingston"
+}
