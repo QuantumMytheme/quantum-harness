@@ -29,11 +29,16 @@ it can guide materials design.
 
 1. Pair-binding Δ_pb and the pair-field correlation on 2×4 and 2×6 ladders (Lanczos, extending
    `hubbard.py`), U/t ∈ {6, 8}, t′/t ∈ {0, −0.1, −0.2, −0.3, −0.4}, two doped holes.
-2. Oracle (to be read, quoted and registered before comparing): the reported correlation between the
-   band-structure parameter tied to t′/t and Tc_max across cuprate families (Pavarini et al., Phys. Rev.
-   Lett. 87, 047003 (2001), as recalled; not yet read).
-3. Pass: the sign and ordering of the pairing proxy versus t′/t matches the oracle's trend across ≥ 4
-   points, on both ladder widths. Fail: report it, and the proxy is not used for design.
+2. **Oracle (read 2026-10-07, arXiv cond-mat/0012051 = Pavarini, Dasgupta, Saha-Dasgupta, Jepsen,
+   Andersen, PRL 87, 047003 (2001)):** "For the single-layer materials, we observe a strong correlation
+   between r and Tc max", and Tc max "increases" with r; "one may think of r as t′/t, this holds only for
+   flat layers and when r<0.2"; "t′/t=0.17 for La2CuO4 and 0.33 for Tl2Ba2CuO6" (Tc max ≈ 40 K vs ≈ 90 K).
+   Hedge kept: r is not exactly t′/t beyond 0.2, and the correlation is empirical.
+3. **Declared rule (2026-10-07, before running):** pairing proxy = −Δ_pb (positive = bound pair) for two
+   holes doped into the half-filled ladder, t′ on the plaquette diagonals with the hole-doped sign
+   (t′/t < 0). **Pass** if −Δ_pb increases monotonically with |t′/t| over {0, 0.1, 0.2, 0.3, 0.4} at
+   U/t = 8 on the 2×4 ladder, and the 2×6 ladder agrees in direction between |t′/t| = 0.1 and 0.3.
+   **Fail** otherwise; a fail means this proxy, on these clusters, cannot be used to rank materials.
 
 ## Then (if the proxy passes)
 
