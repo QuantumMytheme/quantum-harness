@@ -164,12 +164,14 @@ def confusion(c0, c1):
     return out
 
 
-def fold3(isa):
-    """Global fold C·C†·C of an ISA circuit's body (measurements moved to the end), re-translated to the
-    native gates with no optimisation, so no inverse pair is cancelled and the layout is unchanged."""
+def fold3(isa, scale=3):
+    """Global fold C·(C†·C)^((scale-1)/2) of an ISA circuit's body (measurements moved to the end), re-translated
+    to the native gates with no optimisation, so no inverse pair is cancelled and the layout is unchanged."""
     from qiskit import QuantumCircuit, transpile
     body = isa.remove_final_measurements(inplace=False)
-    folded = body.compose(body.inverse()).compose(body)
+    folded = body
+    for _ in range((scale - 1) // 2):
+        folded = folded.compose(body.inverse()).compose(body)
     meas = QuantumCircuit(isa.num_qubits, isa.num_clbits)
     for inst in isa.data:
         if inst.operation.name == "measure":
@@ -196,7 +198,7 @@ def calibration_circuits(isa, n_qubits):
     return cs
 
 
-def build(backend, seeds=range(8)):
+def build(backend, seeds=range(8), scales=(1, 3)):
     """ISA circuits: for each setting the best-of-seeds transpile (scale 1), its fold (scale 3), and calibrations."""
     from qiskit import transpile
     gates2 = calib_medians(backend)[2]
@@ -205,13 +207,19 @@ def build(backend, seeds=range(8)):
         qc = to_qiskit(ops_for(s)[0], name=s[0])
         best = min((transpile(qc, backend=backend, optimization_level=3, seed_transpiler=sd) for sd in seeds),
                    key=lambda t: sum(v for k, v in t.count_ops().items() if k in gates2))
-        f3 = transpile(fold3(best), backend=backend, optimization_level=0, layout_method="trivial", routing_method="none")
-        n1 = sum(v for k, v in best.count_ops().items() if k in gates2); n3 = sum(v for k, v in f3.count_ops().items() if k in gates2)
-        assert n3 == 3 * n1, (s[0], n1, n3)
-        assert measured_physical(f3) == measured_physical(best), "fold changed the measured qubits"
+        n1 = sum(v for k, v in best.count_ops().items() if k in gates2)
+        folds = {}
+        for sc in scales:
+            if sc == 1:
+                continue
+            f = transpile(fold3(best, sc), backend=backend, optimization_level=0, layout_method="trivial", routing_method="none")
+            nf = sum(v for k, v in f.count_ops().items() if k in gates2)
+            assert nf == sc * n1, (s[0], sc, n1, nf)
+            assert measured_physical(f) == measured_physical(best), "fold changed the measured qubits"
+            folds[sc] = f
         cal0, cal1 = (transpile(c, backend=backend, optimization_level=0, layout_method="trivial", routing_method="none")
                       for c in calibration_circuits(best, backend.num_qubits))
-        for kind, circ in (("scale1", best), ("scale3", f3), ("cal0", cal0), ("cal1", cal1)):
+        for kind, circ in [("scale1", best)] + [(f"scale{sc}", folds[sc]) for sc in sorted(folds)] + [("cal0", cal0), ("cal1", cal1)]:
             pubs.append(circ); meta.append({"setting": s[0], "kind": kind, "cz": sum(v for k, v in circ.count_ops().items() if k in gates2),
                                             "measured_physical": measured_physical(circ)})
     return pubs, meta
@@ -221,7 +229,8 @@ def analyze_job(meta, counts):
     """counts[i] for pub i. Returns per-scale mitigated/raw results and linear ZNE."""
     by = {(m["setting"], m["kind"]): c for m, c in zip(meta, counts)}
     res = {}
-    for scale in ("scale1", "scale3"):
+    scales = sorted({m["kind"] for m in meta if m["kind"].startswith("scale")}, key=lambda k: int(k[5:]))
+    for scale in scales:
         probs = {s: counts_to_probs(by[(s, scale)]) for s in ("Z", "x", "y")}
         conf = {s: confusion(by[(s, "cal0")], by[(s, "cal1")]) for s in ("Z", "x", "y")}
         sets = {x[0]: x for x in rl.settings(U)}
@@ -239,6 +248,11 @@ def analyze_job(meta, counts):
     z = lambda a, b: (3 * a - b) / 2
     res["zne"] = {"energy": z(res["scale1"]["mitigated"]["energy"], res["scale3"]["mitigated"]["energy"]),
                   "holdout": {k: z(res["scale1"]["mitigated"]["holdout"][k], res["scale3"]["mitigated"]["holdout"][k]) for k in HOLDOUT}}
+    if "scale5" in res:
+        q = lambda a, b, c: (15 * a - 10 * b + 3 * c) / 8
+        m = lambda sc, key=None: res[sc]["mitigated"]["energy"] if key is None else res[sc]["mitigated"]["holdout"][key]
+        res["zne_quadratic"] = {"energy": q(m("scale1"), m("scale3"), m("scale5")),
+                                "holdout": {k: q(m("scale1", k), m("scale3", k), m("scale5", k)) for k in HOLDOUT}}
     return res
 
 
@@ -258,7 +272,7 @@ def check_conversion():
 SHOTS, RANDOMIZATIONS, CAL_SHOTS, USAGE_CAP_S = 24576, 96, 4096, 400
 
 
-def run():
+def run(scales=(1, 3), shots=SHOTS, cap=USAGE_CAP_S):
     """Declared run (DECLARED.md hardware addendum): one Sampler V2 job; device by the declared rule; cancel while
     queued if IBM's usage estimate exceeds the cap. Writes results/qpu-<job>.json before and after."""
     import time
@@ -269,17 +283,17 @@ def run():
     if be.status().pending_jobs > 20:
         be = svc.backend("ibm_fez")
     e2, ero, _ = calib_medians(be)
-    pubs, meta = build(be)
+    pubs, meta = build(be, scales=scales)
     sampler = SamplerV2(mode=be)
     sampler.options.twirling.enable_gates = True
     sampler.options.twirling.num_randomizations = RANDOMIZATIONS
     sampler.options.twirling.shots_per_randomization = "auto"  # 256 on the 24 576-shot circuits, ~43 on calibrations
     sampler.options.dynamical_decoupling.enable = True
     sampler.options.dynamical_decoupling.sequence_type = "XY4"
-    job = sampler.run([(c, None, CAL_SHOTS if m["kind"].startswith("cal") else SHOTS) for c, m in zip(pubs, meta)])
+    job = sampler.run([(c, None, CAL_SHOTS if m["kind"].startswith("cal") else shots) for c, m in zip(pubs, meta)])
     rec = {"job_id": job.job_id(), "backend": be.name, "submitted": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
            "calibration_medians": {"cz_error": e2, "readout_error": ero}, "pending_at_submit": be.status().pending_jobs,
-           "usage_before_s": usage0.get("usage_consumed_seconds"), "shots": SHOTS, "randomizations": RANDOMIZATIONS,
+           "usage_before_s": usage0.get("usage_consumed_seconds"), "shots": shots, "scales": list(scales), "randomizations": RANDOMIZATIONS,
            "cal_shots": CAL_SHOTS, "meta": meta}
     path = os.path.join(HERE, "results", f"qpu-{job.job_id()}.json")
     json.dump(rec, open(path, "w"), indent=1)
@@ -288,7 +302,7 @@ def run():
         est = (job.usage_estimation or {}).get("quantum_seconds")
         if est is not None:
             print("IBM usage estimate", est, "s", flush=True)
-            if est > USAGE_CAP_S:
+            if est > cap:
                 job.cancel(); print("CANCELLED: estimate over the declared cap", flush=True)
             break
         time.sleep(10)
@@ -314,6 +328,8 @@ def collect(job_id):
 if __name__ == "__main__":
     if sys.argv[1] == "run":
         run()
+    if sys.argv[1] == "run3":   # addendum 2: scales 1, 3, 5; 49 152 shots; cap 350 s
+        run(scales=(1, 3, 5), shots=49152, cap=350)
     if sys.argv[1] == "collect":
         r = collect(sys.argv[2]); print(json.dumps(r["analysis"], indent=1)[:4000])
     if sys.argv[1] == "predict":   # predict <e_cz> <e_ro> <n_cz Z> <n_cz x> <n_cz y>

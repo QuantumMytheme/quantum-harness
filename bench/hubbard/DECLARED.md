@@ -167,3 +167,26 @@ within the tolerance. The diagonal correlation, a smaller signal, is under-recov
 model A also predicted it would be (0.192): linear extrapolation from scale 3, where only ~20 % of shots
 survive post-selection, leaves that bias. Next, if wanted (≈ 2 min of the remaining 545 s): a third scale
 (5) for quadratic Richardson, which the simulator work (items 10–16) found necessary for small signals.
+
+## Hardware addendum 2 (2026-10-06, before the second QPU job): three noise scales, quadratic ZNE
+
+Craig: "yes do the third noise level". One new Sampler job on ibm_kingston with all three scales
+(1; 3 = C·C†·C; 5 = C·(C†·C)²) and fresh readout calibration, so every point shares one calibration
+window. It also **replicates** job db2scfs7f06c73aqf40g at scales 1 and 3. Shots 49 152 per circuit
+(96 randomizations × 512, gate twirling, XY4), calibrations 4 096. Analysis unchanged (`qpu.analyze_job`),
+plus quadratic Richardson (15·E₁ − 10·E₃ + 3·E₅)/8 (mitigation.py's declared weights). Budget: 545 s
+left; estimate ~190 s; cancel while queued if IBM's estimate exceeds 350 s.
+
+Predictions (`qpu.py`, same gate model as addendum 1, ibm_kingston medians):
+
+| | scale-5 E | kept (Z) | quadratic ZNE E | ZNE holdouts |
+|---|---|---|---|---|
+| model A | −0.43 | 0.18 | −6.45 (106 %) | 0.508 / 0.251 |
+| model B | −0.01 | 0.14 | −5.04 (83 %) | 0.396 / 0.105 |
+
+Expected holdout uncertainty after the quadratic weights: ~0.019 (keep fractions from job 1).
+
+Rules: **H1′** both quadratic-ZNE holdouts within ±0.05 of exact; **H2′** quadratic-ZNE energy within
+10 % of exact (−5.49 ≥ E ≥ −6.71); **H5 (replication)** this job's scale-1 and scale-3 mitigated energies
+agree with job 1's within 3σ (combined bootstrap); a disagreement is reported as device drift.
+Model A over-shoots the energy (106 %): an over-shoot inside 10 % passes H2′; beyond it fails.
