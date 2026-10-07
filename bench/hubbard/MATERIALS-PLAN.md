@@ -55,3 +55,18 @@ it can guide materials design.
 Not a claim that the Hubbard model fully explains cuprates (still argued), and not a substitute for
 experiment: the deliverable is a ranked list of real or near-real compounds with model parameters that
 the validated proxy says pair more strongly than known ones.
+
+## Result of the first experiment (2026-10-07): **FAIL, the proxy runs opposite to the cuprate trend**
+
+`ladder_tprime.py` → `results/ladder-tprime.json`. Two holes on the 2×4 ladder do not bind even at t′ = 0
+(Δ_pb = +0.037 at U/t = 8), and binding gets weaker as t′/t goes from 0 to −0.4:
+
+| t′/t | 0 | −0.1 | −0.2 | −0.3 | −0.4 |
+|---|---|---|---|---|---|
+| Δ_pb, U/t = 8 | +0.037 | +0.102 | +0.154 | +0.197 | +0.211 |
+| Δ_pb, U/t = 6 | +0.041 | +0.092 | +0.132 | +0.168 | +0.203 |
+
+The declared rule needed −Δ_pb to *rise* with |t′/t|; it falls monotonically at both U. As declared, this
+proxy on these clusters cannot rank materials. (The 2×6 points were still computing when this was
+written; they are appended to the results file when done, and cannot reverse a monotone 2×4 failure.)
+Next proxy to try, declared before running: d-wave pair-field correlations on wider ladders with DMRG.
