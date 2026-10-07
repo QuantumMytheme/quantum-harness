@@ -129,6 +129,24 @@ def main():
                         - fastdm.simulate_density(c, 0.01, 0.03)).max())
     record("fastdm equals density_matrix.py on a random noisy 4-qubit circuit", diff < 1e-12, f"max err {diff:.1e}")
 
+    # Saved circuit files must rebuild with the committed ansatz and give back their saved energies
+    # (2026-10-06: pb-circuits-U4.json was a stale artifact of the rejected x/y-tied ansatz).
+    import glob
+    import json as _json
+    import pair_binding_vqe as pbv
+    import ansatz as az
+    for path in sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "pb-circuits-U*.json"))):
+        data = _json.load(open(path))
+        Hs = hb.pauli_matrix(hb.jw_terms(pbv.cluster, float(data["U"])), pbv.N_Q)
+        worst, why = 0.0, ""
+        for L, v in data["layers"].items():
+            rec = v["by_N"]["4"]
+            try:
+                worst = max(worst, abs(az.energy(pbv.circuit(4, rec["params"], compact=True), Hs) - rec["energy"]))
+            except ValueError as e:
+                worst, why = float("inf"), str(e)
+        record(f"{os.path.basename(path)} rebuilds with the committed ansatz", worst < 1e-9, why or f"max energy diff {worst:.1e}")
+
     n_ok = sum(ok for _, ok in results)
     print(f"\n{n_ok}/{len(results)} checks passed")
     return 0 if n_ok == len(results) else 1
