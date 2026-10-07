@@ -94,7 +94,7 @@ def binding_and_mass(m2, m1, g, d=0.02):
     return e2 - 2 * e1, kap
 
 
-def g_for_binding(m2, m1, target=-1.0, lo=0.0, hi=3.0, steps=14):
+def g_for_binding(m2, m1, target=-1.0, lo=0.0, hi=4.0, steps=14):
     """Bisection on g so that Delta = target (binding grows with g in both models over this range)."""
     for _ in range(steps):
         mid = 0.5 * (lo + hi)
@@ -105,17 +105,18 @@ def g_for_binding(m2, m1, target=-1.0, lo=0.0, hi=3.0, steps=14):
     return 0.5 * (lo + hi)
 
 
-def main(nphs=(8, 10)):
-    out = {"model": "two electrons, U = 0, 6-site ring, Omega = t", "rule": "HYPOTHESES.md W2(a)", "rows": []}
+def main(nphs=(8, 10), target=-1.0, n=6, outname="bipolaron-control.json"):
+    out = {"model": f"two electrons, U = 0, {n}-site ring, Omega = t", "target_binding": target, "rule": "HYPOTHESES.md W2", "rows": []}
     for nph in nphs:
         for kind in ("holstein", "peierls"):
-            m2, m1 = Model(kind, nph=nph), Model(kind, nph=nph, electrons=1)
+            m2, m1 = Model(kind, n=n, nph=nph), Model(kind, n=n, nph=nph, electrons=1)
             _, kap0 = binding_and_mass(m2, m1, 0.0)
-            g = g_for_binding(m2, m1)
+            g = g_for_binding(m2, m1, target)
             delta, kap = binding_and_mass(m2, m1, g)
             row = {"kind": kind, "nph": nph, "dim": m2.dim, "g": g, "binding": delta, "mass_ratio": kap0 / kap}
             out["rows"].append(row); print(json.dumps(row), flush=True)
-            json.dump(out, open(os.path.join(HERE, "results", "bipolaron-control.json"), "w"), indent=1)
+            os.makedirs(os.path.join(HERE, "results"), exist_ok=True)
+            json.dump(out, open(os.path.join(HERE, "results", outname), "w"), indent=1)
     return out
 
 
@@ -123,5 +124,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--quick":
         m2, m1 = Model("holstein", nph=4), Model("holstein", nph=4, electrons=1)
         print("g=0 binding (must be ~0 for U=0 free pair on a ring):", binding_and_mass(m2, m1, 0.0))
+        sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1] == "--strong":   # W2(a') declared 2026-10-07
+        main(nphs=(10, 12, 14), target=-2.5, n=6, outname="bipolaron-strong.json")
         sys.exit(0)
     main()
