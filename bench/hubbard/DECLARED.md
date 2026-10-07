@@ -138,3 +138,32 @@ Exact: E₀ = −6.102748, holdouts 0.482078 / 0.230597; best product state (Né
 - **H3, beats the best product state:** scale-1 mitigated energy below −4.0 by ≥ 3σ (shot noise).
 - **H4, model check:** where each measured number falls against models A and B; a value outside [B, A]
   is reported as a model miss, not explained away.
+
+### Result (2026-10-06, job db2scfs7f06c73aqf40g on ibm_kingston; 55 s of the 600 s Open Plan)
+
+Raw counts, calibrations and the analysis are in `results/qpu-db2scfs7f06c73aqf40g.json`. Uncertainties:
+300-sample multinomial bootstrap of every circuit's counts, calibrations included (seed 20261006).
+
+| quantity | measured | model A | model B | exact |
+|---|---|---|---|---|
+| scale-1 raw E | −1.996 | −2.72 | −1.28 | −6.103 |
+| scale-1 mitigated E | **−4.082 ± 0.040** | −4.43 | −2.82 | −6.103 |
+| scale-1 holdouts | 0.315 ± 0.011 / 0.019 ± 0.011 | 0.349 / 0.064 | 0.222 / −0.086 | 0.482 / 0.231 |
+| kept after post-selection (Z / x / y) | 0.41 / 0.51 / 0.48 | 0.55 / 0.53 / 0.53 | 0.35 / 0.34 / 0.33 | 1 |
+| scale-3 mitigated E | −1.082 | −1.62 | −0.21 | — |
+| **linear ZNE E** | **−5.581 ± 0.066 (91 %)** | −5.84 | −4.13 | −6.103 |
+| **ZNE holdouts** | **0.455 ± 0.019 / 0.147 ± 0.019** | 0.460 / 0.192 | 0.324 / 0.027 | 0.482 / 0.231 |
+
+- **H1 (held-out, ±0.05): FAIL.** ⟨Z₀↑Z₁↓⟩ 0.455 passes (0.027 off); ⟨Z₀↑Z₂↑⟩ 0.147 is 0.084 off.
+- **H2 (ZNE energy within 10 %): PASS**, −5.581 ± 0.066 against the −5.49 line (1.4σ margin).
+- **H3 (scale-1 below the Néel product state −4.0 by ≥ 3σ): FAIL**, −4.082 ± 0.040 is 2.1σ below.
+- **H4 (model band): every measured value lies inside [B, A]**, at roughly 80 % of the way toward A for the
+  scale-1 energy. Readout was asymmetric (1→0 flips up to 10 % on one qubit, 8 % on another), which the
+  per-qubit calibration absorbed; the symmetric-readout model did not have it.
+
+Reading: the device reproduced the half-filled plaquette's energy to 91 % after post-selection, readout
+inversion and a two-point linear extrapolation, and the nearest-neighbour antiferromagnetic correlation to
+within the tolerance. The diagonal correlation, a smaller signal, is under-recovered (0.147 vs 0.231), as
+model A also predicted it would be (0.192): linear extrapolation from scale 3, where only ~20 % of shots
+survive post-selection, leaves that bias. Next, if wanted (≈ 2 min of the remaining 545 s): a third scale
+(5) for quadratic Richardson, which the simulator work (items 10–16) found necessary for small signals.
