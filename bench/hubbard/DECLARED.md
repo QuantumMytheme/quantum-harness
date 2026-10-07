@@ -99,3 +99,42 @@ hardware time, the same pass rule is re-applied under a device-like model:
     channel ρ → (1 − sin²(ε/2)) ρ + sin²(ε/2) ZZ ρ ZZ after every two-qubit gate. Same protocol and
     item-10 rule, ε = 0.02, readout 1%, at p₂q = 3×10⁻⁴ (failed untwirled) and 1×10⁻³. Expected:
     both pass, with the 3×10⁻⁴ estimate close to the ε = 0 value (−0.036).
+
+## Hardware addendum (2026-10-06, before any QPU job): hubbard2x2 on an IBM Heron device
+
+README "Next" 1: the half-filled `hubbard2x2` energy and its held-out spin correlations on a real device,
+sized to the free tier (Open Plan, 600 s/month, 0 s used). Nothing about pair binding (Δ_pb needs ~4×10⁷ shots).
+
+**Circuit.** The committed per-bond HVA, 3 layers, compact hops (`results/pb-circuits-U4.json` regenerated
+2026-10-06 with the committed code: N = 4 error 2×10⁻¹², 104 logical two-qubit gates), plus the three
+number-conserving settings of item 12 (all-Z, x bonds, y bonds). Conversion to Qiskit checked: ideal
+statevector energy −6.102748483 (diff −1.6×10⁻¹³). Transpiled (opt 3, best of 8 seeds) on the Heron
+heavy-hex: 222 / 236 / 243 CZ for Z / x / y.
+
+**Device.** ibm_kingston (median CZ error 2.0×10⁻³, readout 0.90 %) unless it has > 20 pending jobs at
+submission, then ibm_fez (2.68×10⁻³, 1.05 %). Calibration medians are recorded with the result.
+
+**Protocol (fixed now).** One Sampler V2 job: 3 settings × 2 noise scales (1; 3 = global fold C·C†·C on
+the ISA circuit, so the CZ count triples and no gate is cancelled) × 24 576 shots (Pauli twirling on the
+two-qubit gates, 96 randomizations × 256 shots; XY4 dynamical decoupling), plus readout calibration
+(all-0 and all-1 on the measured physical qubits of each setting, 4 096 shots each). Analysis =
+`qpu.analyze`, the same function that produced the predictions: per-qubit readout inversion →
+post-selection on (N↑, N↓) = (2, 2) → energy (sum of the three settings) and the two held-out
+⟨Z₀↑Z₁↓⟩, ⟨Z₀↑Z₂↑⟩; linear Richardson ZNE = (3·E₁ − E₃)/2. Budget cap: if the job's estimated usage
+exceeds 400 s it is not submitted; one job only.
+
+**Predictions (computed before the run; `qpu.py predict`; gate-error model, idle/crosstalk not modelled):**
+
+| ibm_kingston | scale-1 mitigated E | holdouts | kept (Z) | linear ZNE E | ZNE holdouts |
+|---|---|---|---|---|---|
+| model A (calibration medians) | −4.43 (73 %) | 0.349 / 0.064 | 0.55 | −5.84 (96 %) | 0.460 / 0.192 |
+| model B (A × 2) | −2.82 (46 %) | 0.222 / −0.086 | 0.35 | −4.13 (68 %) | 0.324 / 0.027 |
+
+Exact: E₀ = −6.102748, holdouts 0.482078 / 0.230597; best product state (Néel) −4.0.
+
+**Pass rules (each reported, pass or fail):**
+- **H1, held-out (the judge's rule):** both ZNE holdouts within ±0.05 of exact. Model A says pass, B says fail.
+- **H2, energy:** ZNE energy within 10 % of exact (≤ −5.49).
+- **H3, beats the best product state:** scale-1 mitigated energy below −4.0 by ≥ 3σ (shot noise).
+- **H4, model check:** where each measured number falls against models A and B; a value outside [B, A]
+  is reported as a model miss, not explained away.
