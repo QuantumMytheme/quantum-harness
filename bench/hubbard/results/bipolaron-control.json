@@ -1,0 +1,38 @@
+{
+ "model": "two electrons, U = 0, 6-site ring, Omega = t",
+ "rule": "HYPOTHESES.md W2(a)",
+ "rows": [
+  {
+   "kind": "holstein",
+   "nph": 8,
+   "dim": 108108,
+   "g": 1.173431396484375,
+   "binding": -1.000274973079196,
+   "mass_ratio": 5.251890779625281
+  },
+  {
+   "kind": "peierls",
+   "nph": 8,
+   "dim": 108108,
+   "g": 0.608551025390625,
+   "binding": -0.9997573363493508,
+   "mass_ratio": 2.932495242311357
+  },
+  {
+   "kind": "holstein",
+   "nph": 10,
+   "dim": 288288,
+   "g": 1.160797119140625,
+   "binding": -1.0003003178149097,
+   "mass_ratio": 5.8933924432015345
+  },
+  {
+   "kind": "peierls",
+   "nph": 10,
+   "dim": 288288,
+   "g": 0.604156494140625,
+   "binding": -1.0005305300929672,
+   "mass_ratio": 3.129534326446504
+  }
+ ]
+}
