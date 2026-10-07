@@ -133,10 +133,27 @@ beyond a free tier's monthly QPU minutes.
   runs that coherently; the hardware step needs a fermionic-swap layout and a much shallower
   circuit, measured against the same exact answer.
 
+## On real hardware (2026-10-06/07, ibm_kingston, IBM Open Plan)
+
+`qpu.py` runs the half-filled `hubbard2x2` state (3-layer per-bond HVA, compact hops: 104 logical
+two-qubit gates, 222–243 CZ after routing onto heavy-hex) with three number-conserving measurement
+settings, Pauli twirling and XY4 decoupling; analysis is readout inversion → post-selection on
+(N↑, N↓) = (2, 2) → zero-noise extrapolation by global folding. Predictions and pass rules were
+written into `DECLARED.md` before each job; raw counts are in `results/qpu-*.json`.
+
+| job | extrapolation | energy (exact −6.103) | ⟨Z₀↑Z₁↓⟩ (0.482) | ⟨Z₀↑Z₂↑⟩ (0.231) |
+|---|---|---|---|---|
+| db2scfs7f06c73aqf40g (55 s) | linear, scales 1, 3 | **−5.58 ± 0.07 (91 %)** | 0.455 ± 0.019 ✓ | 0.147 ± 0.019 ✗ |
+| db2ssrk2ljfc73d54dg0 (153 s) | quadratic, scales 1, 3, 5 | **−5.77 ± 0.08 (95 %)** | 0.447 ± 0.022 ✓ | 0.157 ± 0.022 ✗ |
+
+The energy passes its declared 10 % rule both times; the nearest-neighbour correlation is within
+the judge's ±0.05; the diagonal correlation is under-recovered by ~0.08 in both, which the declared
+rules count as a fail. The device drifted strongly between the two windows (scale-1 energy moved by
+13σ), and quadratic extrapolation still recovered 95 % of the energy. Total use: 208 of 600 s.
+
 ## Next
 
-1. Real QPU, first run sized to a free tier: the `hubbard2x2` half-filled energy and its held-out
-   spin correlations (signals of order 1, thousands of shots), mapped to the device's coupling graph
-   and reported against the exact answer. Δ_pb on hardware only once shots and error rates allow.
+1. Hardware: find out why ⟨Z₀↑Z₂↑⟩ is under-recovered (coupler quality on that pair, layout choice)
+   before spending more shots. Δ_pb on hardware only once shots and error rates allow (~4×10⁷ shots).
 2. Larger clusters by Lanczos (2×3, 2×4 ladders, 3×3), t′ sweeps, and published cuprate and
    nickelate parameters.

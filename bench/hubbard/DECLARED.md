@@ -195,3 +195,29 @@ Model A over-shoots the energy (106 %): an over-shoot inside 10 % passes H2′; 
 (`db2srrm8v0ts73c3fhn0`) was routed to ibm_fez by addendum 1's fallback rule (kingston had > 20 pending).
 Addendum 2 names ibm_kingston, its predictions are kingston's, and H5 replicates a kingston job, so the
 fez job was cancelled while still queued (0 s used) and resubmitted with the backend forced to kingston.
+
+### Result of addendum 2 (2026-10-07, job db2ssrk2ljfc73d54dg0 on ibm_kingston; 153 s, 208 of 600 s used)
+
+150-sample bootstrap (seed 20261007), calibrations included.
+
+| quantity | measured | model A | model B | exact |
+|---|---|---|---|---|
+| scale-1 mitigated E | −3.408 ± 0.033 | −4.43 | −2.82 | −6.103 |
+| scale-3 mitigated E | −0.491 ± 0.042 | −1.62 | −0.21 | — |
+| scale-5 mitigated E | +0.017 ± 0.047 | −0.43 | −0.01 | — |
+| linear ZNE (1, 3) E / holdouts | −4.867 ± 0.051 / 0.369, 0.082 | | | |
+| **quadratic ZNE (1, 3, 5) E** | **−5.771 ± 0.077 (95 %)** | −6.45 | −5.04 | −6.103 |
+| **quadratic ZNE holdouts** | **0.447 ± 0.022 / 0.157 ± 0.022** | 0.508 / 0.251 | 0.396 / 0.105 | 0.482 / 0.231 |
+
+- **H1′ (holdouts ±0.05): FAIL.** ⟨Z₀↑Z₁↓⟩ passes (0.035 off); ⟨Z₀↑Z₂↑⟩ misses by 0.074, as in job 1 (0.147).
+- **H2′ (quadratic energy within 10 %): PASS**, −5.771 ± 0.077 (3.6σ inside −5.49).
+- **H5 (replication): FAIL, device drift.** Scale-1 −3.408 vs job 1's −4.082 (13σ); scale-3 −0.491 vs
+  −1.082 (7.8σ). The device was noisier in this window; the kept fractions fell too (0.39 vs 0.41–0.51).
+- **H4:** every value inside [B, A] except scale 5, which sits at B's edge (+0.017 ± 0.047 vs −0.01).
+
+Reading: two independent hardware windows bracket the plaquette's energy at 91 % (linear, quiet window)
+and 95 % (quadratic, noisy window). Quadratic extrapolation held up under a 13σ drift where linear fell
+from 91 % to 80 %. The diagonal spin correlation came in at 0.147 and 0.157: under-recovered both times by
+~0.08, a systematic the gate-error model does not reproduce at scale 1 (model A 0.064 vs 0.019 measured).
+Open: whether that correlation's qubits sit on worse couplers (layout-specific), or decay faster than
+the global fold models. Next hardware step would be a layout check, not more shots.
