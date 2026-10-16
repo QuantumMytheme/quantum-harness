@@ -308,3 +308,18 @@ Add a committed adversarial fixture for EACH judge gate so every reject path has
 When an item ships, mark it ☑, note the worked reference + fixtures it shipped with, and move
 any follow-ups into a fresh todo. Every "Done" must remain gradable by `judge_verify.py` or a
 metric — no human-eyeball criteria.
+
+## ☐ 13. Reversible-arithmetic task + rare-failure gate (from Anthropic's LLM circuit-discovery work, 2026-10)
+Anthropic/Harvard (arXiv:2610.22367) ran the same BRIEF → model → automated judge → iterate loop
+on 8 classically-checkable primitives and beat the published state of the art on all 8 (e.g. 17×
+fewer gates for EC point addition; ~12× fewer for the DQI Reed–Solomon decoder). Findings + gap
+map: `docs/research/2026-10-anthropic-llm-circuit-discovery.md`.
+- **Proposal:** (a) `task=reversible` — {X,CX,CCX} circuits judged on sampled + small-n exhaustive
+  basis inputs against a classical reference function (no statevector, so it scales); metric =
+  Toffoli count, qubits, and their product. (b) Optional `max_failure_rate` in a reference: seeded
+  sampling, reject (5) if the upper confidence bound exceeds it. (c) Pareto (qubits, Toffolis)
+  scoreboard column. (d) KICKOFF clause: explore divergent approaches in parallel, widen on plateau.
+- **Done =** a ripple-adder problem ACCEPTs a correct bundle; a bundle that is wrong on one held-out
+  input REJECTs at 6; a rare-failure bundle above its declared rate REJECTs at 5; regression tests
+  for each in `test_judge.py`.
+
